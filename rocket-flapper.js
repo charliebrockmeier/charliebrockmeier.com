@@ -22,8 +22,8 @@ class RocketFlapper {
         // Physics (lighter gravity for space!)
         this.rocketY = 200; // Middle of screen
         this.rocketVelocity = 0;
-        this.gravity = 0.08; // Ultra light gravity for space feel
-        this.flapPower = -3; // Adjusted flap power to match
+        this.gravity = 0.04; // Much lighter gravity for space feel
+        this.flapPower = -2; // Reduced flap power to match lighter gravity
         
         // Game objects
         this.obstacles = [];
@@ -32,9 +32,9 @@ class RocketFlapper {
         this.lastObstacleTime = 0;
         this.lastDinosaurTime = 0;
         this.lastAsteroidTime = 0;
-        this.obstacleInterval = 2500; // Faster spawning
-        this.dinosaurInterval = 2000;
-        this.asteroidInterval = 1500; // Frequent asteroids
+        this.obstacleInterval = 4000; // Much slower obstacle spawning
+        this.dinosaurInterval = 3000; // Slower dinosaur spawning
+        this.asteroidInterval = 3000; // Much less frequent asteroids
         this.asteroids = [];
         
         // Game phases
@@ -231,12 +231,14 @@ class RocketFlapper {
             asteroidBody.style.fontSize = asteroidType.size + 'px';
             
             asteroid.appendChild(asteroidBody);
-            asteroid.style.top = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60 + 'px';
+            const asteroidY = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60;
+            asteroid.style.top = asteroidY + 'px';
             this.gameCanvas.appendChild(asteroid);
             
             this.asteroids.push({
                 element: asteroid,
                 x: this.gameCanvas.offsetWidth + 60,
+                y: asteroidY,
                 speed: asteroidType.speed
             });
             
@@ -263,12 +265,14 @@ class RocketFlapper {
             obstacleBody.textContent = planets[Math.floor(Math.random() * planets.length)];
             
             obstacle.appendChild(obstacleBody);
-            obstacle.style.top = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60 + 'px';
+            const obstacleY = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60;
+            obstacle.style.top = obstacleY + 'px';
             this.gameCanvas.appendChild(obstacle);
             
             this.obstacles.push({
                 element: obstacle,
-                x: this.gameCanvas.offsetWidth + 60
+                x: this.gameCanvas.offsetWidth + 60,
+                y: obstacleY
             });
             
             this.lastObstacleTime = currentTime;
@@ -294,12 +298,14 @@ class RocketFlapper {
             dinosaurBody.textContent = dinosaurs[Math.floor(Math.random() * dinosaurs.length)];
             
             dinosaur.appendChild(dinosaurBody);
-            dinosaur.style.top = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60 + 'px';
+            const dinosaurY = Math.random() * (this.gameCanvas.offsetHeight - 120) + 60;
+            dinosaur.style.top = dinosaurY + 'px';
             this.gameCanvas.appendChild(dinosaur);
             
             this.dinosaurs.push({
                 element: dinosaur,
                 x: this.gameCanvas.offsetWidth + 60,
+                y: dinosaurY,
                 hit: false
             });
             
@@ -317,12 +323,14 @@ class RocketFlapper {
         earthBody.textContent = '🌍';
         
         earth.appendChild(earthBody);
-        earth.style.top = this.gameCanvas.offsetHeight / 2 - 40 + 'px'; // Center vertically
+        const earthY = this.gameCanvas.offsetHeight / 2 - 40;
+        earth.style.top = earthY + 'px'; // Center vertically
         this.gameCanvas.appendChild(earth);
         
         this.earth = {
             element: earth,
             x: this.gameCanvas.offsetWidth + 80,
+            y: earthY,
             hit: false
         };
     }
@@ -421,22 +429,20 @@ class RocketFlapper {
     }
     
     checkCollisions() {
-        const rocketRect = this.rocket.getBoundingClientRect();
+        const rocketX = this.gameCanvas.offsetWidth / 2; // Rocket is centered horizontally
+        const rocketY = this.rocketY;
+        const rocketSize = 40; // Rocket collision size
         
         // Check obstacle collisions (game over)
         this.obstacles.forEach(obstacle => {
-            const obstacleRect = obstacle.element.getBoundingClientRect();
-            
-            if (this.isColliding(rocketRect, obstacleRect)) {
+            if (this.isColliding(rocketX, rocketY, rocketSize, obstacle.x, obstacle.y, 60)) {
                 this.gameOver('obstacle');
             }
         });
         
         // Check asteroid collisions (game over)
         this.asteroids.forEach(asteroid => {
-            const asteroidRect = asteroid.element.getBoundingClientRect();
-            
-            if (this.isColliding(rocketRect, asteroidRect)) {
+            if (this.isColliding(rocketX, rocketY, rocketSize, asteroid.x, asteroid.y, 50)) {
                 this.gameOver('asteroid');
             }
         });
@@ -444,9 +450,7 @@ class RocketFlapper {
         // Check dinosaur collisions (score points)
         this.dinosaurs.forEach(dinosaur => {
             if (!dinosaur.hit) {
-                const dinosaurRect = dinosaur.element.getBoundingClientRect();
-                
-                if (this.isColliding(rocketRect, dinosaurRect)) {
+                if (this.isColliding(rocketX, rocketY, rocketSize, dinosaur.x, dinosaur.y, 50)) {
                     dinosaur.hit = true;
                     dinosaur.element.classList.add('hit');
                     this.dinosaursHit++;
@@ -461,9 +465,7 @@ class RocketFlapper {
         
         // Check Earth collision (WIN THE GAME!)
         if (this.earth && !this.earth.hit) {
-            const earthRect = this.earth.element.getBoundingClientRect();
-            
-            if (this.isColliding(rocketRect, earthRect)) {
+            if (this.isColliding(rocketX, rocketY, rocketSize, this.earth.x, this.earth.y, 80)) {
                 this.earth.hit = true;
                 this.earth.element.classList.add('hit');
                 this.updateScore(1000); // HUGE score for destroying Earth!
@@ -485,11 +487,9 @@ class RocketFlapper {
         }
     }
     
-    isColliding(rect1, rect2) {
-        return rect1.left < rect2.right &&
-               rect1.right > rect2.left &&
-               rect1.top < rect2.bottom &&
-               rect1.bottom > rect2.top;
+    isColliding(x1, y1, size1, x2, y2, size2) {
+        const distance = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+        return distance < (size1 + size2) / 2;
     }
     
     updateScore(points) {
