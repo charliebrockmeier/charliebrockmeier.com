@@ -98,19 +98,50 @@ body {
 }
 
 .rock-face {
-    font-size: 2rem;
-    margin-bottom: 0;
-    transition: all 0.3s ease;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #333;
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) rotate(15deg);
     z-index: 2;
-    font-family: 'Arial', sans-serif;
-    font-weight: bold;
-    color: #333;
-    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Eyes */
+.rock-face::before,
+.rock-face::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    top: 18px;
+}
+
+.rock-face::before {
+    left: 16px;
+}
+
+.rock-face::after {
+    right: 16px;
+}
+
+/* Mouth */
+.rock-face::after {
+    width: 20px;
+    height: 10px;
+    background: transparent;
+    border: 3px solid white;
+    border-top: none;
+    border-radius: 0 0 20px 20px;
+    top: 35px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .rock-body {
@@ -133,27 +164,56 @@ body {
 
 /* Rock Emotions */
 .pet-rock.sad .rock-face {
-    content: ":(";
     animation: rockShake 0.5s ease-in-out infinite;
-    color: #666;
+    background: #666;
+}
+
+.pet-rock.sad .rock-face::after {
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    border-top: 3px solid white;
+    top: 25px;
 }
 
 .pet-rock.angry .rock-face {
-    content: ">:(";
     animation: rockBounce 0.3s ease-in-out infinite;
-    color: #cc0000;
+    background: #cc0000;
+}
+
+.pet-rock.angry .rock-face::before,
+.pet-rock.angry .rock-face::after {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 0;
+    transform: rotate(45deg);
+}
+
+.pet-rock.angry .rock-face::after {
+    width: 15px;
+    height: 3px;
+    background: white;
+    border: none;
+    border-radius: 0;
+    top: 40px;
+    transform: translateX(-50%) rotate(0deg);
 }
 
 .pet-rock.happy .rock-face {
-    content: ":)";
     animation: rockHappy 0.6s ease-in-out;
-    color: #333;
+    background: #333;
 }
 
 .pet-rock.excited .rock-face {
-    content: ":D";
     animation: rockExcited 0.4s ease-in-out infinite;
-    color: #0066cc;
+    background: #0066cc;
+}
+
+.pet-rock.excited .rock-face::after {
+    width: 25px;
+    height: 12px;
+    border-radius: 0 0 25px 25px;
+    top: 30px;
 }
 
 /* Rock Status */
@@ -304,7 +364,29 @@ body {
     }
     
     .rock-face {
-        font-size: 1.5rem;
+        width: 45px;
+        height: 45px;
+    }
+    
+    .rock-face::before,
+    .rock-face::after {
+        width: 6px;
+        height: 6px;
+        top: 14px;
+    }
+    
+    .rock-face::before {
+        left: 12px;
+    }
+    
+    .rock-face::after {
+        right: 12px;
+    }
+    
+    .rock-face::after {
+        width: 15px;
+        height: 8px;
+        top: 26px;
     }
     
     .rock-body {

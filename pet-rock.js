@@ -17,8 +17,7 @@ class PetRockGame {
         this.sadThreshold = 60;
         this.angryThreshold = 30;
         
-        // Set initial face
-        this.rockFace.textContent = ':)';
+        // Set initial face - no text content needed for CSS face
         
         // Messages for different moods
         this.messages = {
@@ -66,8 +65,8 @@ class PetRockGame {
     }
     
     petRock() {
-        // Increase happiness
-        this.happiness = Math.min(100, this.happiness + 20);
+        // Increase happiness more significantly
+        this.happiness = Math.min(100, this.happiness + 30);
         this.lastPetTime = Date.now();
         this.petCount++;
         
@@ -82,12 +81,13 @@ class PetRockGame {
         
         // Update display
         this.updateDisplay();
+        
+        console.log('Rocky petted! Happiness:', this.happiness); // Debug
     }
     
     showPettingAnimation() {
         // Add excited class temporarily
         this.petRock.classList.add('excited');
-        this.rockFace.textContent = ':D';
         
         // Remove other mood classes
         this.petRock.classList.remove('sad', 'angry', 'happy');
@@ -103,29 +103,28 @@ class PetRockGame {
         // Remove all mood classes
         this.petRock.classList.remove('sad', 'angry', 'happy', 'excited');
         
-        // Determine mood based on happiness and update face
+        // Determine mood based on happiness
         if (this.happiness <= this.angryThreshold) {
             this.mood = 'angry';
             this.petRock.classList.add('angry');
-            this.rockFace.textContent = '>:(';
         } else if (this.happiness <= this.sadThreshold) {
             this.mood = 'sad';
             this.petRock.classList.add('sad');
-            this.rockFace.textContent = ':(';
         } else {
             this.mood = 'happy';
             this.petRock.classList.add('happy');
-            this.rockFace.textContent = ':)';
         }
     }
     
     startHappinessDecay() {
         setInterval(() => {
-            // Decrease happiness over time - much faster decay
+            // Decrease happiness over time - ULTRA fast decay
             const timeSinceLastPet = Date.now() - this.lastPetTime;
-            const decayRate = Math.min(5, timeSinceLastPet / 3000); // Much faster decay if not petted recently
+            const decayRate = Math.min(8, timeSinceLastPet / 2000); // ULTRA fast decay if not petted recently
             
             this.happiness = Math.max(0, this.happiness - decayRate);
+            
+            console.log('Happiness decay:', decayRate, 'New happiness:', this.happiness); // Debug
             
             // Update mood and display
             this.updateMood();
