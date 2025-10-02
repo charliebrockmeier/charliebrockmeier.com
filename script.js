@@ -146,9 +146,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function scrollToSocials() {
     const socialsSection = document.getElementById('socials');
     if (socialsSection) {
-        socialsSection.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
+        // Use requestAnimationFrame for smoother scrolling
+        requestAnimationFrame(() => {
+            socialsSection.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
         });
     }
 }
@@ -367,21 +370,28 @@ style.textContent = `
 document.head.appendChild(style);
 
 
-// Footer scroll visibility
+// Footer scroll visibility with throttling for better performance
+let footerScrollTimeout;
 function handleFooterVisibility() {
-    const footer = document.querySelector('.footer-nav');
-    const scrollPosition = window.scrollY;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
+    if (footerScrollTimeout) return;
     
-    // Show footer when scrolled to bottom 20% of page
-    const scrollPercentage = (scrollPosition + windowHeight) / documentHeight;
-    
-    if (scrollPercentage > 0.8) {
-        footer.classList.add('visible');
-    } else {
-        footer.classList.remove('visible');
-    }
+    footerScrollTimeout = requestAnimationFrame(() => {
+        const footer = document.querySelector('.footer-nav');
+        const scrollPosition = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Show footer when scrolled to bottom 20% of page
+        const scrollPercentage = (scrollPosition + windowHeight) / documentHeight;
+        
+        if (scrollPercentage > 0.8) {
+            footer.classList.add('visible');
+        } else {
+            footer.classList.remove('visible');
+        }
+        
+        footerScrollTimeout = null;
+    });
 }
 
 // Initialize footer scroll functionality
