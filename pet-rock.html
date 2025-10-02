@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charlie's Pet Rock - Take Care of Rocky!</title>
+    <link rel="stylesheet" href="pet-rock.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Wave Background Video -->
+    <video id="background-video" autoplay muted loop playsinline preload="auto">
+        <source src="waves-background.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Game Title -->
+        <div class="game-title">
+            <h1>🪨 Charlie's Pet Rock 🪨</h1>
+            <p>Take care of Rocky while Charlie is away!</p>
+        </div>
+        
+        <!-- Pet Rock -->
+        <div class="pet-rock-container">
+            <div class="pet-rock" id="petRock">
+                <div class="rock-face" id="rockFace">😊</div>
+                <div class="rock-body" id="rockBody">🪨</div>
+            </div>
+        </div>
+        
+        <!-- Rock Status -->
+        <div class="rock-status">
+            <div class="happiness-meter">
+                <span class="label">Happiness:</span>
+                <div class="meter">
+                    <div class="meter-fill" id="happinessMeter"></div>
+                </div>
+                <span class="happiness-text" id="happinessText">Happy!</span>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="instructions">
+            <p><i class="fas fa-hand-pointer"></i> Click on Rocky to pet him and keep him happy!</p>
+            <p><i class="fas fa-heart"></i> Rocky gets sad if you don't pet him regularly</p>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="home-btn" onclick="window.location.href='index.html'">
+                <i class="fas fa-home"></i> Back to Website
+            </button>
+        </div>
+    </div>
+
+    <script src="pet-rock.js"></script>
+</body>
+</html>

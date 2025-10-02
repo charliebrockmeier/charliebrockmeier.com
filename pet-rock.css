@@ -1,0 +1,317 @@
+/* Pet Rock Game Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    will-change: scroll-position;
+    overscroll-behavior: none;
+}
+
+/* Background Video */
+#background-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Game Container */
+.game-container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+/* Game Title */
+.game-title {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+.game-title h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+.game-title p {
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    color: rgba(255, 255, 255, 0.9);
+    font-style: italic;
+}
+
+/* Pet Rock Container */
+.pet-rock-container {
+    position: relative;
+    margin: 40px 0;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.pet-rock-container:hover {
+    transform: scale(1.05);
+}
+
+/* Pet Rock */
+.pet-rock {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+    animation: rockFloat 4s ease-in-out infinite;
+}
+
+.rock-face {
+    font-size: 4rem;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.rock-body {
+    font-size: 6rem;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* Rock Emotions */
+.pet-rock.sad .rock-face {
+    content: "😢";
+    animation: rockShake 0.5s ease-in-out infinite;
+}
+
+.pet-rock.angry .rock-face {
+    content: "😠";
+    animation: rockBounce 0.3s ease-in-out infinite;
+}
+
+.pet-rock.happy .rock-face {
+    content: "😊";
+    animation: rockHappy 0.6s ease-in-out;
+}
+
+.pet-rock.excited .rock-face {
+    content: "🤩";
+    animation: rockExcited 0.4s ease-in-out infinite;
+}
+
+/* Rock Status */
+.rock-status {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    min-width: 300px;
+}
+
+.happiness-meter {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+}
+
+.label {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.meter {
+    flex: 1;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    width: 100%;
+}
+
+.happiness-text {
+    font-weight: bold;
+    font-size: 1rem;
+    min-width: 80px;
+    text-align: right;
+}
+
+/* Instructions */
+.instructions {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 20px 0;
+    max-width: 500px;
+}
+
+.instructions p {
+    margin: 10px 0;
+    font-size: 1rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.home-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 15px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.home-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.home-btn:active {
+    transform: translateY(0);
+}
+
+/* Animations */
+@keyframes rockFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@keyframes rockShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes rockBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-8px) scale(1.1); }
+}
+
+@keyframes rockHappy {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes rockExcited {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.1) rotate(-5deg); }
+    75% { transform: scale(1.1) rotate(5deg); }
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 15px;
+    }
+    
+    .game-title h1 {
+        font-size: 2.5rem;
+    }
+    
+    .rock-face {
+        font-size: 3rem;
+    }
+    
+    .rock-body {
+        font-size: 4rem;
+    }
+    
+    .rock-status {
+        min-width: 280px;
+        padding: 15px;
+    }
+    
+    .happiness-meter {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .meter {
+        width: 100%;
+    }
+    
+    .action-buttons {
+        gap: 15px;
+        margin: 20px auto 0;
+        justify-content: center;
+        width: 100%;
+        padding: 0 20px;
+        box-sizing: border-box;
+    }
+    
+    .home-btn {
+        font-size: 1rem;
+        padding: 12px 25px;
+    }
+}
