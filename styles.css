@@ -830,6 +830,31 @@ body::before {
     width: 100%;
 }
 
+/* Smooth touch interactions for mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection for important content */
+.main-heading, .socials-title, .copyright, .social-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .main-heading {
@@ -840,7 +865,9 @@ body::before {
     
     .dive-button {
         font-size: 1rem;
-        padding: 12px 30px;
+        padding: 15px 35px;
+        min-height: 44px;
+        touch-action: manipulation;
     }
     
     .social-box {
@@ -1043,26 +1070,39 @@ body::before {
     }
     
     /* Footer Mobile */
+    .footer-nav {
+        padding: 10px 0;
+    }
+    
     .footer-content {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 8px;
         padding: 0 1rem;
+        text-align: center;
     }
     
     .footer-left, .footer-center, .footer-right {
         flex: none;
-        text-align: center;
+        width: 100%;
     }
     
     .footer-links {
-        gap: 1rem;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
     }
     
     .copyright {
         font-size: 0.7rem;
+        order: 2;
+    }
+    
+    .footer-center {
+        order: 1;
     }
     
     .footer-link {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
+        padding: 5px 10px;
     }
 }

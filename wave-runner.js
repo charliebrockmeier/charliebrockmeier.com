@@ -89,7 +89,29 @@ class RocketFlapper {
             e.preventDefault();
             if (this.isGameRunning) {
                 this.flap();
+            } else if (this.startScreen.style.display !== 'none') {
+                this.startGame();
             }
+        });
+        
+        // Prevent scrolling and other touch behaviors
+        this.gameCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+        
+        this.gameCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        });
+        
+        // Touch support for buttons
+        document.getElementById('startBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.startGame();
+        });
+        
+        document.getElementById('restartBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.restartGame();
         });
     }
     

@@ -508,34 +508,62 @@ body::before {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .game-container {
-        max-width: 95%;
-        height: 300px;
-        margin: 20px;
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        max-width: 100%;
     }
     
     .game-title {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
     
     .game-stats {
-        font-size: 0.9rem;
-        gap: 15px;
+        font-size: 0.8rem;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .game-canvas {
+        height: calc(100vh - 120px);
     }
     
     .start-screen,
     .game-over-screen {
-        padding: 30px 20px;
-        margin: 20px;
+        padding: 20px;
+        margin: 10px;
+        max-width: calc(100vw - 40px);
+        max-height: 80vh;
+        overflow-y: auto;
     }
     
     .start-screen h2,
     .game-over-screen h2 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
+        margin-bottom: 15px;
     }
     
-    .dino {
-        left: 60px;
-        bottom: 60px;
+    .start-btn,
+    .restart-btn,
+    .home-btn {
+        padding: 15px 25px;
+        font-size: 1rem;
+        margin: 8px;
+        min-height: 44px; /* iOS touch target size */
+        border-radius: 25px;
+        touch-action: manipulation;
+    }
+    
+    .instructions {
+        font-size: 0.85rem;
+        padding: 15px;
+    }
+    
+    /* Make game elements more touch-friendly */
+    .rocket {
+        transform: scale(1.1);
     }
     
     .dino-body {
