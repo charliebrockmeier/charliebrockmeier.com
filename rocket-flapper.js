@@ -22,8 +22,8 @@ class RocketFlapper {
         // Physics (lighter gravity for space!)
         this.rocketY = 200; // Middle of screen
         this.rocketVelocity = 0;
-        this.gravity = 0.04; // Much lighter gravity for space feel
-        this.flapPower = -2; // Reduced flap power to match lighter gravity
+        this.gravity = 0.02; // Ultra light gravity for space feel
+        this.flapPower = -4; // Strong flap power for responsive control
         
         // Game objects
         this.obstacles = [];
@@ -144,6 +144,10 @@ class RocketFlapper {
         this.gameSpeed = 2;
         this.rocketY = 200;
         this.rocketVelocity = 0;
+        
+        // Clear all existing game objects from DOM
+        this.clearAllGameObjects();
+        
         this.obstacles = [];
         this.dinosaurs = [];
         this.asteroids = [];
@@ -172,14 +176,46 @@ class RocketFlapper {
         this.startGame();
     }
     
+    clearAllGameObjects() {
+        // Remove all obstacles
+        this.obstacles.forEach(obstacle => {
+            if (obstacle.element && obstacle.element.parentNode) {
+                obstacle.element.remove();
+            }
+        });
+        
+        // Remove all dinosaurs
+        this.dinosaurs.forEach(dinosaur => {
+            if (dinosaur.element && dinosaur.element.parentNode) {
+                dinosaur.element.remove();
+            }
+        });
+        
+        // Remove all asteroids
+        this.asteroids.forEach(asteroid => {
+            if (asteroid.element && asteroid.element.parentNode) {
+                asteroid.element.remove();
+            }
+        });
+        
+        // Remove Earth if it exists
+        if (this.earth && this.earth.element && this.earth.element.parentNode) {
+            this.earth.element.remove();
+        }
+    }
+    
     flap() {
         if (this.isGameRunning) {
             this.rocketVelocity = this.flapPower;
             this.rocket.classList.add('flapping');
             
+            // Add visual feedback
+            this.rocket.style.transform = 'scale(1.1)';
+            
             setTimeout(() => {
                 this.rocket.classList.remove('flapping');
-            }, 300);
+                this.rocket.style.transform = 'scale(1)';
+            }, 200);
         }
     }
     
@@ -348,7 +384,7 @@ class RocketFlapper {
             this.gravity = Math.min(this.gravity + 0.01, 0.15);
         } else {
             // Reset gravity when not at top
-            this.gravity = 0.08;
+            this.gravity = 0.02;
         }
         
         if (this.rocketY > this.gameCanvas.offsetHeight - 50) {
