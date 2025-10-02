@@ -90,6 +90,10 @@ body::before {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Rocket Player */
@@ -451,6 +455,11 @@ body::before {
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .start-btn:hover,

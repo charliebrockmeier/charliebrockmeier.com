@@ -84,35 +84,58 @@ class RocketFlapper {
             }
         });
         
-        // Touch support for mobile
+        // Enhanced touch support for mobile
         this.gameCanvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (this.isGameRunning) {
                 this.flap();
             } else if (this.startScreen.style.display !== 'none') {
                 this.startGame();
             }
-        });
+        }, { passive: false });
         
         // Prevent scrolling and other touch behaviors
         this.gameCanvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-        });
+            e.stopPropagation();
+        }, { passive: false });
         
         this.gameCanvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-        });
+            e.stopPropagation();
+        }, { passive: false });
         
-        // Touch support for buttons
+        // Additional touch event for better mobile support
+        this.gameCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (this.isGameRunning) {
+                this.flap();
+            }
+        }, { passive: false });
+        
+        // Enhanced touch support for buttons
         document.getElementById('startBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.startGame();
-        });
+        }, { passive: false });
         
         document.getElementById('restartBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.restartGame();
-        });
+        }, { passive: false });
+        
+        // Add touch support for home button
+        const homeBtn = document.getElementById('homeBtn');
+        if (homeBtn) {
+            homeBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.close();
+            }, { passive: false });
+        }
     }
     
     startGame() {
@@ -309,11 +332,17 @@ class RocketFlapper {
         this.rocketVelocity += this.gravity;
         this.rocketY += this.rocketVelocity;
         
-        // Keep rocket in bounds
+        // Keep rocket in bounds with penalty for staying at top
         if (this.rocketY < 0) {
             this.rocketY = 0;
             this.rocketVelocity = 0;
+            // Penalty for staying at top - gradually increase gravity
+            this.gravity = Math.min(this.gravity + 0.01, 0.15);
+        } else {
+            // Reset gravity when not at top
+            this.gravity = 0.08;
         }
+        
         if (this.rocketY > this.gameCanvas.offsetHeight - 50) {
             this.rocketY = this.gameCanvas.offsetHeight - 50;
             this.rocketVelocity = 0;
@@ -324,6 +353,15 @@ class RocketFlapper {
     
     updateRocketPosition() {
         this.rocket.style.top = this.rocketY + 'px';
+        
+        // Visual indicator for penalty at top
+        if (this.rocketY <= 0) {
+            this.rocket.style.filter = 'hue-rotate(180deg) brightness(1.2)';
+            this.rocket.style.transform = 'scale(1.1)';
+        } else {
+            this.rocket.style.filter = 'none';
+            this.rocket.style.transform = 'scale(1)';
+        }
     }
     
     updateObstacles() {
