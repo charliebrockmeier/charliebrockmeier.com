@@ -100,8 +100,6 @@ body {
 .rock-face {
     width: 60px;
     height: 60px;
-    border-radius: 50%;
-    background: #333;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -131,8 +129,9 @@ body {
     right: 16px;
 }
 
-/* Mouth */
-.rock-face::after {
+/* Mouth - separate element */
+.rock-mouth {
+    position: absolute;
     width: 20px;
     height: 10px;
     background: transparent;
@@ -142,6 +141,7 @@ body {
     top: 35px;
     left: 50%;
     transform: translateX(-50%);
+    transition: all 0.3s ease;
 }
 
 .rock-body {
@@ -214,6 +214,29 @@ body {
     height: 12px;
     border-radius: 0 0 25px 25px;
     top: 30px;
+}
+
+/* Death state - X eyes */
+.pet-rock.dead .rock-face::before,
+.pet-rock.dead .rock-face::after {
+    background: transparent;
+    border: 2px solid white;
+    border-radius: 0;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+}
+
+.pet-rock.dead .rock-face::after {
+    transform: rotate(-45deg);
+}
+
+.pet-rock.dead .rock-mouth {
+    border: 2px solid white;
+    border-radius: 0;
+    width: 15px;
+    height: 2px;
+    top: 40px;
 }
 
 /* Rock Status */

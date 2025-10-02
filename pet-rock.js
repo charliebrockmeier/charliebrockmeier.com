@@ -3,6 +3,7 @@ class PetRockGame {
     constructor() {
         this.petRock = document.getElementById('petRock');
         this.rockFace = document.getElementById('rockFace');
+        this.rockMouth = document.getElementById('rockMouth');
         this.rockBody = document.getElementById('rockBody');
         this.happinessMeter = document.getElementById('happinessMeter');
         this.happinessText = document.getElementById('happinessText');
@@ -16,6 +17,7 @@ class PetRockGame {
         // Mood thresholds - much more sensitive
         this.sadThreshold = 60;
         this.angryThreshold = 30;
+        this.deathThreshold = 0;
         
         // Set initial face - no text content needed for CSS face
         
@@ -44,6 +46,12 @@ class PetRockGame {
                 "Rocky is THRILLED! 🪨🎉",
                 "Rocky is ECSTATIC! 🪨✨",
                 "Rocky is OVER THE MOON! 🪨🌙"
+            ],
+            dead: [
+                "Rocky has died from neglect... 💀",
+                "Rocky is no more... RIP 🪨💀",
+                "You killed Rocky! 💀",
+                "Rocky is dead! You monster! 💀"
             ]
         };
         
@@ -65,6 +73,12 @@ class PetRockGame {
     }
     
     petRock() {
+        // Don't pet if dead
+        if (this.mood === 'dead') {
+            this.showMessage("Rocky is dead! You can't pet a dead rock! 💀");
+            return;
+        }
+        
         // Increase happiness more significantly
         this.happiness = Math.min(100, this.happiness + 30);
         this.lastPetTime = Date.now();
@@ -101,10 +115,13 @@ class PetRockGame {
     
     updateMood() {
         // Remove all mood classes
-        this.petRock.classList.remove('sad', 'angry', 'happy', 'excited');
+        this.petRock.classList.remove('sad', 'angry', 'happy', 'excited', 'dead');
         
         // Determine mood based on happiness
-        if (this.happiness <= this.angryThreshold) {
+        if (this.happiness <= this.deathThreshold) {
+            this.mood = 'dead';
+            this.petRock.classList.add('dead');
+        } else if (this.happiness <= this.angryThreshold) {
             this.mood = 'angry';
             this.petRock.classList.add('angry');
         } else if (this.happiness <= this.sadThreshold) {
@@ -131,7 +148,10 @@ class PetRockGame {
             this.updateDisplay();
             
             // Show warning messages
-            if (this.happiness <= this.angryThreshold && this.mood === 'angry') {
+            if (this.happiness <= this.deathThreshold && this.mood === 'dead') {
+                this.showMessage("💀 Rocky has died! Click the restart button to bring him back! 💀");
+                this.showRestartButton();
+            } else if (this.happiness <= this.angryThreshold && this.mood === 'angry') {
                 this.showMessage("⚠️ Rocky is getting VERY angry! Pet him NOW! 🪨😠");
             } else if (this.happiness <= this.sadThreshold && this.mood === 'sad') {
                 this.showMessage("💔 Rocky is getting sad... please pet him! 🪨😢");
@@ -208,6 +228,53 @@ class PetRockGame {
                 messageEl.parentNode.removeChild(messageEl);
             }
         }, 3000);
+    }
+    
+    showRestartButton() {
+        // Create restart button
+        const restartBtn = document.createElement('button');
+        restartBtn.textContent = '🔄 Restart Rocky';
+        restartBtn.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s ease-in-out infinite;
+        `;
+        
+        restartBtn.addEventListener('click', () => {
+            this.restartRocky();
+            restartBtn.remove();
+        });
+        
+        document.body.appendChild(restartBtn);
+    }
+    
+    restartRocky() {
+        // Reset Rocky to full health
+        this.happiness = 100;
+        this.lastPetTime = Date.now();
+        this.petCount = 0;
+        this.mood = 'happy';
+        
+        // Remove death class
+        this.petRock.classList.remove('dead');
+        
+        // Update display
+        this.updateMood();
+        this.updateDisplay();
+        
+        this.showMessage("Rocky is back from the dead! 🪨👻");
     }
 }
 
