@@ -66,21 +66,20 @@ class RocketFlapper {
         });
         
         // Flap controls
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (this.isGameRunning) {
-                    this.flap();
-                } else if (this.startScreen.style.display !== 'none') {
-                    this.startGame();
-                }
+        // Mouse controls - rocket follows mouse
+        this.gameCanvas.addEventListener('mousemove', (e) => {
+            if (this.isGameRunning) {
+                const rect = this.gameCanvas.getBoundingClientRect();
+                const mouseY = e.clientY - rect.top;
+                this.rocketY = Math.max(25, Math.min(mouseY - 25, this.gameCanvas.offsetHeight - 75));
+                this.updateRocketPosition();
             }
         });
         
-        // Click to flap
+        // Click to start game
         this.gameCanvas.addEventListener('click', (e) => {
-            if (this.isGameRunning) {
-                this.flap();
+            if (this.startScreen.style.display !== 'none') {
+                this.startGame();
             }
         });
         
@@ -88,17 +87,21 @@ class RocketFlapper {
         this.gameCanvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (this.isGameRunning) {
-                this.flap();
-            } else if (this.startScreen.style.display !== 'none') {
+            if (this.startScreen.style.display !== 'none') {
                 this.startGame();
             }
         }, { passive: false });
         
-        // Prevent scrolling and other touch behaviors
+        // Touch move for rocket control
         this.gameCanvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (this.isGameRunning && e.touches.length > 0) {
+                const rect = this.gameCanvas.getBoundingClientRect();
+                const touchY = e.touches[0].clientY - rect.top;
+                this.rocketY = Math.max(25, Math.min(touchY - 25, this.gameCanvas.offsetHeight - 75));
+                this.updateRocketPosition();
+            }
         }, { passive: false });
         
         this.gameCanvas.addEventListener('touchend', (e) => {
@@ -204,20 +207,7 @@ class RocketFlapper {
         }
     }
     
-    flap() {
-        if (this.isGameRunning) {
-            this.rocketVelocity = this.flapPower;
-            this.rocket.classList.add('flapping');
-            
-            // Add visual feedback
-            this.rocket.style.transform = 'scale(1.1)';
-            
-            setTimeout(() => {
-                this.rocket.classList.remove('flapping');
-                this.rocket.style.transform = 'scale(1)';
-            }, 200);
-        }
-    }
+    // Flap function removed - rocket now follows mouse/touch
     
     updatePhase() {
         // Update phase display
@@ -372,40 +362,14 @@ class RocketFlapper {
     }
     
     updatePhysics() {
-        // Apply gravity
-        this.rocketVelocity += this.gravity;
-        this.rocketY += this.rocketVelocity;
-        
-        // Keep rocket in bounds with penalty for staying at top
-        if (this.rocketY < 0) {
-            this.rocketY = 0;
-            this.rocketVelocity = 0;
-            // Penalty for staying at top - gradually increase gravity
-            this.gravity = Math.min(this.gravity + 0.01, 0.15);
-        } else {
-            // Reset gravity when not at top
-            this.gravity = 0.02;
-        }
-        
-        if (this.rocketY > this.gameCanvas.offsetHeight - 50) {
-            this.rocketY = this.gameCanvas.offsetHeight - 50;
-            this.rocketVelocity = 0;
-        }
-        
+        // Rocket now follows mouse/touch, no physics needed
+        // Keep rocket in bounds
+        this.rocketY = Math.max(25, Math.min(this.rocketY, this.gameCanvas.offsetHeight - 75));
         this.updateRocketPosition();
     }
     
     updateRocketPosition() {
         this.rocket.style.top = this.rocketY + 'px';
-        
-        // Visual indicator for penalty at top
-        if (this.rocketY <= 0) {
-            this.rocket.style.filter = 'hue-rotate(180deg) brightness(1.2)';
-            this.rocket.style.transform = 'scale(1.1)';
-        } else {
-            this.rocket.style.filter = 'none';
-            this.rocket.style.transform = 'scale(1)';
-        }
     }
     
     updateObstacles() {
