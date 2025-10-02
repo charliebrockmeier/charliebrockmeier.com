@@ -18,35 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('.hero-section').style.background = 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)';
     });
     
-    // Enhanced button interactions
-    diveButton.addEventListener('click', function() {
-        // Add a ripple effect
-        const ripple = document.createElement('span');
-        ripple.classList.add('ripple');
-        this.appendChild(ripple);
-        
-        // Remove ripple after animation
-        setTimeout(() => {
-            ripple.remove();
-        }, 600);
-    });
     
-    // Add subtle parallax effect to content on mouse move (only in hero section)
-    document.addEventListener('mousemove', function(e) {
-        if (window.scrollY < window.innerHeight) {
-            const content = document.querySelector('.main-content');
-            const x = (e.clientX / window.innerWidth) * 100;
-            const y = (e.clientY / window.innerHeight) * 100;
-            
-            // Subtle movement based on mouse position
-            content.style.transform = `translate(${(x - 50) * 0.02}px, ${(y - 50) * 0.02}px)`;
-        }
-    });
     
-    // Scroll indicator click handler
-    if (scrollArrow) {
-        scrollArrow.addEventListener('click', scrollToSocials);
-    }
     
     // Enhanced Intersection Observer for smooth scroll animations
     const observerOptions = {
@@ -100,16 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     socialLinks.forEach(link => enhancedObserver.observe(link));
     
-    // Hide scroll indicator when scrolling (removed parallax effect)
-    window.addEventListener('scroll', function() {
-        const scrolled = window.pageYOffset;
-        
-        // Hide scroll indicator when scrolling
-        const scrollIndicator = document.querySelector('.scroll-indicator');
-        if (scrollIndicator) {
-            scrollIndicator.style.opacity = scrolled > 50 ? '0' : '1';
-        }
-    });
     
     // Ensure video maintains aspect ratio on resize
     function adjustVideoSize() {
@@ -270,10 +233,36 @@ function closeContactModal() {
     }, 300);
 }
 
+// Relax mode functions
+function enterRelaxMode() {
+    const relaxMode = document.getElementById('relaxMode');
+    const relaxVideo = document.getElementById('relax-video');
+    
+    // Show relax mode
+    relaxMode.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Start the relax video
+    relaxVideo.play().catch(console.log);
+}
+
+function exitRelaxMode() {
+    const relaxMode = document.getElementById('relaxMode');
+    const relaxVideo = document.getElementById('relax-video');
+    
+    // Hide relax mode
+    relaxMode.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // Pause the relax video
+    relaxVideo.pause();
+}
+
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {
-    const modal = document.getElementById('contactModal');
-    if (e.target === modal) {
+    const contactModal = document.getElementById('contactModal');
+    
+    if (e.target === contactModal) {
         closeContactModal();
     }
 });
@@ -367,7 +356,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-
 // Footer scroll visibility with throttling for better performance
 let footerScrollTimeout;
 function handleFooterVisibility() {
@@ -392,30 +380,9 @@ function handleFooterVisibility() {
     });
 }
 
-// Preload rocket game for instant opening
-function preloadRocketGame() {
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.href = 'rocket-flapper.html';
-    document.head.appendChild(link);
-    
-    // Also preload the CSS and JS
-    const cssLink = document.createElement('link');
-    cssLink.rel = 'prefetch';
-    cssLink.href = 'rocket-flapper.css';
-    document.head.appendChild(cssLink);
-    
-    const jsLink = document.createElement('link');
-    jsLink.rel = 'prefetch';
-    jsLink.href = 'rocket-flapper.js';
-    document.head.appendChild(jsLink);
-}
 
 // Initialize footer scroll functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Start preloading immediately
-    preloadRocketGame();
-    
     // Handle footer visibility on scroll
     window.addEventListener('scroll', handleFooterVisibility);
     

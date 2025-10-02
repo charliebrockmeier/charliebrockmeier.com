@@ -629,7 +629,7 @@ body::before {
 }
 
 .contact-trigger-btn,
-.secret-game-btn {
+.relax-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
@@ -649,20 +649,20 @@ body::before {
 }
 
 .contact-trigger-btn:hover,
-.secret-game-btn:hover {
+.relax-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.5);
     transform: translateY(-3px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.secret-game-btn {
+.relax-btn {
     background: rgba(100, 181, 246, 0.15);
     border-color: rgba(100, 181, 246, 0.4);
     animation-delay: 1.7s;
 }
 
-.secret-game-btn:hover {
+.relax-btn:hover {
     background: rgba(100, 181, 246, 0.25);
     border-color: rgba(100, 181, 246, 0.6);
     box-shadow: 0 10px 25px rgba(100, 181, 246, 0.2);
@@ -673,7 +673,7 @@ body::before {
 }
 
 .contact-trigger-btn:hover .btn-icon,
-.secret-game-btn:hover .btn-icon {
+.relax-btn:hover .btn-icon {
     transform: scale(1.1);
 }
 
@@ -1055,30 +1055,77 @@ body {
     }
 }
 
-/* Secret Button Styles */
-.secret-btn {
+/* Relax Mode Styles */
+.relax-mode {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 0.8rem;
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
     transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
-    z-index: 1000;
-    opacity: 0.5;
 }
 
-.secret-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: rgba(255, 255, 255, 0.8);
+.relax-mode.active {
     opacity: 1;
-    transform: scale(1.05);
+    visibility: visible;
+}
+
+.relax-mode video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+
+.relax-gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+}
+
+.return-to-website-btn {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 12px 25px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10000;
+}
+
+.return-to-website-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.return-to-website-btn .btn-icon {
+    transition: transform 0.3s ease;
+}
+
+.return-to-website-btn:hover .btn-icon {
+    transform: scale(1.1);
 }
 
 /* Desktop Optimization */
@@ -1119,7 +1166,7 @@ body {
     }
     
     .contact-trigger-btn,
-    .secret-game-btn {
+    .relax-btn {
         font-size: 1.1rem;
         padding: 15px 30px;
     }
