@@ -20,7 +20,7 @@ class RocketFlapper {
         this.gameSpeed = 2;
         
         // Physics (lighter gravity for space!)
-        this.rocketY = 200; // Middle of screen
+        this.rocketY = this.gameCanvas.offsetHeight / 2; // Center of screen
         this.rocketVelocity = 0;
         this.gravity = 0.02; // Ultra light gravity for space feel
         this.flapPower = -4; // Strong flap power for responsive control
@@ -67,12 +67,13 @@ class RocketFlapper {
         
         // Flap controls
         // Mouse controls - rocket follows mouse
-        this.gameCanvas.addEventListener('mousemove', (e) => {
+        document.addEventListener('mousemove', (e) => {
             if (this.isGameRunning) {
                 const rect = this.gameCanvas.getBoundingClientRect();
                 const mouseY = e.clientY - rect.top;
                 this.rocketY = Math.max(25, Math.min(mouseY - 25, this.gameCanvas.offsetHeight - 75));
                 this.updateRocketPosition();
+                console.log('Mouse Y:', mouseY, 'Rocket Y:', this.rocketY, 'Game Running:', this.isGameRunning); // Debug
             }
         });
         
@@ -93,14 +94,14 @@ class RocketFlapper {
         }, { passive: false });
         
         // Touch move for rocket control
-        this.gameCanvas.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             if (this.isGameRunning && e.touches.length > 0) {
                 const rect = this.gameCanvas.getBoundingClientRect();
                 const touchY = e.touches[0].clientY - rect.top;
                 this.rocketY = Math.max(25, Math.min(touchY - 25, this.gameCanvas.offsetHeight - 75));
                 this.updateRocketPosition();
+                console.log('Touch Y:', touchY, 'Rocket Y:', this.rocketY); // Debug
             }
         }, { passive: false });
         
@@ -145,7 +146,7 @@ class RocketFlapper {
         this.isGameRunning = true;
         this.score = 0;
         this.gameSpeed = 2;
-        this.rocketY = 200;
+        this.rocketY = this.gameCanvas.offsetHeight / 2;
         this.rocketVelocity = 0;
         
         // Clear all existing game objects from DOM
