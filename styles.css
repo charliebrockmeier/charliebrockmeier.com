@@ -75,6 +75,8 @@ body::before {
     justify-content: center;
     align-items: center;
     z-index: 1;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
 .main-content {
@@ -83,6 +85,9 @@ body::before {
     opacity: 0;
     transform: translateY(30px);
     animation: fadeInUp 2s ease-out 0.5s forwards;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 /* Typography */
@@ -397,6 +402,9 @@ body::before {
 .socials-container {
     max-width: 600px;
     width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
 }
 
 .social-box {
@@ -418,6 +426,8 @@ body::before {
     font-weight: 600;
     margin-bottom: 12px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 100%;
 }
 
 .socials-subtitle {
@@ -425,6 +435,8 @@ body::before {
     font-size: 1rem;
     margin-bottom: 30px;
     font-style: italic;
+    text-align: center;
+    width: 100%;
 }
 
 .social-links {
@@ -594,7 +606,9 @@ body::before {
     display: flex;
     gap: 20px;
     justify-content: center;
-    margin-top: 40px;
+    align-items: center;
+    margin: 40px auto 0;
+    max-width: 100%;
     flex-wrap: wrap;
 }
 
@@ -886,17 +900,23 @@ body {
     
     .social-box {
         padding: 40px 20px;
-        margin: 0 10px;
+        margin: 0 auto;
+        max-width: calc(100vw - 40px);
+        width: 100%;
     }
     
     .socials-title {
         font-size: 2rem;
         margin-bottom: 10px;
+        text-align: center;
+        width: 100%;
     }
     
     .socials-subtitle {
         font-size: 1rem;
         margin-bottom: 30px;
+        text-align: center;
+        width: 100%;
     }
     
     .social-links {
@@ -1074,7 +1094,12 @@ body {
     }
     
     .action-buttons {
-        gap: 25px;
+        gap: 15px;
+        margin: 30px auto 0;
+        justify-content: center;
+        width: 100%;
+        padding: 0 20px;
+        box-sizing: border-box;
     }
     
     .contact-trigger-btn,
