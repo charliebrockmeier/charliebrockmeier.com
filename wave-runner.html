@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asteroid Flapper - Charlie's Secret Game</title>
+    <link rel="stylesheet" href="wave-runner.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Wave Background Video -->
+    <video id="background-video" autoplay muted loop>
+        <source src="waves-background.mp4" type="video/mp4">
+    </video>
+    
+    <div class="game-container">
+        <!-- Game Header -->
+        <div class="game-header">
+            <h1 class="game-title">🚀 Rocket Flapper</h1>
+            <div class="game-stats">
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="high-score">Best: <span id="highScore">0</span></div>
+                <div class="phase-timer">Phase: <span id="phaseTimer">Survive</span></div>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div class="game-canvas" id="gameCanvas">
+            <!-- Rocket Player -->
+            <div class="rocket" id="rocket">
+                <div class="rocket-body">🚀</div>
+            </div>
+
+            <!-- Stars Background -->
+            <div class="stars" id="stars"></div>
+
+            <!-- Obstacles and targets will be spawned here -->
+        </div>
+
+        <!-- Game UI -->
+        <div class="game-ui">
+            <div class="start-screen" id="startScreen">
+                <h2>🚀 Rocket Flapper! 🌍</h2>
+                <p><strong>Mission:</strong> Hit 5 dinosaurs to reveal Earth!</p>
+                <p><strong>Goal:</strong> Destroy Earth and become the ultimate space pilot!</p>
+                <p>Press <strong>SPACE</strong> or <strong>CLICK</strong> to flap!</p>
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-rocket"></i> Launch Rocket
+                </button>
+            </div>
+
+            <div class="game-over-screen" id="gameOverScreen" style="display: none;">
+                <h2 id="gameOverTitle">🚀 Rocket Crashed! 💥</h2>
+                <p id="gameOverMessage">You hit an obstacle!</p>
+                <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+                <div class="phase-result" id="phaseResult"></div>
+                <button class="restart-btn" id="restartBtn">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+                <button class="home-btn" id="homeBtn">
+                    <i class="fas fa-home"></i> Back to Website
+                </button>
+            </div>
+
+            <div class="instructions">
+                <p><i class="fas fa-keyboard"></i> Press SPACE to flap | <i class="fas fa-mouse-pointer"></i> Click to flap</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="wave-runner.js"></script>
+</body>
+</html>

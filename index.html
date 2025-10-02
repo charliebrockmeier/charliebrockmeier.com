@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charlie Brockmeier - Personal Website</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for social icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <!-- Hero Section with Wave Background -->
+    <section id="hero" class="hero-section">
+        <!-- Background Video -->
+        <video id="background-video" autoplay muted loop playsinline>
+            <source src="waves-background.mp4" type="video/mp4">
+            <!-- Fallback for browsers that don't support video -->
+            Your browser does not support the video tag.
+        </video>
+        
+        
+        <!-- Gradient Overlay -->
+        <div class="gradient-overlay"></div>
+        
+        <!-- Main Content -->
+        <div class="content-container">
+            <div class="main-content">
+                <h1 class="main-heading">Charlie Brockmeier</h1>
+                <button class="dive-button" onclick="scrollToSocials()">Dive In</button>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="scroll-arrow">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Media Section - Now First -->
+    <section id="socials" class="socials-section">
+        <div class="socials-container">
+            <div class="social-box">
+                <h3 class="socials-title">Connect With Me</h3>
+                <p class="socials-subtitle">Follow my journey across platforms</p>
+                
+                <div class="social-links">
+                    <a href="https://instagram.com/charliebrockmeier" target="_blank" class="social-link instagram" data-platform="instagram">
+                        <div class="social-icon-wrapper">
+                            <i class="fab fa-instagram"></i>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <span class="social-text">
+                            <strong>Instagram</strong>
+                            <small>@charliebrockmeier</small>
+                        </span>
+                        <div class="social-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+                    
+                    <a href="https://linkedin.com/in/charliebrockmeier" target="_blank" class="social-link linkedin" data-platform="linkedin">
+                        <div class="social-icon-wrapper">
+                            <i class="fab fa-linkedin-in"></i>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <span class="social-text">
+                            <strong>LinkedIn</strong>
+                            <small>charliebrockmeier</small>
+                        </span>
+                        <div class="social-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+                    
+                    <a href="https://x.com/Rockmeier1" target="_blank" class="social-link twitter" data-platform="x">
+                        <div class="social-icon-wrapper">
+                            <span class="x-icon">𝕏</span>
+                            <div class="icon-glow"></div>
+                        </div>
+                        <span class="social-text">
+                            <strong>X</strong>
+                            <small>@Rockmeier1</small>
+                        </span>
+                        <div class="social-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="contact-trigger-btn" onclick="openContactModal()">
+                        <span class="btn-text">Get In Touch</span>
+                        <i class="fas fa-envelope btn-icon"></i>
+                    </button>
+                    <button class="secret-game-btn" onclick="window.open('wave-runner.html', '_blank')">
+                        <span class="btn-text">Secret Button</span>
+                        <i class="fas fa-gamepad btn-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Get In Touch</h3>
+                <button class="modal-close" onclick="closeContactModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <p class="modal-subtitle">Ready to make waves together? Drop me a message!</p>
+                
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <input type="text" id="name" name="name" placeholder="Your Name" required>
+                        <i class="fas fa-user form-icon"></i>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" placeholder="Your Email" required>
+                        <i class="fas fa-envelope form-icon"></i>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="text" id="subject" name="subject" placeholder="Subject" required>
+                        <i class="fas fa-tag form-icon"></i>
+                    </div>
+                    
+                    <div class="form-group">
+                        <textarea id="message" name="message" placeholder="Your Message" rows="4" required></textarea>
+                        <i class="fas fa-comment form-icon"></i>
+                    </div>
+                    
+                    <button type="submit" class="submit-button">
+                        <span class="button-text">Send Message</span>
+                        <i class="fas fa-paper-plane button-icon"></i>
+                    </button>
+                </form>
+                
+                <div class="contact-info">
+                    <p class="email-text">Or reach out directly at</p>
+                    <a href="mailto:charliebrockmeier@gmail.com" class="email-link">charliebrockmeier@gmail.com</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Navigation -->
+    <footer class="footer-nav">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="copyright">© 2025 Charlie Brockmeier. All rights reserved.</span>
+            </div>
+            <div class="footer-center">
+                <nav class="footer-links">
+                    <a href="#hero" class="footer-link">Home</a>
+                    <a href="#socials" class="footer-link">Connect</a>
+                    <a href="mailto:charliebrockmeier@gmail.com" class="footer-link">Contact</a>
+                </nav>
+            </div>
+            <div class="footer-right">
+            </div>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
