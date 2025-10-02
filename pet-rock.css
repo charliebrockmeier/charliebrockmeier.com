@@ -98,37 +98,62 @@ body {
 }
 
 .rock-face {
-    font-size: 4rem;
-    margin-bottom: 10px;
+    font-size: 2rem;
+    margin-bottom: 0;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    color: #333;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .rock-body {
-    font-size: 6rem;
+    font-size: 12rem;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+    position: relative;
+    background: linear-gradient(145deg, #8B7355, #A0522D);
+    border-radius: 50% 30% 50% 30%;
+    width: 200px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        inset -10px -10px 20px rgba(0, 0, 0, 0.3),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.2),
+        0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Rock Emotions */
 .pet-rock.sad .rock-face {
-    content: "😢";
+    content: ":(";
     animation: rockShake 0.5s ease-in-out infinite;
+    color: #666;
 }
 
 .pet-rock.angry .rock-face {
-    content: "😠";
+    content: ">:(";
     animation: rockBounce 0.3s ease-in-out infinite;
+    color: #cc0000;
 }
 
 .pet-rock.happy .rock-face {
-    content: "😊";
+    content: ":)";
     animation: rockHappy 0.6s ease-in-out;
+    color: #333;
 }
 
 .pet-rock.excited .rock-face {
-    content: "🤩";
+    content: ":D";
     animation: rockExcited 0.4s ease-in-out infinite;
+    color: #0066cc;
 }
 
 /* Rock Status */
@@ -279,11 +304,13 @@ body {
     }
     
     .rock-face {
-        font-size: 3rem;
+        font-size: 1.5rem;
     }
     
     .rock-body {
-        font-size: 4rem;
+        width: 150px;
+        height: 135px;
+        font-size: 8rem;
     }
     
     .rock-status {
