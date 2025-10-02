@@ -146,12 +146,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function scrollToSocials() {
     const socialsSection = document.getElementById('socials');
     if (socialsSection) {
-        // Use requestAnimationFrame for smoother scrolling
-        requestAnimationFrame(() => {
-            socialsSection.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'start'
-            });
+        // Immediate scroll for instant response
+        socialsSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
         });
     }
 }
@@ -394,8 +392,30 @@ function handleFooterVisibility() {
     });
 }
 
+// Preload rocket game for instant opening
+function preloadRocketGame() {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = 'rocket-flapper.html';
+    document.head.appendChild(link);
+    
+    // Also preload the CSS and JS
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'prefetch';
+    cssLink.href = 'rocket-flapper.css';
+    document.head.appendChild(cssLink);
+    
+    const jsLink = document.createElement('link');
+    jsLink.rel = 'prefetch';
+    jsLink.href = 'rocket-flapper.js';
+    document.head.appendChild(jsLink);
+}
+
 // Initialize footer scroll functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Start preloading immediately
+    preloadRocketGame();
+    
     // Handle footer visibility on scroll
     window.addEventListener('scroll', handleFooterVisibility);
     
