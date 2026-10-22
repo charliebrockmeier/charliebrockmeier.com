@@ -9,6 +9,7 @@
 // reduced motion, it's a static strip.
 import Icon from './Icon.astro';
 import { FONT } from '../../scripts/art/journey-kit.mjs';
+import { FAST_TRAVEL_SF } from '../../scripts/art/journey-west.mjs';
 import { camera, journeyArt, regions, stops, timeKeys, vehicles, vehicleSheet } from '../data/journey';
 
 const { nearWidth: NW, farWidth: FW, height: H, ground: G, feet, farSpeed, farAlignView, walker: WK, lanes } = journeyArt;
@@ -73,9 +74,16 @@ const px = (rows: string[], pal: Record<string, string>, ox = 0, oy = 0): Run[] 
     });
     return runs;
   });
-/** Pixel text in the art's 3×5 font. */
-const label = (str: string, fill: string, ox: number, oy: number) =>
-  [...str].flatMap((ch, i) => px((FONT as Record<string, string[]>)[ch].map((r) => r.replace(/1/g, '#').replace(/0/g, '.')), { '#': fill }, ox + i * 4, oy));
+/** Pixel text in the art's 3×5 font (W is wider), one pixel between glyphs. */
+const label = (str: string, fill: string, ox: number, oy: number) => {
+  let x = ox;
+  return [...str].flatMap((ch) => {
+    const glyph = (FONT as Record<string, string[]>)[ch];
+    const runs = px(glyph.map((r) => r.replace(/1/g, '#').replace(/0/g, '.')), { '#': fill }, x, oy);
+    x += glyph[0].length + 1;
+    return runs;
+  });
+};
 
 const cableCar = px(['..RRRRRRRRRR..', '.RCCCCCCCCCCR.', 'RRWWBWWBWWBWRR', 'RRWWBWWBWWBWRR', 'RRRRRRRRRRRRRR', 'CCCCCCCCCCCCCC', '.KK........KK.'], {
   R: '#9a2f2a',
@@ -211,7 +219,8 @@ const walkupWindows = [
   [3658, 138],
   [3714, 138],
 ];
-const floors = Array.from({ length: 26 }, (_, i) => ({ y: 130 - i * 4, i }));
+// 7 WTC's floors light up at the checkpoint, from just above MSCI's sign over the lobby.
+const floors = Array.from({ length: 21 }, (_, i) => ({ y: 110 - i * 4, i }));
 const steam = [0, 1, 2, 3];
 const neon = [...'OPEN'].flatMap((ch, i) =>
   ({ O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['101', '111', '111', '111', '101'] })[ch]!.flatMap((row, y) =>
@@ -276,7 +285,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       <div
         class="viewport"
         role="img"
-        aria-label="A pixel-art street from Kearney, Nebraska, under the Archway, through Lincoln and Omaha, across San Francisco and the Golden Gate to Pebble Beach, then New York: Union Square, the Flatiron, a walk-up and 7 World Trade Center, where a sign points on down the road to the next chapter."
+        aria-label="A pixel-art street from Kearney, Nebraska, past Kearney High, Cash-Wa and a Buckle store, under the Archway, through Lincoln and Omaha past Covisum, across San Francisco past Three Bridge and the Golden Gate to Pebble Beach, then New York: Union Square and the Vantager office, the Flatiron, a walk-up and 7 World Trade Center with MSCI's sign, where a sign points on down the road to the next chapter."
       >
         <div class="layer far" data-far>
           <img src="/art/journey-far.png" width={FW} height={H} alt="" loading="lazy" decoding="async" />
@@ -344,7 +353,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
               </g>
               <g class="board-b">
                 <rect x="1298" y="48" width="42" height="15" fill="#e43b44" />
-                {label('TOUCHDOWN', '#ffe9a8', 1302, 53).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                {label('TOUCHDOWN', '#ffe9a8', 1301, 53).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
               </g>
               <g class="board-c">
                 <rect x="1298" y="48" width="42" height="15" fill="#fdf6e3" />
@@ -360,13 +369,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
               ))}
             </g>
 
-            <!-- Omaha: the Missouri catching the light, a cyclist on the bridge, the runway to San Francisco. -->
+            <!-- Omaha: the Missouri catching the light, a cyclist on the bridge, the runway to San Francisco past Covisum. -->
             <g class="zone" data-from="1480" data-to="1900">
               {glints.missouri.map((s) => <rect class="glint" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:-${s.d}s`} />)}
               <g class="stroll" style="--a:1528px;--b:1736px;--t:22s">
                 {cyclist.map((r) => <rect x={r.x - 4} y={r.y + 108} width={r.w} height="1" fill={r.fill} />)}
               </g>
-              {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={1752 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+              {Array.from({ length: 7 }, (_, i) => <rect class="runway" x={FAST_TRAVEL_SF - 10 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
             </g>
 
             <!-- San Francisco: the cable car and its bell, fog through the Gate, pickleball, a hiker. -->

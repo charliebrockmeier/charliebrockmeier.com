@@ -1,5 +1,6 @@
-// Nebraska, west to east: the Platte at sunrise, home, Kearney High, the Archway
-// over I-80, Lincoln on game day, and the Omaha riverfront. Then fast travel west.
+// Nebraska, west to east: the Platte at sunrise, home, Kearney High, Cash-Wa's
+// warehouse, a Buckle store under the Archway over I-80, Lincoln on game day, and
+// the Omaha riverfront with Covisum's office. Then fast travel west.
 import { C, SKY, ramp } from './lib.mjs';
 import { GROUND, LAWN, Layer, WALK, text, textWidth, bricks, windowGrid, tree, tod } from './journey-kit.mjs';
 
@@ -8,17 +9,26 @@ export function nebraska(cv, rand) {
   prairie(cv, rand);
   home(cv);
   kearneyHigh(cv, rand);
-  cornfield(cv, 652, 784);
+  cornfield(cv, 652, 692);
+  cashWa(cv);
   cornfield(cv, 992, 1076);
   archway(cv);
+  buckle(cv);
+  // Green guide signs on I-80 east, in miles to each city's downtown: the Archway is at
+  // about mile 275 and Lincoln's I-180 exit is 401, a few miles short of downtown; from
+  // downtown Lincoln it's about 4 miles back to I-80, then 51 to Omaha's I-480 exit.
   guideSign(cv, 1000, ['LINCOLN', '130']);
   capitol(cv, rand);
   haymarket(cv, rand);
   stadium(cv, rand);
   guideSign(cv, 1478, ['OMAHA', '57']);
   omaha(cv, rand);
-  fastTravel(cv, 1772, ['SAN', 'FRANCISCO'], 'SUMMER 2024');
+  covisum(cv);
+  fastTravel(cv, FAST_TRAVEL_SF, ['SAN', 'FRANCISCO'], 'SUMMER 2024', [-10, 60]);
 }
+
+/** The fast-travel signpost to San Francisco, past Covisum's office (the overlay's runway lights follow it). */
+export const FAST_TRAVEL_SF = 1816;
 
 // --- Kearney -----------------------------------------------------------------
 
@@ -216,7 +226,10 @@ function kearneyHigh(cv, rand) {
   cv.rect(570, 134, 20, LAWN - 134, '#c6e6f2');
   cv.rect(579, 134, 2, LAWN - 134, '#566c86');
   cv.rect(566, 131, 28, 3, '#3d2f4a');
-  text(cv, 574, 122, 'KHS', C.cream);
+  // The school's letters in Bearcat blue and gold.
+  cv.rect(571, 120, 18, 9, '#3b54b0');
+  cv.rect(571, 120, 18, 1, '#3b5dc9');
+  text(cv, 574, 122, 'KHS', '#ffcd75');
   cv.rect(622, 70, 1, LAWN - 70, C.steel);
   cv.px(622, 69, C.gold);
   cv.rect(524, 134, 34, 14, '#2b2150');
@@ -244,6 +257,85 @@ function cornfield(cv, xa, xb) {
       if (c) cv.px(x, y, tod(c === C.gold ? [C.gold, C.gold, C.orange, '#566c86'] : [c, c, '#3a5a3a', '#1c3a3a'], x, y));
     }
   }
+}
+
+/** A centered sign line: draws `str` so it's centered on x. */
+const centerText = (cv, x, y, str, color) => text(cv, Math.round(x - textWidth(str) / 2), y, str, color);
+
+function cashWa(cv) {
+  // Cash-Wa Distributing's warehouse: corrugated metal, the name over the office door,
+  // and three loading docks. (The company's own logo couldn't be confirmed, so the
+  // sign is just the name.)
+  const x0 = 694;
+  const x1 = 782;
+  const top = 112;
+  cv.rect(x0, top, x1 - x0, LAWN - top, '#d6ccb8');
+  for (let x = x0 + 1; x < x1; x += 2) cv.rect(x, top + 3, 1, LAWN - top - 3, '#c9bfb0');
+  cv.rect(x0 - 1, top - 2, x1 - x0 + 2, 3, '#8a7f80');
+  cv.rect(x0 - 1, top - 2, x1 - x0 + 2, 1, '#a89f8c');
+  cv.rect(x1 - 2, top + 1, 2, LAWN - top - 1, '#bdb3a0');
+  // The sign: the name in red over DISTRIBUTING, on a white panel.
+  const sx = x0 + 4;
+  cv.rect(sx, top + 4, 53, 16, '#7a2030');
+  cv.rect(sx + 1, top + 5, 51, 14, '#f4f4f4');
+  centerText(cv, sx + 26.5, top + 7, 'CASH-WA', '#a82a34');
+  centerText(cv, sx + 26.5, top + 13, 'DISTRIBUTING', '#3d2f4a');
+  // The office door and windows under the sign.
+  cv.rect(x0 + 6, 136, 22, 10, '#94b0c2');
+  cv.rect(x0 + 6, 136, 22, 1, '#566c86');
+  for (let x = x0 + 13; x < x0 + 28; x += 7) cv.rect(x, 136, 1, 10, '#566c86');
+  cv.rect(x0 + 34, 134, 9, LAWN - 134, '#566c86');
+  cv.rect(x0 + 35, 135, 7, LAWN - 135, '#94b0c2');
+  cv.rect(x0 + 38, 135, 1, LAWN - 135, '#566c86');
+  // Three roll-up dock doors over a concrete dock, with black bumpers.
+  for (let i = 0; i < 3; i++) {
+    const dx = x0 + 50 + i * 12;
+    cv.rect(dx, 134, 10, 12, '#6e6e80');
+    for (let y = 135; y < 146; y += 2) cv.rect(dx, y, 10, 1, '#5a5878');
+    cv.rect(dx - 1, 133, 12, 1, '#4a3a5a');
+    cv.rect(dx - 1, 140, 1, 4, '#141026');
+    cv.rect(dx + 10, 140, 1, 4, '#141026');
+  }
+  cv.rect(x0 + 47, 146, x1 - x0 - 47, LAWN - 146, '#a99fc4');
+  cv.rect(x0 + 47, 146, x1 - x0 - 47, 1, '#c9bfd9');
+}
+
+function buckle(cv) {
+  // A Buckle store under the Archway (Buckle started in Kearney in 1948 and is still
+  // headquartered there): the rounded B monogram and the name on a stone band, then
+  // display windows full of denim.
+  const cx = 898;
+  const x0 = cx - 42;
+  const x1 = cx + 42;
+  const top = 120;
+  cv.rect(x0, top, x1 - x0, LAWN - top, '#e9e0d0');
+  cv.rect(x0 - 1, top - 2, x1 - x0 + 2, 2, '#232323');
+  cv.rect(x0, top, x1 - x0, 1, '#f4f4f4');
+  cv.rect(x1 - 2, top, 2, LAWN - top, '#c9bfb0');
+  // The sign: the B monogram in maroon, then BUCKLE in black.
+  const B = ['.#########.', '##.....####', '##.....####', '###########', '##.....####', '##.....####', '.#########.'];
+  const word = 'BUCKLE';
+  const sw = B[0].length + 4 + textWidth(word);
+  const sx = Math.round(cx - sw / 2);
+  cv.sprite(sx, top + 3, B, { '#': '#821b33' });
+  text(cv, sx + B[0].length + 4, top + 4, word, '#141026');
+  // Storefront: dark frame, two display windows with folded jeans and tees, a door.
+  cv.rect(x0 + 3, 132, x1 - x0 - 6, LAWN - 132, '#232323');
+  for (const wx of [x0 + 5, cx + 8]) {
+    cv.rect(wx, 134, 29, 14, '#c6e6f2');
+    cv.fill(wx, 134, 29, 14, (x, y) => (x - wx + (y - 134) < 9 ? '#ddebef' : null));
+    for (let i = 0; i < 4; i++) {
+      const px = wx + 2 + i * 7;
+      cv.rect(px, 141, 5, 2, i % 2 ? '#3b5dc9' : '#29366f');
+      cv.rect(px, 143, 5, 2, i % 2 ? '#29366f' : '#3b5dc9');
+      cv.rect(px + 1, 137, 3, 3, ['#f4ecdc', '#e43b44', '#94a0c2', '#141026'][i]);
+    }
+    cv.rect(wx, 146, 29, 2, '#8a7f80');
+  }
+  cv.rect(cx - 5, 134, 10, LAWN - 134, '#94b0c2');
+  cv.rect(cx, 134, 1, LAWN - 134, '#232323');
+  cv.px(cx - 2, 143, '#d6ccb8');
+  cv.px(cx + 2, 143, '#d6ccb8');
 }
 
 function archway(cv) {
@@ -388,8 +480,10 @@ function guideSign(cv, x, lines) {
   cv.rect(x + 1, 109, w - 2, 7 * lines.length + 2, '#2f8a5a');
   cv.rect(x + 1, 109, w - 2, 1, C.cream);
   lines.forEach((l, i) => text(cv, x + Math.round((w - textWidth(l)) / 2), 112 + i * 7, l, C.cream));
-  const shield = ['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.BBBBB.', '..BBB..'];
-  cv.sprite(x + w + 3, 112, shield, { B: C.navy, R: C.red, W: C.cream });
+  // The I-80 shield: a red crown over a blue body, with the number.
+  const shield = ['.RRR.RRR.', 'RRRRRRRRR', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', 'BBBBBBBBB', '.BBBBBBB.', '..BBBBB..'];
+  cv.sprite(x + w + 2, 109, shield, { B: '#3b54b0', R: C.red });
+  text(cv, x + w + 3, 111, '80', C.cream);
   cv.rect(x + w + 6, 119, 1, LAWN - 119, C.steel);
 }
 
@@ -671,7 +765,32 @@ function omaha(cv, rand) {
   rand();
 }
 
-export function fastTravel(cv, x, lines, sub) {
+function covisum(cv) {
+  // Covisum's office on the riverfront: a glass box with the name on top. (The company's
+  // own logo couldn't be confirmed, so the sign is just the name.)
+  const x0 = 1762;
+  const x1 = 1804;
+  const top = 108;
+  cv.rect(x0, top, x1 - x0, LAWN - top, '#8a94b4');
+  cv.rect(x0, top, 2, LAWN - top, '#b8c0d4');
+  cv.rect(x1 - 2, top, 2, LAWN - top, '#6a7494');
+  cv.rect(x0 - 1, top - 2, x1 - x0 + 2, 2, '#4a5a72');
+  for (let y = top + 14; y < LAWN - 12; y += 7) {
+    cv.rect(x0 + 3, y, x1 - x0 - 6, 5, '#c6e6f2');
+    cv.fill(x0 + 3, y, x1 - x0 - 6, 5, (x, yy) => ((x + yy) % 9 < 2 ? '#e9edf7' : null));
+    for (let x = x0 + 9; x < x1 - 3; x += 6) cv.rect(x, y, 1, 5, '#566c86');
+  }
+  // The sign: COVISUM in white on teal.
+  cv.rect(x0 + 4, top + 3, x1 - x0 - 8, 9, '#1c4a43');
+  cv.rect(x0 + 4, top + 3, x1 - x0 - 8, 1, '#257156');
+  centerText(cv, (x0 + x1) / 2, top + 5, 'COVISUM', '#ffffff');
+  // The lobby doors.
+  cv.rect(x0 + 15, LAWN - 10, 12, 10, '#ffe9a8');
+  cv.rect(x0 + 21, LAWN - 10, 1, 10, '#566c86');
+  cv.rect(x0 + 13, LAWN - 12, 16, 2, '#4a5a72');
+}
+
+export function fastTravel(cv, x, lines, sub, [r0, r1] = [-20, 100]) {
   // A game-style fast-travel signpost: the walk jumps across the country here.
   cv.rect(x + 18, 112, 3, LAWN - 112, C.bark);
   cv.rect(x, 92, 58, 22, '#2b2150');
@@ -682,5 +801,5 @@ export function fastTravel(cv, x, lines, sub) {
   cv.rect(x + 4, 116, 50, 9, C.gold);
   text(cv, x + 6, 118, sub, '#141026');
   // Runway lights along the lawn.
-  for (let i = x - 20; i < x + 100; i += 10) cv.rect(i, LAWN - 2, 2, 2, '#73eff7');
+  for (let i = x + r0; i < x + r1; i += 10) cv.rect(i, LAWN - 2, 2, 2, '#73eff7');
 }

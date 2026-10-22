@@ -65,7 +65,8 @@ export const FONT = {
   T: ['111', '010', '010', '010', '010'],
   U: ['101', '101', '101', '101', '111'],
   V: ['101', '101', '101', '101', '010'],
-  W: ['101', '101', '101', '111', '101'],
+  // W is five wide: at three it reads as an H.
+  W: ['10001', '10001', '10101', '10101', '01010'],
   X: ['101', '101', '010', '101', '101'],
   Y: ['101', '101', '010', '010', '010'],
   0: ['111', '101', '101', '101', '111'],
@@ -86,18 +87,18 @@ export const FONT = {
   ' ': ['000', '000', '000', '000', '000'],
 };
 
-/** Draw a string in the 3×5 font; returns the x after the last glyph. */
+/** Draw a string in the 3×5 font (a one-pixel gap between glyphs); returns the x after the last glyph. */
 export function text(cv, x, y, str, color) {
   for (const ch of str) {
     const g = FONT[ch];
     if (!g) throw new Error(`no glyph for ${ch}`);
     g.forEach((row, j) => [...row].forEach((b, i) => b === '1' && cv.px(x + i, y + j, color)));
-    x += 4;
+    x += g[0].length + 1;
   }
   return x;
 }
 
-export const textWidth = (str) => str.length * 4 - 1;
+export const textWidth = (str) => [...str].reduce((w, ch) => w + FONT[ch][0].length + 1, -1);
 
 /** Brick wall with mortar lines. */
 export function bricks(cv, x, y, w, h, brick, mortar) {

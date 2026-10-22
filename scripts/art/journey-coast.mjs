@@ -1,8 +1,8 @@
 // San Francisco, the summer of 2024, in golden-hour light: the Painted Ladies,
-// a cable-car hill, the Transamerica Pyramid and Coit Tower, the Golden Gate,
-// a hike in the Marin Headlands, and Pebble Beach.
+// a cable-car hill, the Financial District with Three Bridge's door, the Transamerica
+// Pyramid and Coit Tower, the Golden Gate, a hike in the Marin Headlands, and Pebble Beach.
 import { C, SKY, ramp } from './lib.mjs';
-import { LAWN, WALK, STREET, GROUND, H, HORIZON, sea, text, windowGrid, tree } from './journey-kit.mjs';
+import { LAWN, WALK, STREET, GROUND, H, HORIZON, sea, text, textWidth, windowGrid, tree } from './journey-kit.mjs';
 
 export const GG = { x0: 2266, x1: 2512, t1: 2326, t2: 2452, top: 34, deck: 158 };
 export const CABLE_HILL = { x0: 1996, y0: 150, x1: 2120, y1: 98 };
@@ -126,6 +126,20 @@ function downtown(cv, rand) {
   cv.rect(px - 9, 50, 3, 30, '#f4ecdc');
   cv.rect(px + 7, 50, 3, 30, '#d6ccb8');
   cv.rect(px, 14, 1, 12, '#d6ccb8');
+  // Three Bridge Wealth Advisors: the name over a tower's door, on navy. (The firm's
+  // own logo couldn't be confirmed, so the sign is just the name.)
+  const tx = 2187;
+  const lines = ['THREE', 'BRIDGE'];
+  const w = Math.max(...lines.map(textWidth)) + 6;
+  const x = tx - Math.floor(w / 2);
+  // Kept above the walker's head (y 137) so it reads as you pass.
+  cv.rect(x - 1, 119, w + 2, 17, '#29366f');
+  cv.rect(x, 120, w, 15, '#2b2150');
+  cv.rect(x, 120, w, 1, '#3b5dc9');
+  lines.forEach((l, i) => text(cv, Math.round(tx - textWidth(l) / 2), 123 + i * 6, l, '#e9edf7'));
+  cv.rect(tx - 5, 139, 10, LAWN - 139, '#5a4a6e');
+  cv.rect(tx - 4, 140, 8, LAWN - 140, '#ffcd75');
+  cv.rect(tx, 140, 1, LAWN - 140, '#5a4a6e');
 }
 
 function coitTower(cv) {
@@ -383,11 +397,12 @@ function pebbleBeach(cv, rand) {
     }
   }
   // A wooden sign at the foot of the point, clear of the beach.
-  cv.rect(2654, 132, 46, 10, '#8a5a3c');
-  cv.rect(2655, 133, 44, 8, '#a8704a');
-  text(cv, 2658, 135, 'PEBBLE BCH', '#f4ecdc');
-  cv.rect(2664, 142, 2, 10, '#5c3a2e');
-  cv.rect(2686, 142, 2, 10, '#5c3a2e');
+  cv.rect(2658, 121, 31, 16, '#8a5a3c');
+  cv.rect(2659, 122, 29, 14, '#a8704a');
+  text(cv, 2662, 124, 'PEBBLE', '#f4ecdc');
+  text(cv, 2664, 130, 'BEACH', '#f4ecdc');
+  cv.rect(2664, 137, 2, 15, '#5c3a2e');
+  cv.rect(2681, 137, 2, 15, '#5c3a2e');
   rand();
 }
 
