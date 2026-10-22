@@ -4,14 +4,14 @@ import { deflateSync } from 'node:zlib';
 import { Canvas, ramp } from './lib.mjs';
 import { journeyArt, timeAt } from '../../src/data/journey.ts';
 
-export const { nearWidth: NW, farWidth: FW, height: H, ground: GROUND } = journeyArt;
+export const { nearWidth: NW, farWidth: FW, height: H, ground: GROUND, horizon: HORIZON, lanes: LANES } = journeyArt;
 export const NONE = 'none';
 
 // Ground bands on the near layer.
 export const LAWN = 152; // lawn or plaza in front of buildings
 export const WALK = 160; // sidewalk the walker walks on
 export const CURB = 166;
-export const STREET = 167; // street down to GROUND, then the cutaway below
+export const STREET = 167; // two lanes of street down to GROUND, then the cutaway below
 
 /** A canvas whose background is transparent; png() keeps the transparency. */
 export class Layer extends Canvas {
@@ -27,7 +27,23 @@ export class Layer extends Canvas {
 /** Pick from [morning, day, golden hour, night] by where x is on the walk, dithered across hand-offs. */
 export const tod = (colors, x, y) => ramp(colors, timeAt(x) / 3, x, y);
 
-const FONT = {
+/**
+ * The sea, one flat color per row below the horizon, so the near and far layers
+ * agree wherever they meet. Golden hour, dusk and night; `night` (0–1) picks, dithered.
+ */
+const SEA = [
+  ['#ffe9a8', '#ffcd75', '#f7a35c', '#ef7d57', '#e08a6a', '#b8607a', '#a86a8a', '#7a6aa8', '#6a6ab0', '#5a6ab8', '#4a64b8', '#3b5dc9', '#3b54b0'],
+  ['#f7a35c', '#ef7d57', '#d8706a', '#a8506a', '#9a5a7a', '#6a4a7a', '#62507e', '#4f4a86', '#48488a', '#3d4686', '#384080', '#33407a', '#2f3a72'],
+  ['#4f3d7d', '#3d2f66', '#33275a', '#2f2552', '#2b2150', '#241c42', '#241c42', '#1f1a3e', '#1b1533', '#1b1533', '#18132e', '#141026', '#141026'],
+];
+export function sea(x, y, night = 0) {
+  const r = y - HORIZON;
+  if (r < 0) return null;
+  const band = r === 0 ? 0 : r < 3 ? 1 + (r & 1) : r < 7 ? 3 + (r & 1) : r < 13 ? 5 + (r & 1) : r < 21 ? 7 + (r & 1) : r < 31 ? 9 + (r & 1) : 11 + (r & 1);
+  return ramp(SEA.map((p) => p[band]), night, x, y);
+}
+
+export const FONT = {
   A: ['010', '101', '111', '101', '101'],
   B: ['110', '101', '110', '101', '110'],
   C: ['011', '100', '100', '100', '011'],
@@ -66,6 +82,7 @@ const FONT = {
   '.': ['000', '000', '000', '000', '010'],
   '-': ['000', '000', '111', '000', '000'],
   '>': ['100', '010', '001', '010', '100'],
+  '?': ['110', '001', '010', '000', '010'],
   ' ': ['000', '000', '000', '000', '000'],
 };
 

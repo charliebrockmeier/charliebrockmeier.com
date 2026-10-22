@@ -2,14 +2,28 @@
 // "The road so far": scroll to walk from a Kearney front yard to 7 World Trade.
 // The scene is PNG layers drawn in code (scripts/art/journey*.mjs): a near layer,
 // a far layer at half speed, three cloud bands, a walker and a vehicle sheet. An
-// SVG overlay carries everything that moves in place. Vehicles are placed by the
-// script in world space and only ever appear or vanish off-screen. Arriving at
-// 7 WTC plays a finale. Without JS, or with reduced motion, it's a static strip.
+// SVG overlay carries everything that moves in place, grouped by zone so only the
+// zone on screen animates. Vehicles are placed by the script in world space and
+// only ever appear or vanish off-screen. 7 WTC is a checkpoint, not the end: a
+// save, fireworks, and a sign pointing on down the road. Without JS, or with
+// reduced motion, it's a static strip.
 import Icon from './Icon.astro';
-import { camera, journeyArt, regions, stops, timeKeys, vehicles } from '../data/journey';
+import { FONT } from '../../scripts/art/journey-kit.mjs';
+import { camera, journeyArt, regions, stops, timeKeys, vehicles, vehicleSheet } from '../data/journey';
 
-const { nearWidth: NW, farWidth: FW, height: H, feet, farSpeed, farAlignView } = journeyArt;
-const config = { ...camera, h: H, farSpeed, farOffset: (farAlignView / 2) * (1 - farSpeed), keys: timeKeys, regions, vehicles };
+const { nearWidth: NW, farWidth: FW, height: H, ground: G, feet, farSpeed, farAlignView, walker: WK, lanes } = journeyArt;
+const config = {
+  ...camera,
+  h: H,
+  farSpeed,
+  farOffset: (farAlignView / 2) * (1 - farSpeed),
+  keys: timeKeys,
+  regions,
+  vehicles,
+  sheetH: vehicleSheet.h,
+  farMax: lanes.farMax,
+  ww: WK.w,
+};
 
 // Pixel discs for the sun and moon, one rect per run.
 const disc = (r: number, bite = false) =>
@@ -36,7 +50,7 @@ const cloudLayers = [
   { band: 2, top: 24, speed: 0.22, wind: 7 },
 ];
 
-// Fireworks for the finale: bursts placed around the sky.
+// Fireworks for the checkpoint: bursts placed around the sky.
 const bursts = [
   { x: 18, y: 16, c: '#ffcd75', d: 0 },
   { x: 80, y: 12, c: '#73eff7', d: 0.5 },
@@ -45,9 +59,24 @@ const bursts = [
   { x: 90, y: 34, c: '#b99cff', d: 2.1 },
 ];
 
-// Overlay sprites, in near-layer art pixels.
-const px = (rows: string[], pal: Record<string, string>) =>
-  rows.flatMap((row, y) => [...row].flatMap((k, x) => (pal[k] ? [{ x, y, fill: pal[k] }] : [])));
+// Overlay sprites, in near-layer art pixels: rows of palette keys, merged into runs.
+type Run = { x: number; y: number; w: number; fill: string };
+const px = (rows: string[], pal: Record<string, string>, ox = 0, oy = 0): Run[] =>
+  rows.flatMap((row, y) => {
+    const runs: Run[] = [];
+    [...row].forEach((k, x) => {
+      const fill = pal[k];
+      if (!fill) return;
+      const last = runs[runs.length - 1];
+      if (last && last.fill === fill && last.x + last.w === ox + x) last.w++;
+      else runs.push({ x: ox + x, y: oy + y, w: 1, fill });
+    });
+    return runs;
+  });
+/** Pixel text in the art's 3×5 font. */
+const label = (str: string, fill: string, ox: number, oy: number) =>
+  [...str].flatMap((ch, i) => px((FONT as Record<string, string[]>)[ch].map((r) => r.replace(/1/g, '#').replace(/0/g, '.')), { '#': fill }, ox + i * 4, oy));
+
 const cableCar = px(['..RRRRRRRRRR..', '.RCCCCCCCCCCR.', 'RRWWBWWBWWBWRR', 'RRWWBWWBWWBWRR', 'RRRRRRRRRRRRRR', 'CCCCCCCCCCCCCC', '.KK........KK.'], {
   R: '#9a2f2a',
   C: '#f4ecdc',
@@ -55,11 +84,65 @@ const cableCar = px(['..RRRRRRRRRR..', '.RCCCCCCCCCCR.', 'RRWWBWWBWWBWRR', 'RRWW
   B: '#29366f',
   K: '#141026',
 });
-const balloon = px(
+const bell = px(['.Y.', 'YYY'], { Y: '#ffcd75' }, 6, -2);
+const hotAir = px(
   ['...RRYRR...', '..RRYYYRR..', '.RRYYYYYRR.', '.RRYYYYYRR.', '.RRYYYYYRR.', '..RRYYYRR..', '...RRYRR...', '....R.R....', '....KKK....', '....KKK....'],
   { R: '#e43b44', Y: '#ffcd75', K: '#8a5a3c' },
 );
-const hiker = px(['.H.', 'SSS', 'BBB', 'BBB', 'L.L', 'L.L'], { H: '#5c3a2e', S: '#f2c4a2', B: '#e43b44', L: '#24305a' });
+// Game-day balloons: big enough to read, each on a string.
+const balloon = px(['.RRR.', 'RRWRR', 'RRRWR', 'RRRRR', 'RRRRR', '.RRR.', '..R..', '..S..', '...S.', '..S..'], { R: '#e43b44', W: '#ff9aa2', S: '#e9e0f0' });
+const balloons = Array.from({ length: 16 }, (_, i) => ({ x: 1290 + ((i * 41) % 104), d: ((i * 0.61) % 6).toFixed(2), y: 92 + ((i * 5) % 9) }));
+// A hiker with a hat, a pack and two strides.
+const hikerTop = px(['.HHH..', 'HHHHH.', '.SSS..', '.SSSP.', 'RRRRPP', 'RRRRPP', 'SRRRP.', '.RRR..', '.LLL..'], { H: '#c9a26b', S: '#f2c4a2', R: '#e43b44', P: '#3b5dc9', L: '#24305a' });
+const hikerA = px(['.L.L..', 'L...L.', 'B...B.'], { L: '#24305a', B: '#3d2a28' }, 0, 9);
+const hikerB = px(['.LL...', '.LL...', '.BB...'], { L: '#24305a', B: '#3d2a28' }, 0, 9);
+// Pickleball players, paddle up and paddle down.
+const player = (shirt: string) => {
+  const pal = { H: '#5c3a2e', S: '#f2c4a2', T: shirt, W: '#f4ecdc', P: '#3d2f4a', B: '#e9e0f0', L: '#d39a78' };
+  const body = px(['..HHH....', '.HHHHS...', '.HSSSS...', '..SSS....', '.TTTTT...', 'TTTTTT...', 'TTTTTT...', '.TTTTT...', '.WWWWW...', '.WW.WW...', '.LL..LL..', '.LL..LL..', '.SS..SS..', '.SS..SS..', 'BBB..BBB.'], pal);
+  const up = px(['.......PP', '......PPP', '.....SPP.', '....SS...'], pal, 0, 3);
+  const down = px(['.....SS..', '......SP.', '......PPP', '.......PP'], pal, 0, 6);
+  return { body, up, down };
+};
+const players = [
+  { x: 2520, ...player('#e43b44'), flip: false },
+  { x: 2553, ...player('#ffcd75'), flip: true },
+];
+// Sandhill cranes over the Platte: long necks out, legs trailing.
+const craneUp = px(['.....GG......', '....GG.......', 'RGGGGGGGGGLLL'], { G: '#566c86', R: '#e43b44', L: '#3d4a62' });
+const craneDown = px(['.............', '.............', 'RGGGGGGGGGLLL', '....GG.......', '.....GG......'], { G: '#566c86', R: '#e43b44', L: '#3d4a62' });
+const craneFlock = [0, 14, 28, 7, 21, 35].map((dx, i) => ({ x: 96 + dx * 2, y: 52 + [0, 5, 1, 10, 7, 3][i] }));
+// Gulls over Carmel Bay, and a peregrine falcon circling the Capitol.
+const gullUp = px(['W.....W', '.W...W.', '..WGW..'], { W: '#f4ecdc', G: '#94a0c2' });
+const gullDown = px(['.......', '..WGW..', 'WW...WW'], { W: '#f4ecdc', G: '#94a0c2' });
+const gulls = [
+  { x: 2724, y: 98, t: 11 },
+  { x: 2810, y: 92, t: 14 },
+  { x: 2856, y: 104, t: 9 },
+];
+const falconUp = px(['K...K', '.KKK.'], { K: '#3d2f4a' });
+const falconDown = px(['.....', 'KKKKK'], { K: '#3d2f4a' });
+// A cyclist on the Bob Kerrey bridge.
+const cyclist = px(['....H....', '...HS....', '...CC....', '..CCCS...', '...CPPKK.', '.KK.P.KK.', 'K..KPK..K', '.KK...KK.'], { H: '#ffcd75', S: '#f2c4a2', C: '#38b764', P: '#24305a', K: '#141026' });
+// New Yorkers out walking: a top half and two leg frames each, facing right.
+const walkerPal = (hair: string, coat: string, pants: string) => ({ H: hair, S: '#f2c4a2', s: '#c88a6a', C: coat, P: pants, B: '#141026', R: '#e43b44', Y: '#ffe9a8' });
+const person = (pal: Record<string, string>, extra: Record<number, string> = {}) => ({
+  top: px(
+    ['..HHH..', '.HHHHS.', '.HSSSS.', '..SSSS.', '..SSS..', '.CCCCC.', 'CCCCCCC', 'CCCCCCC', 'SCCCCCS', '.CCCCC.', '.CCCCC.', '.PPPPP.'].map((r, i) => extra[i] ?? r),
+    pal,
+  ),
+  a: px(['.PP.PP.', '.PP..PP', 'PP...PP', 'PP....P', 'P.....P', 'BB....B'], pal, 0, 12),
+  b: px(['..PPP..', '..PPP..', '..PP...', '..PP...', '..PP...', '.BBB...'], pal, 0, 12),
+});
+const people = [
+  { from: 3064, to: 3176, t: 15, ...person(walkerPal('#3d2a28', '#29366f', '#3d3858')) },
+  { from: 3192, to: 3372, t: 19, ...person(walkerPal('#8a5a3c', '#b8405e', '#24305a'), { 8: 'SCCCCCR', 9: '.CCCCRR', 10: '.CCCCRR' }) },
+  { from: 3442, to: 3640, t: 17, ...person(walkerPal('#141026', '#2f8a5a', '#566c86'), { 7: 'CCCCCCY', 8: 'SCCCCCY' }) },
+  { from: 3744, to: 3962, t: 21, ...person(walkerPal('#e0c088', '#c9bfd9', '#3d2f66')) },
+];
+const dog = { a: px(['K.....', 'KKKKKK', '.K..K.'], { K: '#8a5a3c' }, 10, 15), b: px(['K.....', 'KKKKKK', 'K....K'], { K: '#8a5a3c' }, 10, 15) };
+const pigeonUp = px(['.GG.', 'GGGG', '.KK.'], { G: '#94a0c2', K: '#566c86' });
+const pigeonDown = px(['....', 'GGGG', 'GKK.'], { G: '#94a0c2', K: '#566c86' });
 const train = [0, 1, 2].flatMap((car) =>
   px(['SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.', 'SWWWSWWWSWWWDSWWWSWWWSWWWSDWWWSWWWSWWS.', 'SWWWSWWWSWWWDSWWWSWWWSWWWSDWWWSWWWSWWS.', 'SSSSSSSSSSSSDSSSSSSSSSSSSSDSSSSSSSSSSS.', 'SPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPS.', '.KK..............................KK...'], {
     S: '#c9cfe0',
@@ -67,10 +150,32 @@ const train = [0, 1, 2].flatMap((car) =>
     D: '#94a0c2',
     P: '#7a2a3a',
     K: '#141026',
-  }).map((p) => ({ ...p, x: p.x + car * 38 })),
+  }).map((p) => ({ ...p, x: p.x + car * 38, y: p.y + G + 4 })),
 );
-const craneFlock = [0, 9, 18, 5, 14, 24].map((dx, i) => ({ x: 120 + dx * 3, y: 56 + [0, 4, 1, 9, 6, 3][i] }));
-const balloons = Array.from({ length: 18 }, (_, i) => ({ x: 1304 + ((i * 37) % 136), d: (i * 0.53) % 6, c: i % 4 ? '#e43b44' : '#fdf6e3' }));
+// Waves rolling in to the beach at Pebble Beach.
+const crest = px(['...WWW...', '.WWBBBWW.', 'WB.....BW'], { W: '#ffffff', B: '#94d4f7' });
+const waves = [
+  { x: 2704, d: 0 },
+  { x: 2722, d: 1.4 },
+  { x: 2738, d: 2.6 },
+];
+// The big red N, waving in two frames.
+const nRows = ['NN....NN', '.NN...N.', '.NNN..N.', '.N.NN.N.', '.N..NNN.', '.N...NN.', 'NNN...N.'];
+const nFlag = (k: number) =>
+  Array.from({ length: 16 }, (_, c) => {
+    const dy = Math.round(Math.sin(c / 2.6 + k * Math.PI) * (c / 16) * 1.6);
+    const col = nRows.map((r) => r[c - 4] ?? '.');
+    return [
+      { x: 1469 + c, y: 97 + dy, w: 1, h: 12, fill: c % 5 === 4 ? '#c8303a' : '#e43b44' },
+      ...col.flatMap((k2, j) => (k2 === 'N' ? [{ x: 1469 + c, y: 99 + dy + j, w: 1, h: 1, fill: '#fdf6e3' }] : [])),
+    ];
+  }).flat();
+const bigN = px(['NNN....NNN', '.NNN....N.', '.NNNN...N.', '.N.NNN..N.', '.N..NNN.N.', '.N...NNNN.', '.N....NNN.', 'NNN....NN.'], { N: '#e43b44' }, 1314, 51);
+const crowd = Array.from({ length: 46 }, (_, i) => {
+  const y = 81 + ((i * 7) % 24);
+  const x0 = Math.ceil(1288 + ((106 - y) * 14) / 26);
+  return { x: x0 + ((i * 37) % (1394 - x0)), y, d: ((i * 0.43) % 2).toFixed(2), c: i % 3 ? '#fdf6e3' : '#ffcd75' };
+});
 const fog = [
   { x: 2254, y: 136, w: 40 },
   { x: 2298, y: 141, w: 54 },
@@ -78,10 +183,24 @@ const fog = [
   { x: 2408, y: 140, w: 60 },
   { x: 2466, y: 135, w: 44 },
   { x: 2312, y: 112, w: 34 },
+  { x: 2380, y: 100, w: 42 },
+  { x: 2440, y: 118, w: 30 },
+  { x: 2272, y: 92, w: 26 },
+];
+const roadFog = [
+  { x: 4286, y: 146, w: 56 },
+  { x: 4318, y: 136, w: 70 },
+  { x: 4340, y: 152, w: 60 },
+  { x: 4300, y: 126, w: 44 },
 ];
 const twinkle = (n: number, x0: number, x1: number, y0: number, y1: number, k: number) =>
   Array.from({ length: n }, (_, i) => ({ x: x0 + ((i * 53 + k) % (x1 - x0)), y: y0 + ((i * 29 + k) % (y1 - y0)), d: ((i * 0.37 + k) % 3).toFixed(2) }));
-const shimmer = [...twinkle(10, 1510, 1760, 126, 150, 3), ...twinkle(10, 2270, 2508, 186, 194, 7)];
+const glints = {
+  platte: twinkle(12, 6, 150, 139, 151, 5),
+  missouri: twinkle(10, 1540, 1730, 126, 150, 3),
+  bay: twinkle(10, 2290, 2490, G + 6, G + 13, 7),
+  pacific: twinkle(14, 2712, 2896, 115, 120, 2),
+};
 const officeLights = Array.from({ length: 12 }, (_, i) => ({ x: 3281 + ((i * 4) % 10) * 9, y: 66 + ((i * 3) % 5) * 10, d: (i * 0.7) % 5 }));
 const walkupWindows = [
   [3658, 102],
@@ -106,11 +225,15 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   <header class="wrap section-head">
     <span class="num">02</span>
     <h2 id="journey-title">The road so far</h2>
-    <p>From a Kearney front yard to 7 World Trade Center, one street at a time.</p>
+    <p>From a Kearney front yard to 7 World Trade Center, so far. One street at a time.</p>
   </header>
 
   <div class="track" data-track>
-    <div class="stage" data-stage style={`--nw:${NW};--fw:${FW};--h:${H};--feet:${feet}`}>
+    <div
+      class="stage"
+      data-stage
+      style={`--nw:${NW};--fw:${FW};--h:${H};--feet:${feet};--ww:${WK.w};--wh:${WK.h};--wf:${WK.frames};--vw:${vehicleSheet.w};--vh:${vehicleSheet.h};--lane-far:${lanes.far};--lane-near:${lanes.near}`}
+    >
       <div class="sky" aria-hidden="true">
         <div class="sky-layer morning"></div>
         <div class="sky-layer day" data-sky></div>
@@ -153,7 +276,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       <div
         class="viewport"
         role="img"
-        aria-label="A pixel-art street from Kearney, Nebraska, under the Archway, through Lincoln and Omaha, across San Francisco and the Golden Gate to Pebble Beach, then New York: Union Square, the Flatiron, a walk-up, and 7 World Trade Center."
+        aria-label="A pixel-art street from Kearney, Nebraska, under the Archway, through Lincoln and Omaha, across San Francisco and the Golden Gate to Pebble Beach, then New York: Union Square, the Flatiron, a walk-up and 7 World Trade Center, where a sign points on down the road to the next chapter."
       >
         <div class="layer far" data-far>
           <img src="/art/journey-far.png" width={FW} height={H} alt="" loading="lazy" decoding="async" />
@@ -162,104 +285,217 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
           <img src="/art/journey-near.png" width={NW} height={H} alt="" loading="lazy" decoding="async" />
           <svg class="fx" viewBox={`0 0 ${NW} ${H}`} shape-rendering="crispEdges" aria-hidden="true">
             <defs>
-              <clipPath id="road-stands"><rect x="1284" y="0" width="176" height="100" /></clipPath>
-              <clipPath id="road-tunnel"><rect x="3060" y="182" width="1320" height="14" /></clipPath>
+              <clipPath id="road-sky-lincoln"><rect x="1284" y="0" width="176" height="104" /></clipPath>
+              <clipPath id="road-bowl"><polygon points="1288,106 1302,80 1396,80 1396,106" /></clipPath>
+              <clipPath id="road-tunnel"><rect x="3060" y={G + 2} width="1320" height={H - G - 2} /></clipPath>
+              <g id="road-balloon">{balloon.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              <g id="road-gull-up">{gullUp.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              <g id="road-gull-down">{gullDown.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              <g id="road-crest">{crest.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
             </defs>
-            <!-- Kearney: a balloon, cranes over the Platte, the windmill, the KHS flag. -->
-            <g class="balloon">{balloon.map((p) => <rect x={p.x + 470} y={p.y + 30} width="1" height="1" fill={p.fill} />)}</g>
-            <g class="cranes">
-              {
-                craneFlock.map((b) => (
-                  <g transform={`translate(${b.x} ${b.y})`} fill="#4a5a72">
-                    <g class="wing-up">
-                      <rect x="0" y="0" width="2" height="1" />
-                      <rect x="2" y="1" width="2" height="1" />
-                      <rect x="4" y="0" width="2" height="1" />
+
+            <!-- Kearney: a hot-air balloon, cranes over the Platte, the windmill, the KHS flag. -->
+            <g class="zone" data-from="0" data-to="1000">
+              <g class="hot-air">{hotAir.map((r) => <rect x={r.x + 470} y={r.y + 30} width={r.w} height="1" fill={r.fill} />)}</g>
+              <g class="cranes">
+                {
+                  craneFlock.map((b) => (
+                    <g transform={`translate(${b.x} ${b.y})`}>
+                      <g class="frame-a">{craneUp.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      <g class="frame-b">{craneDown.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
                     </g>
-                    <g class="wing-down">
-                      <rect x="0" y="2" width="2" height="1" />
-                      <rect x="2" y="1" width="2" height="1" />
-                      <rect x="4" y="2" width="2" height="1" />
+                  ))
+                }
+              </g>
+              {glints.platte.map((s) => <rect class="glint" x={s.x} y={s.y} width="3" height="1" fill="#fff3c4" style={`animation-delay:-${s.d}s`} />)}
+              <g class="blades">
+                {[0, 45, 90, 135].map((deg) => <rect x="245" y="85.4" width="22" height="1.2" fill="#3d4a62" transform={`rotate(${deg} 256 86)`} />)}
+                <rect x="255" y="85" width="2" height="2" fill="#94a0c2" />
+              </g>
+              <g class="frame-a">
+                <rect x="623" y="70" width="12" height="8" fill="#e43b44" />
+                {[71, 73, 75, 77].map((y) => <rect x="623" y={y} width="12" height="1" fill="#fdf6e3" />)}
+                <rect x="623" y="70" width="5" height="4" fill="#29366f" />
+              </g>
+              <g class="frame-b">
+                <rect x="623" y="71" width="11" height="8" fill="#e43b44" />
+                {[72, 74, 76, 78].map((y) => <rect x="623" y={y} width="11" height="1" fill="#fdf6e3" />)}
+                <rect x="623" y="71" width="5" height="4" fill="#29366f" />
+              </g>
+              {[[797, 58], [797, 122], [975, 74], [975, 138]].map(([x, y], i) => <rect class="glint slow" x={x} y={y} width="6" height="4" fill="#fff3c4" style={`animation-delay:-${i * 0.8}s`} />)}
+            </g>
+
+            <!-- Lincoln on game day: a falcon over the Capitol, lights, the crowd, the board, the balloons. -->
+            <g class="zone" data-from="1000" data-to="1500">
+              <g class="falcon-x">
+                <g class="falcon-y">
+                  <g class="frame-a">{falconUp.map((r) => <rect x={r.x + 1130} y={r.y + 40} width={r.w} height="1" fill={r.fill} />)}</g>
+                  <g class="frame-b">{falconDown.map((r) => <rect x={r.x + 1130} y={r.y + 40} width={r.w} height="1" fill={r.fill} />)}</g>
+                </g>
+              </g>
+              {Array.from({ length: 18 }, (_, i) => <rect class="bulb" x={1194 + i * 4} y="100" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
+              {[[1282, 46, 10, 3], [1401, 45, 7, 3], [1423, 45, 7, 3], [1445, 45, 7, 3]].map(([x, y, w, h], i) => <rect class="lamp" x={x} y={y} width={w} height={h} fill="#fff3c4" style={`animation-delay:-${i * 0.15}s`} />)}
+              {crowd.map((c) => <rect class="fan" x={c.x} y={c.y} width="1" height="1" fill={c.c} style={`animation-delay:-${c.d}s`} />)}
+              <g clip-path="url(#road-bowl)">
+                <g class="crowd-wave">
+                  {Array.from({ length: 13 }, (_, i) => <rect x={i % 2} y={80 + i * 2} width="3" height="1" fill="#fdf6e3" />)}
+                  {Array.from({ length: 12 }, (_, i) => <rect x={4 + (i % 2)} y={81 + i * 2} width="1" height="1" fill="#ffcd75" />)}
+                </g>
+              </g>
+              <g class="board-b">
+                <rect x="1298" y="48" width="42" height="15" fill="#e43b44" />
+                {label('TOUCHDOWN', '#ffe9a8', 1302, 53).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+              </g>
+              <g class="board-c">
+                <rect x="1298" y="48" width="42" height="15" fill="#fdf6e3" />
+                {bigN.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+              </g>
+              <g clip-path="url(#road-sky-lincoln)">
+                {balloons.map((b) => <use href="#road-balloon" class="red-balloon" x={b.x} y={b.y} style={`animation-delay:-${b.d}s`} />)}
+              </g>
+              {[0, 1].map((k) => (
+                <g class={k ? 'frame-b' : 'frame-a'}>
+                  {nFlag(k).map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} fill={r.fill} />)}
+                </g>
+              ))}
+            </g>
+
+            <!-- Omaha: the Missouri catching the light, a cyclist on the bridge, the runway to San Francisco. -->
+            <g class="zone" data-from="1480" data-to="1900">
+              {glints.missouri.map((s) => <rect class="glint" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:-${s.d}s`} />)}
+              <g class="stroll" style="--a:1528px;--b:1736px;--t:22s">
+                {cyclist.map((r) => <rect x={r.x - 4} y={r.y + 108} width={r.w} height="1" fill={r.fill} />)}
+              </g>
+              {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={1752 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+            </g>
+
+            <!-- San Francisco: the cable car and its bell, fog through the Gate, pickleball, a hiker. -->
+            <g class="zone" data-from="1860" data-to="2700">
+              <g class="cable-car">
+                {cableCar.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                <g class="bell">{bell.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              </g>
+              {glints.bay.map((s) => <rect class="glint" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:-${s.d}s`} />)}
+              <g class="fog">
+                {
+                  fog.map((f, i) => (
+                    <g class={`puff p${i % 3}`} transform={`translate(${f.x} ${f.y})`} fill={i % 2 ? '#e2d4ec' : '#efe4f4'}>
+                      <rect x="5" y="0" width={f.w - 12} height="1" />
+                      <rect x="2" y="1" width={f.w - 5} height="1" />
+                      <rect x="0" y="2" width={f.w} height="2" />
+                      <rect x="3" y="4" width={f.w - 7} height="1" />
+                    </g>
+                  ))
+                }
+              </g>
+              <rect class="beacon" x="2323" y="29" width="1" height="1" fill="#ff3b4f" />
+              <rect class="beacon" x="2449" y="29" width="1" height="1" fill="#ff3b4f" />
+              {
+                players.map((p) => (
+                  <g transform={p.flip ? `translate(${p.x + 9} 136) scale(-1 1)` : `translate(${p.x} 136)`}>
+                    {p.body.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                    <g class={p.flip ? 'frame-b' : 'frame-a'}>{p.up.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                    <g class={p.flip ? 'frame-a' : 'frame-b'}>{p.down.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                  </g>
+                ))
+              }
+              <rect class="ball" x="0" y="0" width="2" height="2" fill="#e9ff70" />
+              <g class="hiker">
+                <g transform="translate(-3 -12)">
+                  {hikerTop.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                  <g class="frame-a">{hikerA.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                  <g class="frame-b">{hikerB.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                </g>
+              </g>
+              <rect class="beacon" x="2608" y="71" width="1" height="1" fill="#ff3b4f" />
+              <rect class="beacon" x="2616" y="71" width="1" height="1" fill="#ff3b4f" style="animation-delay:-1.2s" />
+            </g>
+
+            <!-- Pebble Beach: glints, gulls, waves breaking on the beach and the rocks, the flag, the cave. -->
+            <g class="zone" data-from="2560" data-to="3100">
+              {glints.pacific.map((s) => <rect class="glint" x={s.x} y={s.y} width="3" height="1" fill="#fff3c4" style={`animation-delay:-${s.d}s`} />)}
+              {
+                gulls.map((g, i) => (
+                  <g class="glide" style={`--t:${g.t}s;animation-delay:-${i * 3}s`}>
+                    <use href="#road-gull-up" class="frame-a" x={g.x} y={g.y} />
+                    <use href="#road-gull-down" class="frame-b" x={g.x} y={g.y} />
+                  </g>
+                ))
+              }
+              {waves.map((w) => <use href="#road-crest" class="wave" x={w.x} y="129" style={`animation-delay:-${w.d}s`} />)}
+              <g class="surf">
+                {[2704, 2716, 2728, 2740].map((x, i) => <rect x={x} y={140 + (i % 2)} width="9" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.5}s`} />)}
+                {[2742, 2798, 2804, 2810].map((x, i) => <rect x={x} y={138 + i * 3} width="4" height="2" fill="#ffffff" style={`animation-delay:${-i * 0.7}s`} />)}
+                {Array.from({ length: 10 }, (_, i) => <rect x={2700 + i * 20} y={H - 6 + (i % 2)} width="10" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.3}s`} />)}
+              </g>
+              <g class="frame-a"><polygon points="2863,106 2872,109 2863,112" fill="#ffcd75" /></g>
+              <g class="frame-b"><polygon points="2863,107 2871,108 2863,112" fill="#ffcd75" /></g>
+              {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={2910 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+            </g>
+
+            <!-- New York: people, pigeons, market lights, office windows, the subway, steam, neon. -->
+            <g class="zone" data-from="3000" data-to="4400">
+              {
+                people.map((p, i) => (
+                  <g class="stroll" style={`--a:${p.from}px;--b:${p.to}px;--t:${p.t}s;animation-delay:-${i * 4}s`}>
+                    <g transform="translate(-3 141)">
+                      {p.top.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                      <g class="frame-a">{p.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      <g class="frame-b">{p.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      {i === 3 && (
+                        <>
+                          <rect x="6" y="9" width="5" height="1" fill="#e43b44" />
+                          <g class="frame-a">{dog.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                          <g class="frame-b">{dog.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                        </>
+                      )}
                     </g>
                   </g>
                 ))
               }
-            </g>
-            <g class="blades">
-              {[0, 45, 90, 135].map((deg) => <rect x="245" y="85.4" width="22" height="1.2" fill="#3d4a62" transform={`rotate(${deg} 256 86)`} />)}
-              <rect x="255" y="85" width="2" height="2" fill="#94a0c2" />
-            </g>
-            <g class="flag-a">
-              <rect x="623" y="70" width="12" height="8" fill="#e43b44" />
-              {[71, 73, 75, 77].map((y) => <rect x="623" y={y} width="12" height="1" fill="#fdf6e3" />)}
-              <rect x="623" y="70" width="5" height="4" fill="#29366f" />
-            </g>
-            <g class="flag-b">
-              <rect x="623" y="71" width="11" height="8" fill="#e43b44" />
-              {[72, 74, 76, 78].map((y) => <rect x="623" y={y} width="11" height="1" fill="#fdf6e3" />)}
-              <rect x="623" y="71" width="5" height="4" fill="#29366f" />
-            </g>
-
-            <!-- Lincoln on game day: lights, and red balloons after the first score. -->
-            <rect class="lamp" x="1282" y="51" width="10" height="5" fill="#fff3c4" />
-            <rect class="lamp" x="1452" y="51" width="10" height="5" fill="#fff3c4" />
-            <g clip-path="url(#road-stands)">
-              {balloons.map((b) => <rect class="red-balloon" x={b.x} y="100" width="2" height="3" fill={b.c} style={`animation-delay:${-b.d}s`} />)}
-            </g>
-            {Array.from({ length: 18 }, (_, i) => <rect class="bulb" x={1194 + i * 4} y="100" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
-
-            <!-- Omaha and the Golden Gate: water catching the light. -->
-            {shimmer.map((s) => <rect class="shimmer" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:-${s.d}s`} />)}
-            {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={1752 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
-            {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={2910 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
-
-            <!-- San Francisco: the cable car, pickleball, a hiker, fog, the flag on the green. -->
-            <g class="cable-car">{cableCar.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill={p.fill} />)}</g>
-            <rect class="ball" x="0" y="0" width="1" height="1" fill="#e9ff70" />
-            <g class="hiker">{hiker.map((p) => <rect x={p.x - 1} y={p.y - 6} width="1" height="1" fill={p.fill} />)}</g>
-            <g class="fog">
-              {
-                fog.map((f, i) => (
-                  <g class={`puff p${i % 3}`} transform={`translate(${f.x} ${f.y})`} fill={i % 2 ? '#e2d4ec' : '#efe4f4'}>
-                    <rect x="5" y="0" width={f.w - 12} height="1" />
-                    <rect x="2" y="1" width={f.w - 5} height="1" />
-                    <rect x="0" y="2" width={f.w} height="2" />
-                    <rect x="3" y="4" width={f.w - 7} height="1" />
-                  </g>
-                ))
-              }
-            </g>
-            <rect class="beacon" x="2323" y="29" width="1" height="1" fill="#ff3b4f" />
-            <rect class="beacon" x="2449" y="29" width="1" height="1" fill="#ff3b4f" />
-            <g class="surf">
-              {[2736, 2748, 2762, 2776].map((x, i) => <rect x={x} y="147" width="8" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.4}s`} />)}
-              {Array.from({ length: 12 }, (_, i) => <rect x={2676 + i * 20} y={189 + (i % 3) * 2} width="10" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.3}s`} />)}
-            </g>
-            <g class="pin-a"><polygon points="2863,120 2872,123 2863,126" fill="#ffcd75" /></g>
-            <g class="pin-b"><polygon points="2863,121 2871,122 2863,126" fill="#ffcd75" /></g>
-
-            <!-- New York: market lights, office windows, the subway, steam, neon, windows. -->
-            {Array.from({ length: 22 }, (_, i) => <rect class="bulb" x={3186 + i * 4} y="127" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
-            {officeLights.map((o) => <rect class="glass" x={o.x} y={o.y} width="7" height="7" fill="#1b1a33" style={`animation-delay:-${o.d}s`} />)}
-            <g clip-path="url(#road-tunnel)">
-              <g class="train">{train.map((p) => <rect x={p.x} y={p.y + 184} width="1" height="1" fill={p.fill} />)}</g>
-            </g>
-            <rect x="3060" y="182" width="16" height="14" fill="#0c0a18" />
-            <rect x="4364" y="182" width="16" height="14" fill="#0c0a18" />
-            {
-              steam.map((i) => (
+              {[3160, 3167, 3175].map((x, i) => (
                 <>
-                  <rect class="steam" x="3604" y="150" width="5" height="3" fill="#e9edf7" style={`animation-delay:${-i * 0.9}s`} />
-                  <rect class="steam small" x="3574" y="136" width="3" height="2" fill="#e9edf7" style={`animation-delay:${-i * 0.9 - 0.4}s`} />
+                  <g class="peck" style={`animation-delay:-${i * 0.7}s`}>{pigeonUp.map((r) => <rect x={r.x + x} y={r.y + 149} width={r.w} height="1" fill={r.fill} />)}</g>
+                  <g class="peck down" style={`animation-delay:-${i * 0.7}s`}>{pigeonDown.map((r) => <rect x={r.x + x} y={r.y + 149} width={r.w} height="1" fill={r.fill} />)}</g>
                 </>
-              ))
-            }
-            <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
-            {walkupWindows.map(([x, y], i) => <rect class="win" x={x} y={y} width="7" height="8" fill="#1b1533" style={`animation-delay:${-i * 1.3}s`} />)}
-            <g class="floors">{floors.map((f) => <rect x="3990" y={f.y} width="100" height="2" fill="#c6fff5" style={`transition-delay:${f.i * 45}ms`} />)}</g>
-            <rect class="lobby" x="3990" y="136" width="100" height="16" fill="#ffffff" />
-            <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
-            <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
+              ))}
+              {Array.from({ length: 22 }, (_, i) => <rect class="bulb" x={3186 + i * 4} y="127" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
+              {officeLights.map((o) => <rect class="glass" x={o.x} y={o.y} width="7" height="7" fill="#1b1a33" style={`animation-delay:-${o.d}s`} />)}
+              <g clip-path="url(#road-tunnel)">
+                <g class="train">{train.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              </g>
+              <rect x="3060" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
+              <rect x="4364" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
+              {
+                steam.map((i) => (
+                  <>
+                    <rect class="steam" x="3604" y="150" width="5" height="3" fill="#e9edf7" style={`animation-delay:${-i * 0.9}s`} />
+                    <rect class="steam small" x="3574" y="136" width="3" height="2" fill="#e9edf7" style={`animation-delay:${-i * 0.9 - 0.4}s`} />
+                  </>
+                ))
+              }
+              <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
+              {walkupWindows.map(([x, y], i) => <rect class="win" x={x} y={y} width="7" height="8" fill="#1b1533" style={`animation-delay:${-i * 1.3}s`} />)}
+              <g class="floors">{floors.map((f) => <rect x="3990" y={f.y} width="100" height="2" fill="#c6fff5" style={`transition-delay:${f.i * 45}ms`} />)}</g>
+              <rect class="lobby" x="3990" y="136" width="100" height="16" fill="#ffffff" />
+              <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
+              <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
+              <rect class="beacon" x="3520" y="0" width="1" height="1" fill="#ff3b4f" style="animation-delay:-0.8s" />
+              <!-- The road keeps going: the next chapter is "???", and fog rolls in past it. -->
+              <g class="unknown">{label('???', '#ffcd75', 4108, 136).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              <g class="fog road-fog">
+                {
+                  roadFog.map((f, i) => (
+                    <g class={`puff p${i % 3}`} transform={`translate(${f.x} ${f.y})`} fill={i % 2 ? '#4f3d7d' : '#6b4f96'}>
+                      <rect x="5" y="0" width={f.w - 12} height="1" />
+                      <rect x="2" y="1" width={f.w - 5} height="2" />
+                      <rect x="0" y="3" width={f.w} height="3" />
+                      <rect x="3" y="6" width={f.w - 7} height="1" />
+                    </g>
+                  ))
+                }
+              </g>
+            </g>
           </svg>
           <div class="cars" data-cars></div>
         </div>
@@ -292,16 +528,17 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       </ol>
 
       <div class="banner" aria-hidden="true">
-        <p class="save pixel">Current save</p>
+        <p class="save pixel">Checkpoint · progress saved</p>
         <p class="where pixel">7 World Trade Center</p>
         <p class="who">MSCI Private Assets · New York</p>
-        <p class="next">Keep scrolling ↓</p>
+        <p class="next">Saved. The road keeps going →</p>
+        <p class="loading pixel">Loading next chapter<span>.</span><span>.</span><span>.</span></p>
       </div>
       <div class="toast" aria-hidden="true">
         <Icon name="trophy" color="gold" scale={2.5} />
         <div>
-          <p class="pixel">Achievement unlocked</p>
-          <p>Arrived: Kearney to 7 World Trade</p>
+          <p class="pixel">Checkpoint reached</p>
+          <p>Kearney → 7 World Trade, so far</p>
         </div>
       </div>
     </div>
@@ -312,7 +549,8 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   // One loop drives everything while the section is on screen: the camera follows
   // the scroll with a little easing, the layers pan, the walker steps, the sky moves
   // through the day, clouds drift, and vehicles drive in world space, entering and
-  // leaving only off-screen. Reaching the end plays the finale.
+  // leaving only off-screen. Only the overlay zone on screen animates. Reaching
+  // 7 WTC plays the checkpoint.
   const root = document.querySelector<HTMLElement>('[data-journey]');
   if (root && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
     const cfg = JSON.parse(root.dataset.config!);
@@ -322,6 +560,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     const skies = all('[data-sky]');
     const clouds = all('[data-cloud]');
     const cards = all('[data-stop]');
+    const zones = all('.zone').map((el) => ({ el, from: +el.dataset.from!, to: +el.dataset.to!, on: false }));
     const span = cfg.end - cfg.start;
     const clamp = (v: number) => Math.min(1, Math.max(0, v));
     const timeAt = (x: number) => {
@@ -350,7 +589,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     let snap = true;
 
     type Car = { el: HTMLElement; x: number; dir: number; w: number; v: number; type: string; wait: number };
-    const fleet: Car[] = Array.from({ length: 8 }, (_, i) => {
+    const fleet: Car[] = Array.from({ length: 7 }, (_, i) => {
       const el = document.createElement('i');
       el.className = 'car';
       cars.append(el);
@@ -358,21 +597,22 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     });
     const style = (c: Car) => {
       const v = cfg.vehicles[c.type];
-      Object.assign(c.el.style, { width: `${v.w * s}px`, height: `${v.h * s}px`, backgroundPosition: `${-v.x * s}px ${-(16 - v.h) * s}px` });
+      Object.assign(c.el.style, { width: `${v.w * s}px`, height: `${v.h * s}px`, backgroundPosition: `${-v.x * s}px ${-(cfg.sheetH - v.h) * s}px` });
       c.el.dataset.lane = c.dir > 0 ? 'far' : 'near';
     };
     // Place a car at x (or just off the edge it will drive in from) with a type for that region.
     const spawn = (c: Car, L: number, x?: number) => {
       const list: string[] = cfg.regions.findLast((r: { from: number }) => r.from <= Math.max(0, x ?? L)).vehicles;
       let type = list[Math.floor(Math.random() * list.length)];
-      if (c.dir > 0 && cfg.vehicles[type].h > 12) type = 'sedan';
+      // The far lane passes behind the walker's feet, so only cars short enough to clear them.
+      if (c.dir > 0 && cfg.vehicles[type].h > cfg.farMax) type = 'sedan';
       const v = cfg.vehicles[type];
       Object.assign(c, { type, w: v.w, v: v.speed * (0.85 + Math.random() * 0.3), wait: Math.random() * 3 });
       const fromLeft = x === undefined && c.dir * c.v > vel;
       c.x = x ?? (fromLeft ? L - c.w - 8 : L + vw + 8);
       // Never on top of another car in the lane: step past it, away from the screen.
-      const clash = () => fleet.find((o) => o !== c && o.dir === c.dir && o.type && c.x < o.x + o.w + 12 && o.x < c.x + c.w + 12);
-      for (let o; (o = clash()); ) c.x = fromLeft ? o.x - c.w - 14 : o.x + o.w + 14;
+      const clash = () => fleet.find((o) => o !== c && o.dir === c.dir && o.type && c.x < o.x + o.w + 16 && o.x < c.x + c.w + 16);
+      for (let o; (o = clash()); ) c.x = fromLeft ? o.x - c.w - 18 : o.x + o.w + 18;
       style(c);
     };
 
@@ -397,7 +637,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
         dist += Math.abs(d);
         still = now;
         body.classList.toggle('back', d < 0);
-        body.style.backgroundPosition = `${-(Math.floor(dist / 3) % 8) * 16 * s}px 0`;
+        body.style.backgroundPosition = `${-(Math.floor(dist / 3) % 8) * cfg.ww * s}px 0`;
       }
       body.classList.toggle('idle', now - still > 220);
 
@@ -418,7 +658,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
         if (snap) spawn(c, L, L - 120 + Math.random() * (vw + 240));
         for (const o of fleet) {
           const gap = (o.x - c.x) * c.dir;
-          if (o !== c && o.dir === c.dir && gap > 0 && gap < (c.dir > 0 ? c.w : o.w) + 10) c.v = Math.min(c.v, o.v);
+          if (o !== c && o.dir === c.dir && gap > 0 && gap < (c.dir > 0 ? c.w : o.w) + 14) c.v = Math.min(c.v, o.v);
         }
         c.x += c.dir * c.v * dt;
         if ((c.x > L + vw + 40 || c.x + c.w < L - 40) && (c.wait -= dt) < 0) spawn(c, L);
@@ -426,7 +666,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       }
       snap = false;
 
-      // Zones, captions, progress, and the finale.
+      // Overlay zones animate only while on screen.
+      for (const z of zones) {
+        const on = z.from < L + vw + 40 && z.to > L - 40;
+        if (on !== z.on) z.el.classList.toggle('on', (z.on = on));
+      }
+
+      // Game day, flyovers, captions, progress, and the checkpoint.
       root.classList.toggle('game-on', cam > 1180 && cam < 1560);
       root.classList.toggle('fly', Math.abs(cam - 1812) < 170 || Math.abs(cam - 2960) < 170);
       root.classList.toggle('arrived', p > 1 - cfg.dwell * 0.9 && cfg.end - cam < 3);
@@ -449,7 +695,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       W = stage.clientWidth;
       Hs = stage.clientHeight;
       top = parseFloat(getComputedStyle(stage).top) || 0;
-      s = Math.max(2, Math.floor(Math.min((Hs * 0.82) / cfg.h, W / 150)));
+      s = Math.max(2, Math.floor(Math.min((Hs * 0.86) / cfg.h, W / 150)));
       vw = W / s;
       root.style.setProperty('--s', String(s));
       total = (span * s * cfg.pace) / (1 - cfg.dwell);
@@ -474,6 +720,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       ([e]) => {
         const was = running;
         running = e.isIntersecting;
+        if (!running) for (const z of zones) z.el.classList.remove('on'), (z.on = false);
         if (running && !was) {
           then = 0;
           snap = true;
@@ -792,16 +1039,16 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     position: absolute;
     left: 50%;
     bottom: calc((var(--h) - var(--feet)) * var(--s) * 1px);
-    width: calc(var(--s) * 16px);
-    height: calc(var(--s) * 24px);
-    margin-left: calc(var(--s) * -8px);
+    width: calc(var(--s) * var(--ww) * 1px);
+    height: calc(var(--s) * var(--wh) * 1px);
+    margin-left: calc(var(--s) * var(--ww) * -0.5px);
   }
 
   .shadow {
     position: absolute;
     left: calc(var(--s) * 2px);
     bottom: calc(var(--s) * -1px);
-    width: calc(var(--s) * 12px);
+    width: calc(var(--s) * (var(--ww) - 4) * 1px);
     height: calc(var(--s) * 2px);
     background: #0c0a1855;
   }
@@ -809,7 +1056,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   .walker {
     position: absolute;
     inset: 0;
-    background: url('/art/journey-walker.png') 0 0 / calc(var(--s) * 208px) calc(var(--s) * 24px) no-repeat;
+    background: url('/art/journey-walker.png') 0 0 / calc(var(--s) * var(--ww) * var(--wf) * 1px) calc(var(--s) * var(--wh) * 1px) no-repeat;
     image-rendering: pixelated;
   }
 
@@ -825,15 +1072,15 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   .cars :global(.car) {
     position: absolute;
     left: 0;
-    bottom: calc((var(--h) - 176) * var(--s) * 1px);
+    bottom: calc((var(--h) - var(--lane-far)) * var(--s) * 1px);
     background-image: url('/art/journey-vehicles.png');
-    background-size: calc(var(--s) * 260px) calc(var(--s) * 16px);
+    background-size: calc(var(--s) * var(--vw) * 1px) calc(var(--s) * var(--vh) * 1px);
     image-rendering: pixelated;
     will-change: transform;
   }
 
   .cars :global(.car[data-lane='near']) {
-    bottom: calc((var(--h) - 180) * var(--s) * 1px);
+    bottom: calc((var(--h) - var(--lane-near)) * var(--s) * 1px);
     z-index: 1;
   }
 
@@ -969,6 +1216,14 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     font-size: var(--step--1);
   }
 
+  .loading {
+    margin-top: 4px;
+    color: var(--gold);
+    font-size: var(--label);
+    letter-spacing: 0.06em;
+    font-size-adjust: cap-height 0.7;
+  }
+
   .toast {
     position: absolute;
     right: var(--gutter);
@@ -996,18 +1251,22 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     transition-delay: 1.2s;
   }
 
-  /* World-space details. */
+  /* World-space details. Static by default; they move only with motion allowed,
+     and only inside the zone that's on screen. */
   .blades {
     transform-origin: 256px 86px;
   }
 
-  .wing-down,
-  .flag-b,
-  .pin-b,
+  .frame-b,
   .lamp,
   .win,
   .glass,
-  .red-balloon {
+  .red-balloon,
+  .board-b,
+  .board-c,
+  .peck.down,
+  .crowd-wave,
+  .wave {
     opacity: 0;
   }
 
@@ -1028,12 +1287,25 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     transform: translate(2002px, 140px);
   }
 
+  .bell {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+
   .ball {
-    transform: translate(2524px, 134px);
+    transform: translate(2530px, 137px);
   }
 
   .hiker {
     transform: translate(2562px, 150px);
+  }
+
+  .stroll {
+    transform: translateX(var(--a));
+  }
+
+  .falcon-x {
+    transform: translateX(-20px);
   }
 
   .train {
@@ -1048,16 +1320,38 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     opacity: 0.62;
   }
 
+  .road-fog {
+    opacity: 0.7;
+  }
+
   .steam {
     opacity: 0;
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    .zone:not(:global(.on)) * {
+      animation-play-state: paused !important;
+    }
+
     .stars i.tw,
     .beacon,
-    .shimmer,
-    .bulb {
+    .bulb,
+    .fan {
       animation: road-twinkle 2.4s steps(2) infinite;
+    }
+
+    .glint {
+      animation: road-glint 3s steps(1) infinite;
+    }
+
+    .glint.slow {
+      animation-duration: 7s;
+    }
+
+    .fan {
+      animation-duration: 1.1s;
     }
 
     .flock {
@@ -1081,16 +1375,19 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-breathe 1.4s steps(1) infinite;
     }
 
+    /* At the checkpoint: face out and wave, then turn back toward the road ahead. */
     .journey:global(.arrived) .walker {
       transform: none;
-      animation: road-wave 0.9s steps(1) infinite;
+      animation:
+        road-wave 0.9s steps(1) 4,
+        road-breathe 1.4s steps(1) 3.6s infinite;
     }
 
     .blades {
       animation: road-spin 3s steps(12) infinite;
     }
 
-    .balloon {
+    .hot-air {
       animation: road-balloon 16s ease-in-out infinite alternate;
     }
 
@@ -1098,27 +1395,49 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-cranes 18s ease-in-out infinite alternate;
     }
 
-    .wing-up,
-    .wing-down,
-    .flag-a,
-    .flag-b,
-    .pin-a,
-    .pin-b {
+    .frame-a,
+    .frame-b {
       animation: road-frame 0.6s steps(1) infinite;
     }
 
-    .wing-down,
-    .flag-b,
-    .pin-b {
+    .frame-b {
       animation-delay: -0.3s;
     }
 
+    .peck {
+      animation: road-frame 1.6s steps(1) infinite;
+    }
+
+    .peck.down {
+      animation-name: road-frame-b;
+    }
+
+    .falcon-x {
+      animation: road-sway-x 9s ease-in-out infinite alternate;
+    }
+
+    .falcon-y {
+      animation: road-sway-y 9s ease-in-out -4.5s infinite alternate;
+    }
+
     .journey:global(.game-on) .lamp {
-      animation: road-flicker 1.2s steps(1) 1;
+      animation: road-flash 2.2s steps(1) infinite;
     }
 
     .journey:global(.game-on) .red-balloon {
-      animation: road-rise 6s linear infinite;
+      animation: road-rise 7s linear infinite;
+    }
+
+    .journey:global(.game-on) .crowd-wave {
+      animation: road-crowd 3.2s steps(26) infinite;
+    }
+
+    .board-b {
+      animation: road-board-b 9s steps(1) infinite;
+    }
+
+    .board-c {
+      animation: road-board-c 9s steps(1) infinite;
     }
 
     .runway {
@@ -1129,6 +1448,10 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-cable 10s ease-in-out infinite alternate;
     }
 
+    .bell {
+      animation: road-bell 0.8s steps(2) infinite alternate;
+    }
+
     .ball {
       animation: road-ball 1.3s linear infinite alternate;
     }
@@ -1137,17 +1460,29 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-hike 18s linear infinite alternate;
     }
 
+    .stroll {
+      animation: road-stroll var(--t) linear infinite;
+    }
+
+    .glide {
+      animation: road-glide var(--t) ease-in-out infinite alternate;
+    }
+
+    .wave {
+      animation: road-wave-in 4.2s steps(7) infinite;
+    }
+
     .puff {
-      animation: road-fog 12s ease-in-out infinite alternate;
+      animation: road-fog 18s ease-in-out infinite alternate;
     }
 
     .puff.p1 {
-      animation-duration: 15s;
+      animation-duration: 24s;
       animation-direction: alternate-reverse;
     }
 
     .puff.p2 {
-      animation-duration: 9s;
+      animation-duration: 14s;
     }
 
     .surf rect {
@@ -1170,6 +1505,22 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-neon 3.2s steps(1) infinite;
     }
 
+    .unknown {
+      animation: road-neon 1.4s steps(1) infinite;
+    }
+
+    .loading span {
+      animation: road-twinkle 1.2s steps(1) infinite;
+    }
+
+    .loading span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .loading span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
     .win {
       animation: road-lights 9s steps(1) infinite;
     }
@@ -1182,6 +1533,20 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   @keyframes road-twinkle {
     50% {
       opacity: 0.15;
+    }
+  }
+
+  @keyframes road-glint {
+    0%,
+    60% {
+      opacity: 0;
+    }
+    61%,
+    80% {
+      opacity: 1;
+    }
+    81% {
+      opacity: 0.4;
     }
   }
 
@@ -1231,20 +1596,20 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   @keyframes road-breathe {
     0%,
     100% {
-      background-position: calc(var(--s) * -128px) 0;
+      background-position: calc(var(--s) * var(--ww) * -8px) 0;
     }
     50% {
-      background-position: calc(var(--s) * -144px) 0;
+      background-position: calc(var(--s) * var(--ww) * -9px) 0;
     }
   }
 
   @keyframes road-wave {
     0%,
     100% {
-      background-position: calc(var(--s) * -176px) 0;
+      background-position: calc(var(--s) * var(--ww) * -11px) 0;
     }
     50% {
-      background-position: calc(var(--s) * -192px) 0;
+      background-position: calc(var(--s) * var(--ww) * -12px) 0;
     }
   }
 
@@ -1268,7 +1633,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       transform: translate(-20px, 4px);
     }
     to {
-      transform: translate(60px, -6px);
+      transform: translate(70px, -8px);
     }
   }
 
@@ -1281,16 +1646,43 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes road-flicker {
-    0%,
-    20%,
-    40% {
+  @keyframes road-frame-b {
+    0% {
+      opacity: 0;
+    }
+    50% {
       opacity: 1;
     }
-    10%,
-    30%,
-    50% {
-      opacity: 0.2;
+  }
+
+  @keyframes road-sway-x {
+    from {
+      transform: translateX(-26px);
+    }
+    to {
+      transform: translateX(26px);
+    }
+  }
+
+  @keyframes road-sway-y {
+    from {
+      transform: translateY(-9px);
+    }
+    to {
+      transform: translateY(9px);
+    }
+  }
+
+  @keyframes road-flash {
+    0%,
+    40%,
+    60% {
+      opacity: 1;
+    }
+    50%,
+    70%,
+    100% {
+      opacity: 0.25;
     }
   }
 
@@ -1299,11 +1691,50 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       transform: translateY(0);
       opacity: 1;
     }
-    70% {
+    75% {
       opacity: 1;
     }
     to {
-      transform: translateY(-96px);
+      transform: translateY(-104px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes road-crowd {
+    from {
+      opacity: 1;
+      transform: translateX(1288px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(1398px);
+    }
+  }
+
+  @keyframes road-board-b {
+    0%,
+    39% {
+      opacity: 0;
+    }
+    40%,
+    69% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes road-board-c {
+    0%,
+    69% {
+      opacity: 0;
+    }
+    70%,
+    99% {
+      opacity: 1;
+    }
+    100% {
       opacity: 0;
     }
   }
@@ -1328,15 +1759,24 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
+  @keyframes road-bell {
+    from {
+      transform: rotate(-30deg);
+    }
+    to {
+      transform: rotate(30deg);
+    }
+  }
+
   @keyframes road-ball {
     0% {
-      transform: translate(2524px, 134px);
+      transform: translate(2530px, 137px);
     }
     50% {
-      transform: translate(2536px, 124px);
+      transform: translate(2537px, 125px);
     }
     100% {
-      transform: translate(2548px, 134px);
+      transform: translate(2544px, 137px);
     }
   }
 
@@ -1358,12 +1798,56 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes road-fog {
+  /* There and back along a block, turning around at each end. */
+  @keyframes road-stroll {
+    0% {
+      transform: translateX(var(--a));
+    }
+    49.9% {
+      transform: translateX(var(--b));
+    }
+    50% {
+      transform: translateX(var(--b)) scaleX(-1);
+    }
+    100% {
+      transform: translateX(var(--a)) scaleX(-1);
+    }
+  }
+
+  @keyframes road-glide {
     from {
-      translate: -12px 0;
+      transform: translate(-24px, 3px);
     }
     to {
-      translate: 14px 0;
+      transform: translate(30px, -4px);
+    }
+  }
+
+  /* A crest rolls in toward the beach and breaks into foam. */
+  @keyframes road-wave-in {
+    0% {
+      opacity: 0;
+      transform: translateY(0);
+    }
+    15% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 1;
+      transform: translateY(9px);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  @keyframes road-fog {
+    from {
+      translate: -30px 0;
+    }
+    to {
+      translate: 34px 0;
     }
   }
 

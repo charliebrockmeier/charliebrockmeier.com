@@ -2,10 +2,12 @@
 // a cable-car hill, the Transamerica Pyramid and Coit Tower, the Golden Gate,
 // a hike in the Marin Headlands, and Pebble Beach.
 import { C, SKY, ramp } from './lib.mjs';
-import { LAWN, WALK, STREET, GROUND, text, windowGrid, tree } from './journey-kit.mjs';
+import { LAWN, WALK, STREET, GROUND, H, HORIZON, sea, text, windowGrid, tree } from './journey-kit.mjs';
 
 export const GG = { x0: 2266, x1: 2512, t1: 2326, t2: 2452, top: 34, deck: 158 };
 export const CABLE_HILL = { x0: 1996, y0: 150, x1: 2120, y1: 98 };
+/** Pebble Beach: where the verge turns to sand, and the sea cave under the road. */
+export const COAST = { x0: 2656, x1: 2936, sea: [2678, 2924], cave: { x: 2800, rx: 108, ry: 14, water: H - 6 } };
 
 export function sanFrancisco(cv, rand) {
   paintedLadies(cv, rand);
@@ -204,13 +206,6 @@ function presidio(cv) {
   cv.rect(x + 2, 145, 36, 1, '#f4ecdc');
   cv.rect(x + 19, 134, 2, 17, '#141026');
   for (let y = 135; y < 145; y += 2) cv.rect(x + 18, y, 4, 1, '#c9cfe0');
-  for (const px of [x + 6, x + 32]) {
-    cv.rect(px, 127, 3, 3, '#f2c4a2');
-    cv.rect(px - 1, 130, 5, 6, px < x + 20 ? '#e43b44' : '#ffcd75');
-    cv.rect(px, 136, 1, 4, '#24305a');
-    cv.rect(px + 2, 136, 1, 4, '#24305a');
-    cv.rect(px + (px < x + 20 ? 4 : -3), 128, 2, 3, '#3d2f4a');
-  }
 }
 
 function blackMountain(cv, rand) {
@@ -267,70 +262,132 @@ function blackMountain(cv, rand) {
   rand();
 }
 
-function pebbleBeach(cv, rand) {
-  // The Pacific behind the 17-Mile Drive, the Lone Cypress on its rock, and a
-  // cliff-top green with a flag.
-  for (let y = 98; y < LAWN; y++)
-    for (let x = 2672; x < 2916; x++) {
-      const t = 0.66 - (y - 98) * 0.007 + (Math.sin(x * 0.25 + y * 1.9) > 0.7 ? 0.1 : 0);
-      cv.px(x, y, ramp(SKY, y % 2 ? t - 0.12 : t - 0.2, x, y));
+/** A Monterey cypress: a leaning trunk and flat, wind-swept pads of foliage, blown east. */
+function cypress(cv, x, base, h, lean = 1) {
+  const top = base - h;
+  cv.line(x, base, x + lean * 3, top + 8, '#3d2a2a');
+  cv.line(x + 1, base, x + 1 + lean * 3, top + 8, '#5c3a2e');
+  cv.line(x + lean * 2, top + 14, x - lean * 6, top + 6, '#3d2a2a');
+  cv.line(x + lean * 3, top + 10, x + lean * 10, top + 4, '#3d2a2a');
+  for (const [dx, dy, w] of [
+    [-12, 6, 14],
+    [-4, 2, 18],
+    [4, 0, 16],
+    [8, 6, 14],
+    [-8, -2, 12],
+    [2, -4, 12],
+  ]) {
+    const px = x + dx * lean - (lean < 0 ? w : 0);
+    cv.rect(px, top + dy, w, 3, '#1c4a43');
+    cv.rect(px + 1, top + dy - 1, w - 2, 1, '#1c4a43');
+    cv.rect(px + 2, top + dy - 1, w - 6, 1, '#2f6a4a');
+    cv.rect(px + 3, top + dy - 2, Math.max(2, w - 9), 1, '#4a7a4a');
+  }
+}
+
+/** A granite headland at golden hour: dry grass on top, a sunlit edge, strata and cracks, surf at its foot. */
+function rock(cv, points, { grass = true } = {}) {
+  const body = '#7a5a62';
+  cv.poly(points, body);
+  const xs = points.map((p) => p[0]);
+  const [xa, xb] = [Math.min(...xs), Math.max(...xs)];
+  for (let x = xa; x <= xb; x++) {
+    let top = 0;
+    while (top < LAWN && cv.get(x, top) !== body) top++;
+    if (top >= LAWN) continue;
+    for (let y = top; y < LAWN; y++) {
+      if (cv.get(x, y) !== body) continue;
+      const d = y - top;
+      let c = body;
+      if (d === 0) c = grass ? '#c8a050' : '#e8a878';
+      else if (d === 1) c = grass ? '#8a8a3a' : '#c88a6a';
+      else if (d === 2 && x % 3) c = '#c88a6a';
+      else if (d > 3 && (y + Math.round(3 * Math.sin(x / 7))) % 7 === 0 && (x * 13) % 5) c = '#5c4050';
+      else if ((x * 7 + y * 3) % 19 === 0 || ((x * 3 + y) % 23 === 0 && d > 3)) c = '#4a3040';
+      else if (d > 3 && (x * 11 + y * 5) % 29 === 0) c = '#a87a72';
+      else if (y > LAWN - 5) c = (x + y) % 2 ? '#5c4050' : body;
+      cv.px(x, y, c);
     }
-  cv.rect(2672, 98, 244, 1, '#ffe9a8');
-  // The rock, with surf around its foot.
-  cv.poly(
-    [
-      [2740, LAWN],
-      [2746, 128],
-      [2756, 120],
-      [2772, 122],
-      [2780, 132],
-      [2786, LAWN],
-    ],
-    '#5c4a5a',
-  );
-  cv.line(2746, 128, 2756, 120, '#8a7a8a');
-  for (let x = 2736; x < 2792; x += 3) cv.rect(x, 146 + (x % 2), 2, 1, '#f4ecdc');
-  // The Lone Cypress: a leaning trunk and a flat, wind-swept crown.
-  cv.line(2764, 121, 2760, 108, '#3d2a2a');
-  cv.line(2765, 121, 2761, 108, '#5c3a2e');
-  cv.line(2761, 110, 2752, 104, '#3d2a2a');
+    if (top < LAWN - 3 && (x * 5) % 7 < 3) cv.px(x, LAWN - 1 - (x % 2), '#f4ecdc');
+  }
+}
+
+function pebbleBeach(cv, rand) {
+  // Carmel Bay off the 17-Mile Drive at golden hour. The sea is drawn one flat color
+  // per row from the shared horizon, the same as the far layer's, so the two meet
+  // without a seam; rocky points with cypresses close the bay at both ends.
+  const [s0, s1] = COAST.sea;
+  for (let x = s0; x < s1; x++) for (let y = HORIZON; y < LAWN; y++) cv.px(x, y, sea(x, y, 0));
+  // Swells: long, faint lines that grow toward the shore.
+  for (let y = HORIZON + 4; y < LAWN - 4; y += 3 + Math.floor((y - HORIZON) / 9))
+    for (let x = s0; x < s1; x++) if (Math.sin(x / (5 + (y - HORIZON) / 4) + y * 1.3) > 0.82) cv.px(x, y, (y - HORIZON) < 12 ? '#ffcd75' : '#d8909a');
+  // The beach on the left, sloping into the water with a line of foam.
+  cv.poly([[2696, LAWN], [2700, 142], [2724, 140], [2752, 143], [2760, LAWN]], '#e9c898');
+  for (let x = 2700; x < 2756; x++) {
+    let y = 0;
+    while (y < LAWN && cv.get(x, y) !== '#e9c898') y++;
+    cv.px(x, y, '#f4e0b0');
+    if (x % 5 < 3) cv.px(x, y - 1, '#f4ecdc');
+    if ((x * 3) % 7 === 0) cv.px(x, y + 3, '#d8b080');
+  }
+  // The Lone Cypress on its granite rock, with a little stone wall at its foot.
+  rock(cv, [[2746, LAWN], [2749, 140], [2753, 131], [2758, 127], [2763, 122], [2770, 120], [2779, 120], [2785, 125], [2789, 133], [2795, 141], [2800, LAWN]], { grass: false });
+  cv.rect(2758, 146, 34, 6, '#8a7a7a');
+  for (let x = 2758; x < 2792; x += 4) cv.rect(x, 146 + ((x >> 2) & 1) * 3, 1, 3, '#5c4a5a');
+  cv.rect(2758, 146, 34, 1, '#a89a9a');
+  for (let x = 2744; x < 2802; x += 3) cv.rect(x, 140 + (x % 2), 2, 1, '#f4ecdc');
+  cv.line(2776, 120, 2771, 104, '#3d2a2a');
+  cv.line(2777, 120, 2772, 104, '#5c3a2e');
+  cv.line(2772, 107, 2762, 101, '#3d2a2a');
+  cv.line(2773, 106, 2781, 102, '#3d2a2a');
   for (const [x, y, w] of [
-    [2742, 100, 22],
-    [2748, 97, 22],
-    [2756, 102, 18],
-    [2738, 104, 14],
+    [2752, 98, 22],
+    [2758, 95, 24],
+    [2766, 100, 20],
+    [2748, 102, 14],
+    [2776, 97, 12],
   ]) {
     cv.rect(x, y, w, 3, '#1c4a43');
-    cv.rect(x + 2, y, w - 6, 1, '#2f6a4a');
+    cv.rect(x + 1, y - 1, w - 2, 1, '#1c4a43');
+    cv.rect(x + 2, y - 1, w - 6, 1, '#2f6a4a');
+    cv.rect(x + 3, y - 2, w - 9, 1, '#4a7a4a');
   }
-  // The green, the pin and a bunker on the cliff top.
-  cv.poly(
-    [
-      [2820, LAWN],
-      [2830, 140],
-      [2900, 138],
-      [2914, LAWN],
-    ],
-    '#38b764',
-  );
-  cv.fill(2830, 139, 70, 13, (x, y) => ((x + y) % 4 === 0 ? '#4ac874' : null));
-  cv.poly(
-    [
-      [2880, LAWN],
-      [2886, 146],
-      [2900, 146],
-      [2904, LAWN],
-    ],
-    '#e9d0a8',
-  );
-  cv.rect(2862, 120, 1, 20, '#f4ecdc');
-  cv.rect(2861, 139, 3, 1, '#0c0a18');
-  // A wooden sign.
-  cv.rect(2688, 132, 46, 10, '#8a5a3c');
-  cv.rect(2689, 133, 44, 8, '#a8704a');
-  text(cv, 2692, 135, 'PEBBLE BCH', '#f4ecdc');
-  cv.rect(2698, 142, 2, 10, '#5c3a2e');
-  cv.rect(2720, 142, 2, 10, '#5c3a2e');
+  cv.line(2777, 108, 2790, 121, '#94a0c2');
+  // The 18th green on its bluff above a stone seawall, a bunker, and the pin.
+  cv.rect(2814, 134, 92, LAWN - 134, '#8a7a7a');
+  for (let y = 136; y < LAWN; y += 4)
+    for (let x = 2814 + ((y >> 2) % 2) * 4; x < 2906; x += 8) {
+      cv.rect(x, y, 7, 3, (x + y) % 3 ? '#9a8a8a' : '#7a6a6e');
+      cv.rect(x, y + 3, 8, 1, '#5c4a5a');
+    }
+  cv.rect(2814, 134, 92, 1, '#c9bfb0');
+  cv.poly([[2816, 135], [2826, 128], [2898, 126], [2908, 135]], '#38b764');
+  cv.fill(2822, 126, 84, 9, (x, y) => (cv.get(x, y) === '#38b764' && (x + y) % 4 === 0 ? '#4ac874' : null));
+  cv.poly([[2826, 128], [2840, 125], [2898, 124], [2898, 126]], '#a7f070');
+  cv.poly([[2876, 134], [2880, 130], [2894, 130], [2898, 134]], '#e9d0a8');
+  cv.rect(2862, 106, 1, 21, '#f4ecdc');
+  cv.rect(2861, 126, 3, 1, '#0c0a18');
+  for (let x = 2812; x < 2908; x += 3) cv.rect(x, LAWN - 2 + (x % 2), 2, 1, '#f4ecdc');
+  // Rocky points close the bay at both ends, each with its cypresses.
+  rock(cv, [[2648, LAWN], [2652, 128], [2658, 121], [2668, 118], [2680, 115], [2692, 116], [2699, 120], [2701, 128], [2705, 134], [2707, 143], [2712, LAWN]]);
+  cypress(cv, 2666, 119, 26, 1);
+  cypress(cv, 2686, 116, 20, 1);
+  rock(cv, [[2898, LAWN], [2901, 140], [2904, 130], [2908, 121], [2912, 115], [2922, 112], [2932, 114], [2938, 122], [2942, 134], [2946, LAWN]]);
+  cypress(cv, 2920, 113, 24, 1);
+  // Riprap where the sea meets the road.
+  for (let x = s0; x < s1; x += 5) {
+    const y = LAWN - 3 - ((x * 7) % 3);
+    if (cv.get(x, y) && cv.get(x, y) !== '#e9c898') {
+      cv.rect(x, y, 4, LAWN - y, '#6a5060');
+      cv.rect(x, y, 4, 1, '#a8909a');
+    }
+  }
+  // A wooden sign at the foot of the point, clear of the beach.
+  cv.rect(2654, 132, 46, 10, '#8a5a3c');
+  cv.rect(2655, 133, 44, 8, '#a8704a');
+  text(cv, 2658, 135, 'PEBBLE BCH', '#f4ecdc');
+  cv.rect(2664, 142, 2, 10, '#5c3a2e');
+  cv.rect(2686, 142, 2, 10, '#5c3a2e');
   rand();
 }
 

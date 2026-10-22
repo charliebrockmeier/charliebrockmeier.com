@@ -7,6 +7,22 @@ import { vantagerMark } from '../../src/data/journey.ts';
 
 export const WTC7 = { x: 3990, w: 100, top: 30 };
 export const SUBWAY = { x0: 3060, x1: 4380, platform: [3330, 3476] };
+/** The signpost past 7 WTC: the road keeps going. */
+export const NEXT_SIGN = { x: 4100, y: 112 };
+
+/** A wooden arrow sign pointing on down the road, and a plank for the "???" (it blinks in the overlay). */
+function nextChapter(cv) {
+  const { x, y } = NEXT_SIGN;
+  cv.rect(x + 12, y + 18, 3, LAWN - y - 18, '#5c3a2e');
+  cv.rect(x + 13, y + 18, 1, LAWN - y - 18, '#8a5a3c');
+  cv.poly([[x, y], [x + 38, y], [x + 47, y + 9], [x + 38, y + 18], [x, y + 18]], '#8a5a3c');
+  cv.poly([[x + 1, y + 1], [x + 37, y + 1], [x + 45, y + 9], [x + 37, y + 17], [x + 1, y + 17]], '#a8704a');
+  cv.rect(x + 1, y + 1, 37, 1, '#c8905a');
+  text(cv, x + 4, y + 3, 'NEXT', '#f4ecdc');
+  text(cv, x + 4, y + 10, 'CHAPTER', '#f4ecdc');
+  cv.rect(x + 2, y + 22, 22, 9, '#5c3a2e');
+  cv.rect(x + 3, y + 23, 20, 7, '#141026');
+}
 
 export function newYork(cv, rand) {
   unionSquare(cv, rand);
@@ -277,7 +293,7 @@ function downtown(cv, rand) {
   for (let x = sx; x < sx + sw; x += 8) cv.rect(x, 136, 1, LAWN - 136, '#73eff7');
   cv.rect(sx - 2, 134, sw + 4, 2, '#94a0c2');
   text(cv, sx + 4, 128, '7 WTC', '#c6fff5');
-  for (const tx of [3976, 4104]) tree(cv, tx, LAWN, 6, ['#1c4a43', '#257156', '#38b764']);
+  tree(cv, 3976, LAWN, 6, ['#1c4a43', '#257156', '#38b764']);
 
   // The Oculus: a white spine with ribs rising like wings.
   const cx = 4232;
@@ -306,8 +322,10 @@ function downtown(cv, rand) {
     cv.rect(x, top, w, LAWN - top, col);
     windowGrid(cv, x + 3, top + 4, w - 5, LAWN - top - 10, rand, { dx: 6, dy: 7, ww: 3, wh: 4, lit: 0.4 });
   }
+  nextChapter(cv);
   // Street lamps along the block.
   for (let x = 3600; x < 4400; x += 46) {
+    if (x > 4090 && x < 4150) continue;
     cv.rect(x, 126, 1, WALK - 126, '#566c86');
     cv.rect(x - 2, 124, 5, 2, '#3d4a62');
     cv.rect(x - 1, 126, 3, 1, C.sun);

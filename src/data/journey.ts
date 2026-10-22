@@ -5,16 +5,23 @@
 export const journeyArt = {
   nearWidth: 4400,
   farWidth: 2460,
-  /** 180 rows above ground level, plus a 16-row cutaway below the street (the subway). */
-  height: 196,
-  ground: 180,
+  /** 194 rows above the road's bottom edge, plus a 16-row cutaway below the street (the subway). */
+  height: 210,
+  ground: 194,
   /** Parallax speed of the far layer relative to the near layer. */
   farSpeed: 0.5,
   /** The far layer is drawn so it lines up with the near layer on a viewport this wide (art px). */
   farAlignView: 360,
   /** Bottom edge of the walker's shoes, in art px. */
   feet: 165,
-  walker: { w: 16, h: 24, frames: 13 },
+  walker: { w: 18, h: 28, frames: 13 },
+  /**
+   * The two lanes, as the bottom edge of the wheels. Cars heading east use the far
+   * lane and stay no taller than `farMax`, so they always pass below the walker's shoes.
+   */
+  lanes: { far: 184, near: 193, farMax: 19 },
+  /** The sea's horizon on both layers, so the coast lines up at any parallax offset. */
+  horizon: 114,
 };
 
 /**
@@ -46,15 +53,15 @@ export const regions: { from: number; vehicles: string[] }[] = [
 
 /** Vehicle sprites: x offset in the sheet, size, and driving speed in art px per second. */
 export const vehicles: Record<string, { x: number; w: number; h: number; speed: number }> = {
-  pickup: { x: 0, w: 34, h: 12, speed: 34 },
-  sedan: { x: 34, w: 30, h: 10, speed: 40 },
-  tractor: { x: 64, w: 24, h: 14, speed: 12 },
-  bus: { x: 88, w: 58, h: 16, speed: 26 },
-  convertible: { x: 146, w: 30, h: 10, speed: 44 },
-  muni: { x: 176, w: 54, h: 16, speed: 24 },
-  taxi: { x: 230, w: 30, h: 11, speed: 46 },
+  pickup: { x: 0, w: 58, h: 19, speed: 44 },
+  sedan: { x: 58, w: 52, h: 17, speed: 50 },
+  tractor: { x: 110, w: 44, h: 26, speed: 16 },
+  bus: { x: 154, w: 104, h: 28, speed: 34 },
+  convertible: { x: 258, w: 52, h: 18, speed: 54 },
+  muni: { x: 310, w: 96, h: 28, speed: 30 },
+  taxi: { x: 406, w: 52, h: 19, speed: 56 },
 };
-export const vehicleSheet = { w: 260, h: 16 };
+export const vehicleSheet = { w: 458, h: 28 };
 
 /** The Vantager icon (the cut gem with its sparkle), drawn on the office sign. Swap here if it changes. */
 export const vantagerMark = {
@@ -106,40 +113,49 @@ export const stops: Stop[] = [
     chapter: 'Prologue',
     place: 'Kearney High School',
     when: 'Class of 2021',
-    role: 'Student council president',
-    line: 'Student council president, state tennis medalist, Boys State delegate.',
+    role: 'State tennis medalist · Boys State',
+    line: 'Varsity tennis with a medal at state, a Boys State delegate and an Eagle Scout.',
   },
   {
-    id: 'archway',
-    x: 880,
-    chapter: 'Chapter 1',
-    place: 'Summers in Kearney',
-    when: '2021 – 2022',
-    role: 'Cash-Wa · Buckle',
-    line: 'IT at Cash-Wa, then production e-commerce code at Buckle. Then east under the Archway on I-80.',
+    id: 'cashwa',
+    x: 760,
+    chapter: 'Prologue',
+    place: 'Kearney, Nebraska',
+    when: 'Summer 2021',
+    role: 'Cash-Wa Distributing · IT',
+    line: 'The summer before college: Python macros, and building the IT department’s PCs.',
+  },
+  {
+    id: 'buckle',
+    x: 900,
+    chapter: 'Chapter 1 · College summers',
+    place: 'Buckle, Kearney',
+    when: 'Summer 2022',
+    role: 'Summer internship during college',
+    line: 'Home from Lincoln for the summer, shipping the e-commerce site’s favorites page to production. Then east again under the Archway on I-80.',
   },
   {
     id: 'lincoln',
-    x: 1300,
-    chapter: 'Chapter 2',
-    place: 'Lincoln, Nebraska',
+    x: 1270,
+    chapter: 'Chapter 1',
+    place: 'University of Nebraska–Lincoln',
     when: '2021 – 2025',
-    role: 'Raikes School · Finance & Accounting',
-    line: 'Finance and accounting with a computer science minor. Game days in the sea of red.',
+    role: 'Raikes School honors program · Finance & Accounting',
+    line: 'Four years at Nebraska: finance and accounting with computer science and math minors. Game days in the sea of red.',
   },
   {
     id: 'omaha',
     x: 1630,
-    chapter: 'Chapter 2',
-    place: 'Omaha, Nebraska',
+    chapter: 'Chapter 1 · College summers',
+    place: 'Covisum, Omaha',
     when: 'Summer 2023',
-    role: 'Covisum · Developer intern',
-    line: 'Built financial-advisory tools and a client intake form with the CEO.',
+    role: 'Summer internship during college',
+    line: 'Developer intern: built financial-advisory tools and a client intake form with the CEO.',
   },
   {
     id: 'sf',
     x: 2080,
-    chapter: 'Chapter 3',
+    chapter: 'Chapter 2',
     place: 'San Francisco',
     when: 'Summer 2024',
     role: 'Three Bridge Wealth Advisors · Financial analyst',
@@ -148,7 +164,7 @@ export const stops: Stop[] = [
   {
     id: 'weekends',
     x: 2640,
-    chapter: 'Chapter 3',
+    chapter: 'Chapter 2',
     place: 'Weekends out west',
     when: 'May – July 2024',
     role: 'Pier 39 · the Presidio · Black Mountain · Pebble Beach',
@@ -157,7 +173,7 @@ export const stops: Stop[] = [
   {
     id: 'vantager',
     x: 3250,
-    chapter: 'Chapter 4',
+    chapter: 'Chapter 3',
     place: 'Union Square, New York',
     when: '2025 – 2026',
     role: 'Vantager · Product & growth',
@@ -166,7 +182,7 @@ export const stops: Stop[] = [
   {
     id: 'walkup',
     x: 3720,
-    chapter: 'Chapter 4',
+    chapter: 'Chapter 3',
     place: 'New York, New York',
     when: '2025',
     role: 'Home',
@@ -175,11 +191,11 @@ export const stops: Stop[] = [
   {
     id: 'wtc',
     x: 4040,
-    chapter: 'Chapter 5 · Current save',
+    chapter: 'Chapter 4 · Current save',
     place: '7 World Trade Center',
     when: '2026 – now',
     role: 'MSCI Private Assets · Senior Associate',
-    line: 'Vantager was acquired by MSCI. Now building private-markets diligence tools downtown.',
+    line: 'Vantager was acquired by MSCI. Now building private-markets diligence tools downtown. That’s the road so far; more chapters to come.',
   },
 ];
 
