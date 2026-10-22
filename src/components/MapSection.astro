@@ -1,0 +1,557 @@
+---
+// The world map: a pixel-art US (public/art/usmap.png, drawn by scripts/art/usmap.mjs)
+// with an animated SVG overlay on the same grid. The main quest walks I-80 from
+// Kearney to New York; side quests are road trips (and two flights).
+// Motion starts when the map scrolls into view and stays off for reduced motion.
+import { career, trips, map, mainRoute, tripRoutes, pathOf, xy, point, remoteArc, flights } from '../data/travel';
+
+const { width: W, height: H } = map;
+const main = pathOf(mainRoute);
+const remote = remoteArc();
+const routes = tripRoutes.map((r) => ({ ...r, d: pathOf(r.pts), trip: trips.find((t) => t.id === r.id)! }));
+
+const pins = [
+  ...career.map((p, i) => ({ ...p, ...xy(p), order: i })),
+  ...trips.map((p, i) => ({ ...p, ...xy(p), order: career.length + i })),
+];
+const nyc = pins.find((p) => p.id === 'nyc')!;
+
+// Label placement around a pin.
+const label = (p: { x: number; y: number; label: string }) =>
+  p.label === 'n' ? { x: p.x, y: p.y - 5, a: 'middle' } : p.label === 's' ? { x: p.x, y: p.y + 9.5, a: 'middle' } : p.label === 'e' ? { x: p.x + 5, y: p.y + 2, a: 'start' } : { x: p.x - 5, y: p.y + 2, a: 'end' };
+const short = (name: string) => name.replace(/, [A-Z]{2}$/, '');
+
+// Sprites as rows of palette keys.
+const rects = (rows: string[], pal: Record<string, string>, ox = 0, oy = 0) =>
+  rows.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [{ x: x + ox, y: y + oy, fill: pal[k] }])));
+const walkerPal = { H: '#5c3a2e', S: '#f2c4a2', J: '#2b2350', T: '#fdf6e3', L: '#1b1533', B: '#0c0a18' };
+const walker = [
+  rects(['.HHH.', 'HHSS.', '.SSS.', '.JTJ.', 'JJTJJ', '.JJJ.', '.L.L.', '.B.B.'], walkerPal, -2.5, -8),
+  rects(['.HHH.', 'HHSS.', '.SSS.', '.JTJ.', 'JJTJJ', '.JJJ.', '..LL.', '.B..B'], walkerPal, -2.5, -8),
+];
+const car = rects(['.CCC...', 'CWWCCC.', 'CCCCCCC', '.k...k.'], { C: '#e43b44', W: '#bdeeff', k: '#0c0a18' }, -3.5, -4);
+const plane = rects(['...W...', '..WW...', 'WWWWWWW', '..WW...', '...W...'], { W: '#fdf6e3' }, -3.5, -2.5);
+const cloudRows = ['..cccc.....', '.cccccc.cc.', 'ccccccccccc', '.ccccccccc.'];
+const clouds = [
+  { x: -40, y: 30, dur: 70, delay: 0 },
+  { x: -40, y: 110, dur: 95, delay: -40 },
+  { x: -40, y: 190, dur: 80, delay: -20 },
+  { x: -40, y: 70, dur: 110, delay: -75 },
+];
+
+const kindColor: Record<string, string> = { home: '#ffcd75', school: '#5cb8ff', work: '#ffcd75', remote: '#b99cff', trip: '#73eff7' };
+const pinColor = (p: { kind: string; husker?: boolean }) => (p.husker ? '#ff6b7f' : kindColor[p.kind]);
+const nebraska = point(-99.5, 41.5);
+// An I-80 shield on the main route, somewhere in Illinois.
+const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.BBBBB.', '..BBB..'], { B: '#29366f', R: '#e43b44', W: '#fdf6e3' }, point(-89.2, 41.5).x - 3.5, point(-89.2, 41.5).y - 11);
+---
+
+<section id="map" class="section wrap" aria-labelledby="map-title" data-map>
+  <header class="section-head">
+    <span class="num">03</span>
+    <h2 id="map-title">World map</h2>
+    <p>Everywhere I've lived, worked or road-tripped. The main quest runs along I-80; the side quests go everywhere else.</p>
+  </header>
+
+  <figure class="map panel">
+    <ul class="legend" role="list">
+      <li><i class="key main"></i>Main quest</li>
+      <li><i class="key remote"></i>Remote</li>
+      <li><i class="key trip"></i>Road trip</li>
+      <li><i class="key husker"></i>Husker away game</li>
+      <li><i class="key now"></i>Current save</li>
+    </ul>
+    <div class="frame" data-frame style={`--nx: ${(nebraska.x / W).toFixed(3)}`}>
+      <div class="canvas">
+        <img src="/art/usmap.png" width={W} height={H} alt="Pixel-art map of the United States with Charlie's route from Kearney, Nebraska to New York and his road trips." loading="lazy" decoding="async" />
+        <svg viewBox={`0 0 ${W} ${H}`} shape-rendering="crispEdges" aria-hidden="true" focusable="false">
+          <defs>
+            <mask id="m-main" maskUnits="userSpaceOnUse"><path class="reveal" d={main} pathLength="1" style="--delay: 0.2s; --dur: 3.2s" /></mask>
+            <mask id="m-remote" maskUnits="userSpaceOnUse"><path class="reveal" d={remote} pathLength="1" style="--delay: 1.6s; --dur: 1.6s" /></mask>
+            {routes.map((r, i) => <mask id={`m-${r.id}`} maskUnits="userSpaceOnUse"><path class="reveal" d={r.d} pathLength="1" style={`--delay: ${3.4 + i * 0.6}s; --dur: 1.8s`} /></mask>)}
+            {flights.map((f, i) => <mask id={`m-f-${f.id}`} maskUnits="userSpaceOnUse"><path class="reveal" d={f.d} pathLength="1" style={`--delay: ${5.6 + i * 0.6}s; --dur: 1.4s`} /></mask>)}
+            <path id="p-main" d={main} />
+            <path id="p-remote" d={remote} />
+            {routes.map((r) => <path id={`p-${r.id}`} d={r.d} />)}
+            {flights.map((f) => <path id={`p-f-${f.id}`} d={f.d} />)}
+          </defs>
+          <animate id="mapgo" attributeName="opacity" from="1" to="1" dur="0.1s" begin="indefinite" />
+
+          <g class="routes" fill="none" stroke-linecap="square">
+            {routes.map((r) => (
+              <path d={r.d} mask={`url(#m-${r.id})`} class:list={['route', r.trip.husker ? 'husker' : 'trip']} />
+            ))}
+            {flights.map((f) => <path d={f.d} mask={`url(#m-f-${f.id})`} class:list={['route flight', f.id === 'la' ? 'husker' : 'trip']} />)}
+            <path d={remote} mask="url(#m-remote)" class="route remote" />
+            <path d={main} mask="url(#m-main)" class="route main" />
+          </g>
+          <g class="shield">{shield.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}</g>
+
+          <g class="pins">
+            {
+              pins.map((p) => {
+                const l = label(p);
+                return (
+                  <g class="pin" style={`--d: ${(0.25 + p.order * 0.35).toFixed(2)}s; transform-origin: ${p.x.toFixed(1)}px ${p.y.toFixed(1)}px`}>
+                    <rect x={p.x - 2.5} y={p.y - 2.5} width="5" height="5" fill="#0c0a18" />
+                    <rect x={p.x - 1.5} y={p.y - 1.5} width="3" height="3" fill={pinColor(p)} />
+                    <text x={l.x} y={l.y} text-anchor={l.a} class="lbl">
+                      {short(p.name)}
+                    </text>
+                  </g>
+                );
+              })
+            }
+            <rect class="pulse" x={nyc.x - 2.5} y={nyc.y - 2.5} width="5" height="5" fill="none" stroke="#ff6b7f" stroke-width="1" style={`transform-origin: ${nyc.x.toFixed(1)}px ${nyc.y.toFixed(1)}px`} />
+          </g>
+
+          <g class="movers">
+            {[0, 0.8, 1.6].map((b) => (
+              <rect x="-1" y="-1" width="2" height="2" fill="#b99cff">
+                <animateMotion dur="2.4s" begin={`mapgo.begin+${b + 2}s`} repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
+                  <mpath href="#p-remote" />
+                </animateMotion>
+              </rect>
+            ))}
+            {routes.map((r, i) => (
+              <g>
+                {car.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}
+                <animateMotion dur={`${9 + i * 1.5}s`} begin={`mapgo.begin+${4 + i * 0.6}s`} repeatCount="indefinite" keyPoints="0;1;1;0;0" keyTimes="0;0.42;0.5;0.92;1" calcMode="linear">
+                  <mpath href={`#p-${r.id}`} />
+                </animateMotion>
+              </g>
+            ))}
+            {flights.map((f, i) => (
+              <g>
+                {plane.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}
+                <animateMotion dur={`${7 + i}s`} begin={`mapgo.begin+${6 + i * 0.6}s`} repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.7;1" calcMode="linear">
+                  <mpath href={`#p-f-${f.id}`} />
+                </animateMotion>
+              </g>
+            ))}
+            <g>
+              <g class="walk">
+                {walker.map((frame, i) => (
+                  <g class={`wf wf-${i}`}>
+                    {frame.map((c) => (
+                      <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />
+                    ))}
+                  </g>
+                ))}
+              </g>
+              <animateMotion dur="18s" begin="mapgo.begin+0.2s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.82;1" calcMode="linear">
+                <mpath href="#p-main" />
+              </animateMotion>
+            </g>
+          </g>
+
+          <g class="clouds">
+            {
+              clouds.map((c) => (
+                <g class="cloud" style={`--dur: ${c.dur}s; --delay: ${c.delay}s`}>
+                  {rects(cloudRows, { c: '#0c0a18' }, c.x + 5, c.y + 9).map((r) => (
+                    <rect x={r.x} y={r.y} width="1" height="1" fill={r.fill} opacity="0.22" />
+                  ))}
+                  {rects(cloudRows, { c: '#f2ecf7' }, c.x, c.y).map((r) => (
+                    <rect x={r.x} y={r.y} width="1" height="1" fill={r.fill} opacity="0.9" />
+                  ))}
+                </g>
+              ))
+            }
+          </g>
+        </svg>
+      </div>
+    </div>
+    <figcaption class="hint">Swipe to explore the map.</figcaption>
+  </figure>
+
+  <div class="lists">
+    <section aria-labelledby="mq-title">
+      <h3 id="mq-title" class="pixel">Main quest</h3>
+      <ol role="list">
+        {
+          career.map((p, i) => (
+            <li>
+              <span class="n pixel">{i + 1}</span>
+              <div>
+                <p class="place">
+                  <strong>{p.name}</strong> <span class="when">{p.when}</span>
+                </p>
+                <p class="note">{p.note}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+    <section aria-labelledby="sq-title">
+      <h3 id="sq-title" class="pixel">Side quests</h3>
+      <ul role="list">
+        {
+          trips.map((p) => (
+            <li>
+              <i class:list={['key', p.husker ? 'husker' : 'trip']} />
+              <div>
+                <p class="place">
+                  <strong>{p.name}</strong> <span class="when">{p.when}</span>
+                  {p.husker && <span class="tag pixel">GBR</span>}
+                </p>
+                <p class="note">{p.note}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</section>
+
+<script>
+  // Start the map's animation when it scrolls into view; pause it when it leaves.
+  const root = document.querySelector<HTMLElement>('[data-map]');
+  const svg = root?.querySelector('svg');
+  const frame = root?.querySelector<HTMLElement>('[data-frame]');
+  if (frame && frame.scrollWidth > frame.clientWidth) {
+    const nx = parseFloat(getComputedStyle(frame).getPropertyValue('--nx')) || 0.5;
+    frame.scrollLeft = nx * frame.scrollWidth - frame.clientWidth / 2;
+  }
+  if (root && svg && !matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    root.classList.add('armed');
+    let started = false;
+    new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          root.classList.add('play');
+          root.classList.remove('paused');
+          if (!started) (svg.querySelector('#mapgo') as SVGAnimationElement | null)?.beginElement();
+          else svg.unpauseAnimations();
+          started = true;
+        } else if (started) {
+          root.classList.add('paused');
+          svg.pauseAnimations();
+        }
+      },
+      { threshold: 0.25 },
+    ).observe(root);
+  }
+</script>
+
+<style>
+  .map {
+    padding: var(--space-s);
+    background: #1e2557;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin-bottom: var(--space-s);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .key {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin-right: 0.45em;
+    vertical-align: -0.05em;
+    box-shadow: inset 0 0 0 2px #0c0a18;
+  }
+
+  .key.main {
+    background: var(--gold);
+  }
+
+  .key.remote {
+    background: var(--violet);
+  }
+
+  .key.trip {
+    background: var(--teal);
+  }
+
+  .key.husker {
+    background: var(--red);
+  }
+
+  .key.now {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px var(--red);
+  }
+
+  .frame {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .canvas {
+    position: relative;
+    aspect-ratio: 400 / 267;
+    min-width: 640px;
+  }
+
+  .canvas img,
+  .canvas svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  .hint {
+    display: none;
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    text-align: center;
+  }
+
+  @media (max-width: 700px) {
+    .hint {
+      display: block;
+    }
+  }
+
+  /* Routes: pixel-dotted lines. */
+  .route {
+    stroke-width: 1.2;
+    stroke-dasharray: 2 1.4;
+  }
+
+  .route.main {
+    stroke: var(--gold);
+    stroke-width: 1.6;
+    stroke-dasharray: 2.4 1.2;
+  }
+
+  .route.remote {
+    stroke: var(--violet);
+    stroke-dasharray: 0.8 2.2;
+  }
+
+  .route.trip {
+    stroke: var(--teal);
+  }
+
+  .route.husker {
+    stroke: var(--red);
+  }
+
+  .route.flight {
+    stroke-dasharray: 0.8 2.4;
+  }
+
+  /* Draw-on: the mask paths reveal each route. Without JS everything is drawn. */
+  .reveal {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 6;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+
+  .armed .reveal {
+    stroke-dashoffset: 1;
+  }
+
+  .play .reveal {
+    animation: draw var(--dur) steps(36) var(--delay) forwards;
+  }
+
+  .lbl {
+    fill: var(--ink);
+    font-family: var(--font-pixel);
+    font-size: 6.5px;
+    paint-order: stroke;
+    stroke: #0c0a18;
+    stroke-width: 1.6px;
+    stroke-linejoin: round;
+    shape-rendering: auto;
+  }
+
+  .pin {
+    transform-box: view-box;
+  }
+
+  .armed .pin {
+    opacity: 0;
+  }
+
+  .play .pin {
+    animation: pop 0.3s steps(3) var(--d) forwards;
+  }
+
+  .movers {
+    opacity: 0;
+  }
+
+  .play .movers {
+    opacity: 1;
+  }
+
+  .wf-1 {
+    opacity: 0;
+  }
+
+  .pulse {
+    transform-box: view-box;
+    opacity: 0;
+  }
+
+  .play .pulse {
+    animation: pulse 1.6s steps(4) 2s infinite;
+  }
+
+  .play .wf-0,
+  .play .wf-1 {
+    animation: walk 0.5s linear infinite;
+  }
+
+  .play .wf-1 {
+    animation-delay: -0.25s;
+  }
+
+  .cloud {
+    transform: translateX(var(--start, 120px));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cloud {
+      animation: drift var(--dur) linear var(--delay) infinite;
+    }
+  }
+
+  .paused .cloud,
+  .paused .wf-0,
+  .paused .wf-1,
+  .paused .pulse {
+    animation-play-state: paused;
+  }
+
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes pop {
+    0% {
+      opacity: 1;
+      transform: scale(0);
+    }
+    70% {
+      opacity: 1;
+      transform: scale(1.6);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(3);
+    }
+  }
+
+  @keyframes walk {
+    0%,
+    49.9% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes drift {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(480px);
+    }
+  }
+
+  /* Lists under the map. */
+  .lists {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-l);
+    margin-top: var(--space-l);
+  }
+
+  .lists h3 {
+    margin-bottom: var(--space-s);
+    color: var(--gold);
+    font-size: var(--step-1);
+  }
+
+  .lists ol,
+  .lists ul {
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .lists li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .n {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    background: var(--gold);
+    color: var(--bg);
+    font-size: var(--step-0);
+    line-height: 1;
+  }
+
+  .lists .key {
+    margin: 0.35em 0 0;
+  }
+
+  .place {
+    font-size: var(--step-0);
+    line-height: 1.35;
+  }
+
+  .when {
+    color: var(--teal);
+    font-size: var(--step--1);
+  }
+
+  .tag {
+    margin-left: 0.4em;
+    padding: 0 0.35em;
+    background: var(--red);
+    color: var(--bg);
+    font-size: var(--step--1);
+  }
+
+  .note {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  @media (max-width: 759px) {
+    .lists {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
