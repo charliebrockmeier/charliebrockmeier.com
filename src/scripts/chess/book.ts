@@ -1,8 +1,9 @@
-// Charlie's bot plays Black, and it always answers 1.e4 with the Caro-Kann.
-// Each line is a full SAN sequence; every prefix that ends on a White move maps to
-// Black's reply in that line. Where lines disagree, the bot picks one at random.
+// Charlie's bot always answers 1.e4 with the Caro-Kann. As White it opens 1.e4.
+// Each line is a full SAN sequence; every prefix that ends on the visitor's move
+// maps to the bot's reply in that line. Where lines disagree, the bot picks at random.
 
-const lines = [
+// The bot has Black.
+const blackLines = [
   // Classical
   'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5 Ng3 Bg6 h4 h6 Nf3 Nd7 h5 Bh7 Bd3 Bxd3 Qxd3 e6 Bd2 Ngf6 O-O-O Be7',
   'e4 c6 d4 d5 Nd2 dxe4 Nxe4 Bf5 Ng3 Bg6 h4 h6 Nf3 Nd7 h5 Bh7 Bd3 Bxd3 Qxd3 e6 Bd2 Ngf6',
@@ -46,21 +47,45 @@ const lines = [
   'd3 d5',
 ];
 
-const book = new Map<string, string[]>();
-for (const line of lines) {
-  const moves = line.split(' ');
-  for (let i = 0; i < moves.length; i += 2) {
-    const key = moves.slice(0, i + 1).join(' ');
-    const reply = moves[i + 1];
-    if (!reply) break;
-    const list = book.get(key) ?? [];
-    if (!list.includes(reply)) list.push(reply);
-    book.set(key, list);
+// The bot has White.
+const whiteLines = [
+  'e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5 Ng3 Bg6 h4 h6 Nf3 Nd7',
+  'e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d4 exd4 cxd4',
+  'e4 e5 Nf3 Nc6 Bc4 Nf6 d3 Be7 O-O',
+  'e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4 d4',
+  'e4 e5 Nf3 d6 d4 exd4 Nxd4 Nf6 Nc3',
+  'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3',
+  'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 Nf6 Nc3',
+  'e4 c5 Nf3 e6 d4 cxd4 Nxd4 Nc6 Nc3',
+  'e4 e6 d4 d5 Nc3 Nf6 Bg5 Be7 e5',
+  'e4 e6 d4 d5 Nc3 Bb4 e5 c5 a3',
+  'e4 d5 exd5 Qxd5 Nc3 Qa5 d4 Nf6 Nf3',
+  'e4 d5 exd5 Nf6 d4 Nxd5 Nf3',
+  'e4 Nf6 e5 Nd5 d4 d6 Nf3',
+  'e4 d6 d4 Nf6 Nc3 g6 Be3',
+  'e4 g6 d4 Bg7 Nc3 d6 Be3',
+  'e4 Nc6 Nf3 e5 Bc4',
+];
+
+/** prefix (space-joined SAN) -> the bot's possible replies. */
+function build(lines: string[], botMovesFirst: boolean) {
+  const book = new Map<string, string[]>();
+  for (const line of lines) {
+    const moves = line.split(' ');
+    for (let i = botMovesFirst ? 0 : 1; i < moves.length; i += 2) {
+      const key = moves.slice(0, i).join(' ');
+      const list = book.get(key) ?? [];
+      if (!list.includes(moves[i])) list.push(moves[i]);
+      book.set(key, list);
+    }
   }
+  return book;
 }
 
-/** Black's book reply after these moves, or null once the game leaves the book. */
-export function bookMove(history: string[]): string | null {
-  const options = book.get(history.join(' '));
+const books = { b: build(blackLines, false), w: build(whiteLines, true) };
+
+/** The bot's book reply after these moves, or null once the game leaves the book. */
+export function bookMove(history: string[], bot: 'w' | 'b'): string | null {
+  const options = books[bot].get(history.join(' '));
   return options ? options[Math.floor(Math.random() * options.length)] : null;
 }

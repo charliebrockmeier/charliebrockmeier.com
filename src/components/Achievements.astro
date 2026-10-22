@@ -14,7 +14,7 @@ const unlocked = achievements.filter((a) => !a.locked).length;
   <ul class="grid" role="list">
     {
       achievements.map((a) => (
-        <li class:list={['badge panel', { locked: a.locked }]}>
+        <li class:list={['badge panel', { locked: a.locked }]} data-achievement={a.id}>
           <Icon name={a.icon} color={a.color} scale={5} class="icon" />
           <div>
             <h3 class="pixel">{a.name}</h3>

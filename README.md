@@ -7,6 +7,8 @@ Charlie Brockmeier's personal site: a video-game "player profile" with a one-pag
 
 Built with [Astro](https://astro.build), static output, about 2 KB of JavaScript.
 
+The chess bot uses [Stockfish](https://stockfishchess.org) ([Stockfish.js](https://github.com/nmrugg/stockfish.js) 19, lite single-threaded build), licensed under GPL-3.0. The unmodified engine and its license are in `public/engine/`; it runs in its own Web Worker, separate from the rest of the site's code.
+
 ## Run it locally
 
 Requires Node 22 or later.

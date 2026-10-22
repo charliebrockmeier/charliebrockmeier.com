@@ -1,21 +1,19 @@
 ---
 // A pixel chess board that plays Charlie's favorite opening, the Caro-Kann, on a
-// loop, and lets visitors play his bot. The demo needs no chess library; the rules
-// (chess.js) and the engine (js-chess-engine, in a worker) load only on "Play".
+// loop, and lets visitors play his bot. The demo needs no chess library. On Play,
+// chess.js (rules) and Stockfish (GPL-3.0, its own worker from /engine/) load, and
+// src/scripts/chess/strength.ts turns Stockfish's candidates into ~1200 rapid play.
 import Icon from './Icon.astro';
 import { pieceSvg, type PieceType, type Side } from '../data/chess-pieces';
 import { caroKann, positionAfter, coords, FILES } from '../scripts/chess/line';
 import { strengthFor, DEFAULT_RATING } from '../scripts/chess/strength';
 
-// Charlie's rating comes from the build-time chess.com fetch, when it ran.
+// Charlie's rapid rating comes from the build-time chess.com fetch, when it ran.
 const liveFiles = import.meta.glob<{ default: any }>('../data/live.json', { eager: true });
 const live = Object.values(liveFiles)[0]?.default ?? {};
-const ratings = live?.chess?.ratings ?? {};
-const rated = ratings.blitz?.current ? ['blitz', ratings.blitz.current] : ratings.rapid?.current ? ['rapid', ratings.rapid.current] : null;
-const strength = strengthFor(rated ? Number(rated[1]) : DEFAULT_RATING);
-const caption = rated
-  ? `Plays like Charlie: about ${strength.rating} in ${rated[0]}. Always the Caro-Kann.`
-  : `Plays like a ~${strength.rating} player. Always the Caro-Kann.`;
+const rapid = Number(live?.chess?.ratings?.rapid?.current) || DEFAULT_RATING;
+const strength = strengthFor(rapid);
+const caption = `Plays like Charlie: about ${Math.round(rapid / 100) * 100} rapid. Always the Caro-Kann.`;
 
 // One CSS class per piece, with its pixel sprite as an inline SVG background.
 const pieceCss = (['w', 'b'] as Side[])
@@ -40,31 +38,48 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
 
 <article class="chessbot panel" data-chessbot data-strength={JSON.stringify(strength)} aria-labelledby="chessbot-title">
   <div class="layout">
-    <div class="board-wrap">
-      <div class="board" data-board role="group" aria-label="Chess board">
-        {
-          squares.map(({ sq, dark }) => (
-            <button
-              type="button"
-              class:list={['sq', { dark, last: sq === last.from || sq === last.to }]}
-              data-sq={sq}
-              aria-label={sq}
-              disabled
-            >
-              {sq[1] === '1' && <span class="coord file">{sq[0]}</span>}
-              {sq[0] === 'a' && <span class="coord rank">{sq[1]}</span>}
-            </button>
-          ))
-        }
-        <div class="pieces" data-pieces aria-hidden="true">
+    <div class="board-col">
+      <div class="tray" data-tray="top" aria-label="Pieces Charlie’s bot has captured"></div>
+      <div class="board-wrap">
+        <div class="board" data-board role="group" aria-label="Chess board">
           {
-            Object.entries(finalPosition).map(([sq, code]) => {
-              const [x, y] = coords(sq);
-              return <i class={`pc ${code}`} data-at={sq} data-code={code} style={`--x:${x};--y:${y}`} />;
-            })
+            squares.map(({ sq, dark }) => (
+              <button
+                type="button"
+                class:list={['sq', { dark, last: sq === last.from || sq === last.to }]}
+                data-sq={sq}
+                aria-label={sq}
+                disabled
+              >
+                {sq[1] === '1' && <span class="coord file white-side">{sq[0]}</span>}
+                {sq[1] === '8' && <span class="coord file black-side">{sq[0]}</span>}
+                {sq[0] === 'a' && <span class="coord rank white-side">{sq[1]}</span>}
+                {sq[0] === 'h' && <span class="coord rank black-side">{sq[1]}</span>}
+              </button>
+            ))
           }
+          <div class="pieces" data-pieces aria-hidden="true">
+            {
+              Object.entries(finalPosition).map(([sq, code]) => {
+                const [x, y] = coords(sq);
+                return <i class={`pc ${code}`} data-at={sq} data-code={code} style={`--x:${x};--y:${y}`} />;
+              })
+            }
+          </div>
+          <div class="banner" data-banner hidden>
+            <div class="banner-box">
+              <p class="pixel title" data-banner-title></p>
+              <p class="line" data-banner-line></p>
+              <div class="banner-actions">
+                <button type="button" class="btn" data-again>Rematch</button>
+                <button type="button" class="btn ghost" data-switch>Switch sides</button>
+              </div>
+            </div>
+            <div class="confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i style={`--i:${i}`} />)}</div>
+          </div>
         </div>
       </div>
+      <div class="tray" data-tray="bottom" aria-label="Pieces you have captured"></div>
     </div>
 
     <div class="side">
@@ -76,7 +91,7 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
         </div>
       </header>
 
-      <p class="status" data-status aria-live="polite">The Classical Caro-Kann, played on a loop.</p>
+      <p class="status" aria-live="polite"><span data-status>The Classical Caro-Kann, played on a loop.</span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></p>
 
       <ol class="moves" data-moves aria-label="Moves">
         {
@@ -97,24 +112,52 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
       </ol>
 
       <div class="actions">
-        <button type="button" class="btn" data-play>▶ Play Charlie’s bot</button>
-        <button type="button" class="btn ghost" data-new>New game</button>
-        <button type="button" class="btn ghost" data-resign>Resign</button>
-        <button type="button" class="btn ghost" data-demo>Back to demo</button>
+        <button type="button" class="btn demo-only" data-play="w">▶ Play as White</button>
+        <button type="button" class="btn ghost demo-only" data-play="b">Play as Black</button>
+        <button type="button" class="btn ghost play-only" data-takeback>↶ Takeback</button>
+        <button type="button" class="btn ghost play-only live-only" data-resign>Resign</button>
+        <button type="button" class="btn ghost play-only" data-again>New game</button>
+        <button type="button" class="btn ghost play-only" data-demo>Back to demo</button>
       </div>
-      <p class="caption">{caption} You have White.</p>
+      <p class="caption">{caption} Drag or click to move.</p>
     </div>
   </div>
+
 </article>
+
+<!-- Outside the panel: its clip-path would clip a fixed-position child too. -->
+<div class="toast" data-chess-toast role="status" hidden>
+  <span data-trophy><Icon name="trophy" color="gold" scale={3} class="icon" /></span>
+  <div>
+    <p class="pixel">Achievement unlocked</p>
+    <p data-toast-line>Beat Charlie’s chess bot</p>
+  </div>
+</div>
 
 <script>
   import { BoardView } from '../scripts/chess/board-view';
   import { caroKann, startPosition } from '../scripts/chess/line';
   import type { Strength } from '../scripts/chess/strength';
 
-  type Game = { reset(): void; resign(): void; stop(): void };
+  type Game = { newGame(side: 'w' | 'b'): void; takeback(): void; resign(): void; stop(): void };
+  const ACHIEVEMENT_KEY = 'charliebrockmeier:beat-chess-bot';
 
   for (const root of document.querySelectorAll<HTMLElement>('[data-chessbot]')) setup(root);
+
+  // Unlock the "Beat Charlie's chess bot" card in Achievements, now or on a return visit.
+  function unlockCard(root: HTMLElement) {
+    const card = document.querySelector<HTMLElement>('[data-achievement="beat-chess-bot"]');
+    if (!card || !card.classList.contains('locked')) return;
+    card.classList.remove('locked');
+    const icon = card.querySelector('svg');
+    const trophy = document.querySelector('[data-chess-toast] [data-trophy] svg');
+    if (icon && trophy) icon.innerHTML = trophy.innerHTML;
+    const name = card.querySelector('h3');
+    if (name) name.textContent = 'Bot slayer';
+    const count = document.querySelector<HTMLElement>('#achievements .count');
+    const m = count?.textContent?.match(/(\d+) \/ (\d+)/);
+    if (count && m) count.textContent = `${Number(m[1]) + 1} / ${m[2]} unlocked`;
+  }
 
   function setup(root: HTMLElement) {
     const board = root.querySelector<HTMLElement>('[data-board]')!;
@@ -126,7 +169,13 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const view = new BoardView(board);
 
+    addEventListener('achievement', () => unlockCard(root));
+    try {
+      if (localStorage.getItem(ACHIEVEMENT_KEY)) unlockCard(root);
+    } catch {}
+
     let game: Game | null = null;
+    let side: 'w' | 'b' = 'w';
     let timer = 0;
     let ply = 0;
     let visible = false;
@@ -174,33 +223,28 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     new IntersectionObserver(([entry]) => (visible = entry.isIntersecting)).observe(board);
 
     // Play: load the rules and the engine on first click.
-    root.querySelector('[data-play]')!.addEventListener('click', async () => {
+    async function play(color: 'w' | 'b') {
+      side = color;
       clearTimeout(timer);
-      root.classList.add('playing');
-      status.textContent = 'Loading Charlie’s bot…';
-      const { startGame } = await import('../scripts/chess/play');
-      game = startGame(board, strength, {
-        status: (text) => (status.textContent = text),
-        moves: (sans) => {
-          list.replaceChildren(
-            ...Array.from({ length: Math.ceil(sans.length / 2) }, (_, i) => {
-              const li = document.createElement('li');
-              li.innerHTML = `<span class="n">${i + 1}.</span><span>${sans[2 * i]}</span>${sans[2 * i + 1] ? `<span>${sans[2 * i + 1]}</span>` : ''}`;
-              return li;
-            }),
-          );
-          list.scrollTop = list.scrollHeight;
-        },
-        over: (over) => root.classList.toggle('over', over),
-      });
-      root.querySelector<HTMLElement>('[data-sq="e2"]')?.focus({ preventScroll: true });
-    });
-    root.querySelector('[data-new]')!.addEventListener('click', () => game?.reset());
+      if (!game) {
+        root.classList.add('playing');
+        status.textContent = 'Loading Charlie’s bot…';
+        const { startGame } = await import('../scripts/chess/play');
+        game = startGame(root, strength);
+        (root as HTMLElement & { chessGame?: Game }).chessGame = game;
+      }
+      game.newGame(side);
+    }
+
+    root.querySelectorAll<HTMLElement>('[data-play]').forEach((b) => b.addEventListener('click', () => play(b.dataset.play as 'w' | 'b')));
+    root.querySelectorAll('[data-again]').forEach((b) => b.addEventListener('click', () => play(side)));
+    root.querySelector('[data-switch]')!.addEventListener('click', () => play(side === 'w' ? 'b' : 'w'));
+    root.querySelector('[data-takeback]')!.addEventListener('click', () => game?.takeback());
     root.querySelector('[data-resign]')!.addEventListener('click', () => game?.resign());
     root.querySelector('[data-demo]')!.addEventListener('click', () => {
       game?.stop();
       game = null;
-      root.classList.remove('playing', 'over');
+      root.classList.remove('playing', 'over', 'thinking');
       startDemo();
     });
 
@@ -212,6 +256,7 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
   .chessbot {
     --light: #ead7ae;
     --dark: #8a6fb8;
+    position: relative;
     padding: clamp(1rem, 2.5vw, 1.6rem);
   }
 
@@ -232,7 +277,15 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     position: relative;
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
     aspect-ratio: 1;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* While a game is on, touches on the board move pieces instead of scrolling. */
+  .board:global(.live) {
+    touch-action: none;
   }
 
   .sq {
@@ -255,7 +308,7 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
   }
 
   .sq:focus-visible {
-    z-index: 2;
+    z-index: 4;
     outline: 3px solid var(--teal);
     outline-offset: -3px;
   }
@@ -282,7 +335,7 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
   }
 
   .sq.check::after {
-    background: radial-gradient(circle, rgb(255 59 79 / 0.85), rgb(255 59 79 / 0) 70%);
+    background: radial-gradient(circle, rgb(255 59 79 / 0.9), rgb(255 59 79 / 0) 72%);
   }
 
   /* Legal moves: a square dot, or corner brackets when it's a capture. */
@@ -317,6 +370,16 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     color: var(--light);
   }
 
+  /* Labels sit on the edge nearest you; the board flips when you play Black. */
+  .black-side,
+  .board:global(.flipped) .white-side {
+    display: none;
+  }
+
+  .board:global(.flipped) .black-side {
+    display: block;
+  }
+
   .file {
     right: 3px;
     bottom: 2px;
@@ -346,12 +409,160 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     background-repeat: no-repeat;
     image-rendering: pixelated;
     transform: translate(calc(var(--x) * 100%), calc(var(--y) * 100%));
-    transition: transform 360ms steps(6);
+    transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .pieces :global(.pc.dragging) {
+    z-index: 5;
+    transition: none;
+    filter: drop-shadow(3px 4px 0 rgb(12 10 24 / 0.45));
+    cursor: grabbing;
+  }
+
+  .pieces :global(.pc.no-anim) {
+    transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .pieces :global(.pc) {
       transition: none;
+    }
+  }
+
+  /* Captured pieces above and below the board, with the material lead. */
+  .tray {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    min-height: 22px;
+    margin: 4px 0;
+  }
+
+  .tray :global(.cap) {
+    width: 20px;
+    height: 20px;
+    margin-right: -5px;
+    background-position: center;
+    background-size: 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+  }
+
+  .tray :global(.lead) {
+    margin-left: 10px;
+    color: var(--ink-soft);
+    font-family: var(--font-pixel);
+    font-size: var(--step-0);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  /* Result banner over the board. */
+  .banner {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    background: rgb(12 10 24 / 0.55);
+  }
+
+  .banner[hidden] {
+    display: none;
+  }
+
+  .banner-box {
+    width: min(86%, 300px);
+    padding: 1rem 1.1rem;
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 4px var(--line),
+      6px 6px 0 0 var(--shadow);
+    text-align: center;
+  }
+
+  .banner .title {
+    color: var(--ink);
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .banner[data-result='win'] .title {
+    color: var(--gold);
+  }
+
+  .banner[data-result='loss'] .title {
+    color: var(--red);
+  }
+
+  .banner .line {
+    margin-top: 0.4rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .banner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+
+  .banner-actions .btn {
+    padding: 0.45rem 0.7rem;
+    font-size: var(--step--1);
+  }
+
+  .confetti {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .confetti i {
+    position: absolute;
+    top: -8%;
+    left: calc(var(--i) * 4.1% + 1%);
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    opacity: 0;
+  }
+
+  .confetti i:nth-child(3n) {
+    background: var(--teal);
+  }
+
+  .confetti i:nth-child(4n) {
+    background: var(--red);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .banner[data-result='win'] .confetti i {
+      animation: bot-fall 1.8s steps(12) calc(var(--i) * -0.13s) infinite;
+    }
+
+    .banner-box {
+      animation: bot-pop 260ms steps(4);
+    }
+  }
+
+  @keyframes bot-fall {
+    0% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(1100%) translateX(-20px);
+    }
+  }
+
+  @keyframes bot-pop {
+    from {
+      transform: scale(0.85);
     }
   }
 
@@ -372,16 +583,57 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
   }
 
   .status {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
     min-height: 1.6em;
     margin-top: var(--space-s);
     color: var(--gold);
     font-weight: 600;
   }
 
+  /* "Thinking…" dots, only while the bot is choosing. */
+  .dots {
+    display: none;
+    gap: 3px;
+  }
+
+  .dots i {
+    width: 4px;
+    height: 4px;
+    background: currentColor;
+  }
+
+  .chessbot:global(.thinking) .dots {
+    display: inline-flex;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dots i {
+      animation: bot-blink 0.9s steps(2) infinite;
+    }
+
+    .dots i:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .dots i:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+  }
+
+  @keyframes bot-blink {
+    50% {
+      opacity: 0.15;
+    }
+  }
+
   .moves {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    align-content: start;
     gap: 2px 0.75rem;
+    min-height: 3rem;
     max-height: 11.5rem;
     margin-top: var(--space-xs);
     padding: 0.6rem 0.75rem;
@@ -424,16 +676,19 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     font-size: var(--step-0);
   }
 
-  .actions [data-new],
-  .actions [data-resign],
-  .actions [data-demo],
-  .playing .actions [data-play] {
+  .actions .btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .play-only,
+  .chessbot:global(.playing) .demo-only,
+  .chessbot:global(.over) .live-only {
     display: none;
   }
 
-  .playing .actions [data-new],
-  .playing .actions [data-demo],
-  .playing:not(.over) .actions [data-resign] {
+  .chessbot:global(.playing) .play-only:not(.live-only),
+  .chessbot:global(.playing):not(:global(.over)) .live-only {
     display: inline-flex;
   }
 
@@ -443,12 +698,68 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     font-size: var(--step--1);
   }
 
+  /* "Achievement unlocked" toast, pinned to the viewport. */
+  .toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: calc(100vw - 32px);
+    padding: 0.7rem 1rem 0.7rem 0.7rem;
+    background: var(--panel-2);
+    box-shadow:
+      inset 0 0 0 4px var(--gold),
+      6px 6px 0 0 var(--shadow);
+  }
+
+  .toast[hidden] {
+    display: none;
+  }
+
+  .toast .pixel {
+    color: var(--gold);
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .toast p:not(.pixel) {
+    color: var(--ink);
+    font-size: var(--step--1);
+  }
+
+  .toast :global(.icon) {
+    width: 40px;
+    height: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .toast:global(.show) {
+      animation: bot-toast 6s steps(6) forwards;
+    }
+  }
+
+  @keyframes bot-toast {
+    0% {
+      transform: translateY(140%);
+    }
+    6%,
+    92% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(140%);
+    }
+  }
+
   @media (max-width: 759px) {
     .layout {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .board-wrap {
+    .board-col {
       max-width: 420px;
     }
   }
