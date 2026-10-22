@@ -2,6 +2,8 @@
 // Crafted items: each personal project with an illustrated screen of what it does.
 // Every number inside a mock is synthetic unless it also appears in the build's stats.
 import Icon from './Icon.astro';
+import PixelArt from './PixelArt.astro';
+import { marks } from '../data/logos';
 import live from '../data/live.json';
 import { builds } from '../data/profile';
 
@@ -65,7 +67,10 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
             )}
             {b.id === 'locus' && (
               <div class="mock locus">
-                <p class="brand">Locus</p>
+                <p class="brand">
+                  <PixelArt art={marks.locus} scale={1.5} />
+                  Locus <span>Personal OS</span>
+                </p>
                 <svg viewBox="0 0 100 34" preserveAspectRatio="none">
                   <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke" />
                   <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4 L100 34 L0 34Z" fill="color-mix(in srgb, var(--teal) 18%, transparent)" />
@@ -78,7 +83,9 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
                     </li>
                   ))}
                 </ul>
-                <p class="trade">Trade</p>
+                <p class="ask">
+                  <kbd>⌘K</kbd> Ask Locus anything
+                </p>
               </div>
             )}
             {b.id === 'phyt' && (
@@ -102,15 +109,27 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
             )}
             {b.id === 'faceless' && (
               <div class="mock reel">
-                <div class="frame">
-                  <svg viewBox="0 0 60 50">
-                    {[12, 18, 15, 24, 22, 30, 34, 40].map((h, i) => (
-                      <rect x={4 + i * 7} y={48 - h} width="5" height={h} fill={i === 7 ? 'var(--gold)' : 'var(--violet)'} />
-                    ))}
-                  </svg>
-                  <p class="cap">What the data says, in 30 seconds.</p>
-                  <p class="src">FRED · BLS · NYC Open Data</p>
-                </div>
+                {[
+                  { name: 'Money Math', tag: 'Money, measured.', color: 'var(--gold)', bars: [12, 18, 15, 24, 22, 30, 34, 40] },
+                  { name: 'NYC Numbers', tag: 'The city, measured.', color: 'var(--teal)', bars: [40, 33, 27, 22, 16, 11] },
+                  { name: 'Scale Compare', tag: 'The world, to scale.', color: 'var(--coral)', bars: [6, 40] },
+                ].map((page) => (
+                  <div class="frame" style={`--c: ${page.color}`}>
+                    <p class="page pixel">{page.name}</p>
+                    <svg viewBox="0 0 60 50">
+                      {page.bars.map((h, i) => (
+                        <rect
+                          x={4 + i * (52 / page.bars.length)}
+                          y={48 - h}
+                          width={52 / page.bars.length - 2}
+                          height={h}
+                          fill={i === page.bars.length - 1 || page.bars.length < 7 && i === 0 ? page.color : 'var(--violet)'}
+                        />
+                      ))}
+                    </svg>
+                    <p class="cap">{page.tag}</p>
+                  </div>
+                ))}
               </div>
             )}
             {b.id === 'site' && (
@@ -124,6 +143,11 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
           <div class="info">
             <p class="meta">
               <span class="status pixel">{b.status}</span>
+              {b.url && (
+                <a class="site-link" href={b.url}>
+                  {b.url.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+                </a>
+              )}
               {b.repo && (
                 <span class="repo">
                   <Icon name={b.repo.visibility === 'public' ? 'github' : 'lock'} color="gray" scale={1.25} />
@@ -219,6 +243,11 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     background: var(--panel-2);
     color: var(--teal);
     font-size: var(--label);
+  }
+
+  .site-link {
+    color: var(--teal);
+    font-size: 0.75rem;
   }
 
   .repo {
@@ -399,9 +428,20 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
   }
 
   .locus .brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 15px;
     font-weight: 800;
     letter-spacing: -0.02em;
+  }
+
+  .locus .brand span {
+    color: var(--ink-soft);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .locus svg {
@@ -421,11 +461,19 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     color: var(--ink-soft);
   }
 
-  .trade {
-    justify-self: end;
-    padding: 2px 10px;
+  .ask {
+    padding: 3px 8px;
+    background: #17142a;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink-soft);
+  }
+
+  .ask kbd {
+    margin-right: 4px;
+    padding: 0 4px;
     background: var(--teal);
     color: var(--bg);
+    font: inherit;
     font-weight: 700;
   }
 
@@ -476,17 +524,20 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
   }
 
   .reel {
-    display: grid;
-    place-items: center;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
     padding: 8px;
   }
 
   .frame {
     display: grid;
-    grid-template-rows: 1fr auto auto;
-    width: 104px;
+    grid-template-rows: auto 1fr auto;
+    gap: 4px;
+    width: 30%;
+    max-width: 96px;
     height: 100%;
-    padding: 8px;
+    padding: 6px;
     background: linear-gradient(#1b1533, #110d22);
     box-shadow: 0 0 0 2px var(--line);
   }
@@ -504,10 +555,10 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     font-weight: 700;
   }
 
-  .src {
-    margin-top: 3px;
-    color: var(--ink-soft);
-    font-size: 8px;
+  .page {
+    color: var(--c);
+    font-size: 11px;
+    line-height: 1;
   }
 
   .site {

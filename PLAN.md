@@ -18,7 +18,7 @@ The game frame carries the serious content (MSCI, Vantager, AI work) without fee
 |---|---|
 | Title screen | 32×32 sprite, Class: Finance / Subclass: AI builder, live chess streak. Animated pixel panorama from a Kearney sunset to Manhattan at night: walker, clouds, windows, glints, plane, traffic |
 | 01 Character | Bio (finance at the core, building with AI), photo, attributes with radar chart |
-| 02 The road so far | Scroll-driven side-scroller: Kearney home and Kearney High → Lincoln (Capitol, Memorial Stadium) → SF remote → NYC walk-up → 7 World Trade (`Journey.astro`, `scripts/art/journey.mjs`) |
+| 02 The road so far | Scroll-driven side-scroller: Kearney home and Kearney High → Lincoln (Capitol, Memorial Stadium) → SF summer (in person) → NYC walk-up → 7 World Trade (`Journey.astro`, `scripts/art/journey.mjs`) |
 | 03 Quest log | Career oldest-first with pixel emblems (`src/data/logos.ts`) and Finance/Code/AI levels per chapter |
 | 04 World map | Pixel terrain US map, career route on I-80, road trips and Husker away games, animated (`MapSection.astro`, `scripts/art/usmap.mjs`) |
 | 05 Stats | Chess panel (full year from chess.com at build, fallback snapshot), Charlie's Caro-Kann bot, cards for Huskers, music, builder, learning, gaming, life |
@@ -67,7 +67,7 @@ Settled:
 - Contact email is his Gmail.
 
 Still open:
-1. **Locus logo:** couldn't be found; Charlie to send it.
+1. **Locus logo:** done; the cicada mark is redrawn in pixels in `src/data/logos.ts` (`marks.locus`).
 2. **Childhood home:** drawn as a generic early-2000s ranch; a photo would make it exact.
 3. **Spotify Wrapped:** screenshots of recent years would refresh the music card.
 4. **Phyt:** confirm the one-liner ("a fitness app for iPhone").

@@ -279,17 +279,23 @@ export const quests: Quest[] = [
       { skill: 'Teaching', track: 'lead', up: 1 },
     ],
     extras: [
-      { name: 'FarmHouse Treasurer', note: '$850K annual budget, 110 members' },
+      { name: 'FarmHouse Treasurer', note: 'Two terms on the executive board. $850K annual budget, 110 members' },
       { name: 'FarmHouse Scholarship Chair', note: 'Kept the chapter on track academically' },
-      { name: 'Mortar Board', note: 'Senior honor society; social chair' },
-      { name: 'NHRI Mentoring', note: 'Staff advisor, tri-chair, researcher, Stuart Award committee' },
-      { name: 'Dance Marathon', note: 'Morale and corporate sponsorship' },
-      { name: 'Teaching assistant', note: 'Honors Computer Science I and II' },
-      { name: 'Raikes Student Advisory Board', note: 'A voice for the program' },
-      { name: 'Judiciary Board', note: 'Chapter accountability' },
-      { name: 'Homecoming Royalty', note: '2024 finalist. Finished 2nd. Probably.' },
-      { name: 'Regents Scholar', note: 'Plus 6× College of Business Dean’s Scholar' },
+      { name: 'FarmHouse Judicial Board', note: 'Chapter accountability, 2023' },
+      { name: 'Mortar Board', note: 'Senior honor society, social chair. Helped run its homecoming books' },
+      { name: 'NHRI Mentoring', note: 'Mentor from 2022: staff advisor, tri-chair, scholarship committee' },
+      { name: 'UCARE researcher', note: 'Studied what mentoring did for 75 years of NHRI alumni, 2024–25' },
+      { name: 'Raikes Student Advisory Board', note: 'Liaison between students and the program, through senior year' },
+      { name: 'Teaching assistant', note: 'Honors Computer Science I and II, from 2022' },
+      { name: 'Dance Marathon', note: 'Morale and corporate sponsorship, for Nebraska’s children’s hospital' },
+      { name: 'Regents Scholar', note: 'UNL’s top academic scholarship. Plus 6× Dean’s List' },
+      { name: 'University Honors Program', note: 'Graduated from that one too' },
       { name: 'The Illiquidity Premium', note: 'A paper on private-markets returns, May 2025' },
+      { name: 'Tenaska case challenges', note: 'Energy-trading business cases, 2023 and 2024' },
+      { name: 'Berkshire Hathaway meeting', note: 'Omaha, 2023. Took notes' },
+      { name: 'Homecoming Royalty', note: '2024 finalist. Finished 2nd. Probably.' },
+      { name: 'Mortar Board ski trip', note: 'Breckenridge, Jan 2025. Planned it and built the budget for 21' },
+      { name: 'Philanthropy', note: 'Scoops for Schools, Waffles for Wishes, Floats for Goats' },
       { name: 'Pickleball Club', note: 'Competitive about it' },
     ],
     scene: { src: '/art/raikes.png', place: 'Lincoln, Nebraska', alt: 'Pixel art: the Nebraska State Capitol at dusk.' },
@@ -430,6 +436,7 @@ export type Build = {
   line: string;
   detail: string;
   stats?: [string, string][];
+  url?: string;
 };
 
 export const builds: Build[] = [
@@ -441,7 +448,7 @@ export const builds: Build[] = [
     stack: ['Python', 'GitHub Actions', 'one adapter per site platform'],
     line: 'Reads 10 funeral-home sites every week and flags names on a watchlist in days, not months.',
     detail:
-      'Instead of one scraper per site, there is one adapter per website platform: a JSON API for one, a sitemap crawl for another, a headless browser for a third. Adding a site usually means zero new code. It runs itself every week and emails a digest.',
+      'Instead of one scraper per site, there is one adapter per website platform: a JSON API for one, a sitemap crawl for another, a headless browser for a third. Adding a site usually means zero new code. It runs itself every week, builds a workbook and drafts the digest email. If a site changes its layout, sanity checks stop the run instead of sending a wrong answer.',
     stats: [
       ['Obituaries read', '450+'],
       ['Names cross-checked', '6,000+'],
@@ -466,29 +473,42 @@ export const builds: Build[] = [
   {
     id: 'locus',
     name: 'Locus',
-    status: 'Runs my own money',
+    status: 'Live, invite only',
     repo: { name: 'brockmeier-finances', visibility: 'private' },
-    stack: ['Next.js', 'Supabase', 'Plaid', 'brokerage API'],
-    line: 'A personal finance and trading app with bank and brokerage links.',
-    detail: 'Built to production security standards: row-level security, secrets management, auth on every route and authorization checks on the trade-execution path.',
+    stack: ['Next.js', 'TypeScript', 'Supabase', 'Plaid', 'Vercel'],
+    line: 'A personal OS: every account, the calendar and documents in one place, with an AI assistant on top.',
+    detail:
+      'Net worth, cash flow, forecasts, portfolio and tax views across bank, card, brokerage and retirement accounts, plus tasks, notes and habits. Read-only by design: there is no way for it to move money. Every AI action lands in an approval ledger, and every table has row-level security.',
+    stats: [
+      ['Tests passing', '4,349'],
+      ['API handlers', '143'],
+      ['AI tools', '36'],
+    ],
   },
   {
     id: 'phyt',
     name: 'Phyt',
     status: 'In development',
-    repo: null,
+    repo: { name: 'PHYT', visibility: 'private' },
     stack: ['iOS', 'product design'],
     line: 'A fitness app for iPhone, designed and built end to end. Logo included.',
-    detail: 'From the logo to the last screen, mine. More soon.',
+    detail: 'From the logo to the last screen, mine. More soon at phytapp.org.',
+    url: 'https://phytapp.org/',
   },
   {
     id: 'faceless',
     name: 'Faceless engine',
-    status: 'Experiment',
+    status: 'In rehearsal',
     repo: { name: 'faceless-engine', visibility: 'private' },
-    stack: ['FRED', 'BLS', 'NYC Open Data', 'Our World in Data', 'AI narration'],
-    line: 'Turns public economic data into narrated short videos, start to finish.',
-    detail: 'Pulls a series, finds the story in it, writes the script, narrates it and renders the chart animation. No face required.',
+    stack: ['TypeScript', 'Remotion', 'Supabase', 'Claude', 'FRED · BLS · NYC Open Data'],
+    line: 'Runs three short-video pages from official public data: Money Math, NYC Numbers and Scale Compare.',
+    detail:
+      'It mines a data series for a story, writes the hook in each page’s voice, checks every number against the source rows, narrates it and renders a 9:16 video. A quality gate decides what ships. No face required.',
+    stats: [
+      ['Data series', '226'],
+      ['Tests passing', '2,005'],
+      ['Video templates', '8'],
+    ],
   },
   {
     id: 'site',
@@ -649,7 +669,7 @@ export const resume = {
     },
     {
       name: 'Locus',
-      line: 'Personal finance and trading app (Next.js, Supabase, brokerage API) with row-level security and authorization on the trade path.',
+      line: 'Personal OS for money, calendar and documents with an AI assistant (Next.js, Supabase, Plaid); read-only by design, row-level security throughout.',
     },
     {
       name: 'Phyt',

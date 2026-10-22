@@ -1,6 +1,6 @@
-// Pixel emblems for the places Charlie has worked and studied: original 20×14
-// badges that nod to each brand, not copies of their logos. Generated once from
-// simple shapes; edit the rows directly.
+// Pixel emblems for the places Charlie has worked and studied: 20×14 badges that
+// nod to each brand (Vantager's is its real gem mark, redrawn in pixels). Edit the
+// rows directly.
 import type { PixelArt } from './pixels';
 
 export const logos = {
@@ -86,23 +86,24 @@ export const logos = {
   },
   vantager: {
     label: 'Vantager',
+    // The real mark: a cut gem with a four-point sparkle cut out of it, on Insight Sky Blue.
     rows: [
       '.KKKKKKKKKKKKKKKKKK.',
-      'KbbbbbbbbbbbbbbbbbbK',
-      'KBBBBBBBBBBBBBBBBBBK',
-      'KBBBB31BBBBBB31BBBBK',
-      'KBBBBB31BBBB31BBBBBK',
-      'KBBBBB13BBBB13BBBBBK',
-      'KBBBBBB13BB13BBBBBBK',
-      'KBBBBBB31BB31BBBBBBK',
-      'KBBBBBBB3131BBBBBBBK',
-      'KBBBBBBB1313BBBBBBBK',
-      'KBBBBBBBB13BBBBBBBBK',
-      'KBBBBBBBBBBBBBBBBBBK',
-      'KddddddddddddddddddK',
+      'KBBBBBGGGBBGGGBBBBBK',
+      'KBBBBGGGGBBGGGGBBBBK',
+      'KBBBGGGGBBBBGGGGBBBK',
+      'KBBGGGBBBBBBBBGGGBBK',
+      'KBGBBBBBBBBBBBBBBGBK',
+      'KBBGGGBBBBBBBBGGGBBK',
+      'KBBBGGGGBBBBGGGGBBBK',
+      'KBBBBGGGGBBGGGGBBBBK',
+      'KBBBBBGGGBBGGGBBBBBK',
+      'KBBBBBBGGBBGGBBBBBBK',
+      'KBBBBBBBGBBGBBBBBBBK',
+      'KBBBBBBBBGGBBBBBBBBK',
       '.KKKKKKKKKKKKKKKKKK.',
     ],
-    palette: { K: '#0c0a18', B: '#0f2e2a', b: '#1c4a43', d: '#0a201d', 1: '#73eff7', 3: '#d8fdff' },
+    palette: { K: '#0c0a18', B: '#ddebef', G: '#232323' },
   },
   covisum: {
     label: 'Covisum',
@@ -167,3 +168,30 @@ export const logos = {
 } satisfies Record<string, PixelArt & { label: string }>;
 
 export type LogoName = keyof typeof logos;
+
+// Marks for personal projects, redrawn from each project's own logo.
+export const marks = {
+  // Locus: the cicada. Crossed antennae run down into the wings around a round head.
+  locus: {
+    label: 'Locus',
+    rows: [
+      '...TT......TT...',
+      '.....TT..TT.....',
+      '.......TT.......',
+      '.....TTTTTT.....',
+      '....TT....TT....',
+      '....TT....TT....',
+      '...T.T....T.T...',
+      '...T.TTTTTT.T...',
+      '..T..T....T..T..',
+      '..T..T....T..T..',
+      '..T..T....T..T..',
+      '..T..T....T..T..',
+      '..T.T......T.T..',
+      '..T.T......T.T..',
+      '..TT........TT..',
+      '..T..........T..',
+    ],
+    palette: { T: '#1fb3a0' },
+  },
+} satisfies Record<string, PixelArt & { label: string }>;
