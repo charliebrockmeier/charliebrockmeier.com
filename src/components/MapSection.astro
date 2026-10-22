@@ -1,36 +1,80 @@
 ---
 // The world map: a pixel-art US (public/art/usmap.png, drawn by scripts/art/usmap.mjs)
 // with an animated SVG overlay on the same grid. The main quest walks I-80 from
-// Kearney to New York; side quests are road trips (and two flights).
+// Kearney to New York and flies out to San Francisco; every trip in the travel log
+// (src/data/sidequests.ts) gets a pin, and the drives and flights get a car or a plane.
 // Motion starts when the map scrolls into view and stays off for reduced motion.
-import { career, trips, map, mainRoute, tripRoutes, pathOf, xy, point, remoteArc, flights } from '../data/travel';
+import { career, tripPins, map, mainRoute, roads, flights, pathOf, lengthOf, xy, point } from '../data/travel';
+import { cats, catOrder, trips, tally, type Cat } from '../data/sidequests';
 
 const { width: W, height: H } = map;
-const main = pathOf(mainRoute);
-const remote = remoteArc();
-const routes = tripRoutes.map((r) => ({ ...r, d: pathOf(r.pts), trip: trips.find((t) => t.id === r.id)! }));
+const GOLD = '#ffcd75';
+const colorOf = (c: Cat | 'main') => (c === 'main' ? GOLD : cats[c].color[0]);
 
-const pins = [
-  ...career.map((p, i) => ({ ...p, ...xy(p), order: i })),
-  ...trips.map((p, i) => ({ ...p, ...xy(p), order: career.length + i })),
-];
-const nyc = pins.find((p) => p.id === 'nyc')!;
+const main = { d: pathOf(mainRoute), len: lengthOf(mainRoute) };
+const drives = roads.map((r) => {
+  const a = point(...r.pts[0]);
+  const b = point(...r.pts.at(-1)!);
+  return { ...r, d: pathOf(r.pts), len: lengthOf(r.pts), west: b.x < a.x };
+});
 
-// Label placement around a pin.
-const label = (p: { x: number; y: number; label: string }) =>
-  p.label === 'n' ? { x: p.x, y: p.y - 5, a: 'middle' } : p.label === 's' ? { x: p.x, y: p.y + 9.5, a: 'middle' } : p.label === 'e' ? { x: p.x + 5, y: p.y + 2, a: 'start' } : { x: p.x - 5, y: p.y + 2, a: 'end' };
-const short = (name: string) => name.replace(/, [A-Z]{2}$/, '');
+// When each route draws itself on, and when its vehicle starts: after the route is drawn.
+const MAIN_REVEAL = { delay: 0.2, dur: 3 };
+const routes = [
+  ...flights.filter((f) => f.cat === 'main').map((f) => ({ ...f, kind: 'flight' as const })),
+  ...drives.map((r) => ({ ...r, kind: 'drive' as const })),
+  ...flights.filter((f) => f.cat !== 'main').map((f) => ({ ...f, kind: 'flight' as const })),
+].map((r, i) => ({ ...r, reveal: { delay: +(1.2 + i * 0.32).toFixed(2), dur: r.kind === 'flight' ? 1.2 : 1.6 } }));
 
-// Sprites as rows of palette keys.
+// One-way loops: fade in at the start pin, travel at a steady speed, park at the end pin,
+// fade out, wait offstage, then begin again from the start. Nothing jumps while visible.
+const loop = (len: number, speed: number, begin: number, i: number) => {
+  const hold = 0.5;
+  const travel = Math.max(3, len / speed);
+  const park = 1.4;
+  const fade = 0.6;
+  const gap = 1.2 + (i % 4) * 0.8;
+  const T = hold + travel + park + fade + gap;
+  const k = (s: number) => (s / T).toFixed(4);
+  return {
+    dur: `${T.toFixed(2)}s`,
+    begin: `mapgo.begin+${begin.toFixed(2)}s`,
+    motion: { keyPoints: '0;0;1;1', keyTimes: `0;${k(hold)};${k(hold + travel)};1` },
+    fade: { values: '0;1;1;0;0', keyTimes: `0;${k(hold)};${k(hold + travel + park)};${k(hold + travel + park + fade)};1` },
+  };
+};
+
+// Sprites as rows of palette keys, one map pixel each.
 const rects = (rows: string[], pal: Record<string, string>, ox = 0, oy = 0) =>
   rows.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [{ x: x + ox, y: y + oy, fill: pal[k] }])));
+const carRows = ['....KKKKKKK...', '...KWWKWWWWK..', '..KWWWKWWWWWK.', '.KhhhhhhhhhhhK', 'KCCCCCCCCCCCCK', 'KCCCCCCCCCCCYK', 'KcKKKccccKKKcK', '.KgggK..KgggK.', '..KKK....KKK..'];
+const carPal = { C: '#e43b44', c: '#a8304e', h: '#ff8e8e', W: '#bdeeff', K: '#0c0a18', Y: '#ffcd75', g: '#9aa3c7' };
+const skiPal = { ...carPal, C: '#5cb8ff', c: '#3b5dc9', h: '#d0ecff', R: '#e43b44' };
+const car = rects(carRows, carPal, -7, -7);
+const skiCar = rects(['.RRRRRRRRRRRR.', '....KK..KK....', ...carRows], skiPal, -7, -9);
+const plane = rects(
+  ['......KK......', '......KWK.....', '.KK...KWWK....', '.KRK..KWWWK...', '.KWWKKKWWWWKK.', 'KWWWWWWWWWWWBK', '.KwwKKKwwwwKK.', '.KwK..KwwwK...', '.KK...KwwK....', '......KwK.....', '......KK......'],
+  { W: '#fdf6e3', w: '#bdb3db', K: '#0c0a18', B: '#5cb8ff', R: '#e43b44' },
+  -7,
+  -5.5,
+);
 const walkerPal = { H: '#5c3a2e', S: '#f2c4a2', J: '#2b2350', T: '#fdf6e3', L: '#1b1533', B: '#0c0a18' };
 const walker = [
   rects(['.HHH.', 'HHSS.', '.SSS.', '.JTJ.', 'JJTJJ', '.JJJ.', '.L.L.', '.B.B.'], walkerPal, -2.5, -8),
   rects(['.HHH.', 'HHSS.', '.SSS.', '.JTJ.', 'JJTJJ', '.JJJ.', '..LL.', '.B..B'], walkerPal, -2.5, -8),
 ];
-const car = rects(['.CCC...', 'CWWCCC.', 'CCCCCCC', '.k...k.'], { C: '#e43b44', W: '#bdeeff', k: '#0c0a18' }, -3.5, -4);
-const plane = rects(['...W...', '..WW...', 'WWWWWWW', '..WW...', '...W...'], { W: '#fdf6e3' }, -3.5, -2.5);
+
+const movers = [
+  ...routes.map((r, i) => ({
+    id: r.id,
+    href: `#p-${r.kind === 'flight' ? 'f-' : ''}${r.id}`,
+    sprite: r.kind === 'flight' ? plane : r.cat === 'ski' ? skiCar : car,
+    west: r.west,
+    ...loop(r.len, r.kind === 'flight' ? 34 : 16, r.reveal.delay + r.reveal.dur, i),
+  })),
+];
+const walk = loop(main.len, 9, MAIN_REVEAL.delay + 0.4, 0);
+
 const cloudRows = ['..cccc.....', '.cccccc.cc.', 'ccccccccccc', '.ccccccccc.'];
 const clouds = [
   { x: -40, y: 30, dur: 70, delay: 0 },
@@ -39,51 +83,73 @@ const clouds = [
   { x: -40, y: 70, dur: 110, delay: -75 },
 ];
 
-const kindColor: Record<string, string> = { home: '#ffcd75', school: '#5cb8ff', work: '#ffcd75', remote: '#b99cff', trip: '#73eff7' };
-const pinColor = (p: { kind: string; husker?: boolean }) => (p.husker ? '#ff6b7f' : kindColor[p.kind]);
+// Pins: career stops are gold (school blue); trip pins stripe their categories.
+const kindColor = { home: GOLD, school: '#5cb8ff', work: GOLD };
+const pins = [
+  ...career.map((p) => ({ id: p.id, short: p.name.replace(/, [A-Z]{2}$/, ''), label: p.label, ...xy(p), fills: [kindColor[p.kind]], career: true })),
+  ...tripPins.map((p) => ({ id: p.id, short: p.short ?? p.name.replace(/, [A-Z]{2}$/, ''), label: p.label, ...xy(p), fills: p.cats.map((c) => cats[c].color[0]), career: false })),
+].map((p, i) => ({ ...p, order: i }));
+const nyc = pins.find((p) => p.id === 'nyc')!;
+
+// Label placement around a pin.
+const label = (p: { x: number; y: number; label: string }) =>
+  p.label === 'n' ? { x: p.x, y: p.y - 5, a: 'middle' } : p.label === 's' ? { x: p.x, y: p.y + 9.5, a: 'middle' } : p.label === 'e' ? { x: p.x + 5, y: p.y + 2, a: 'start' } : { x: p.x - 5, y: p.y + 2, a: 'end' };
+
 const nebraska = point(-99.5, 41.5);
 // An I-80 shield on the main route, somewhere in Illinois.
 const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.BBBBB.', '..BBB..'], { B: '#29366f', R: '#e43b44', W: '#fdf6e3' }, point(-89.2, 41.5).x - 3.5, point(-89.2, 41.5).y - 11);
+
+// The side-quest summary under the map: each category with its places.
+const summary = catOrder.map((c) => {
+  const places: { name: string; n: number }[] = [];
+  for (const t of trips.filter((t) => t.cat === c)) {
+    const hit = places.find((p) => p.name === t.place);
+    if (hit) hit.n++;
+    else places.push({ name: t.place, n: 1 });
+  }
+  return { c, ...cats[c], count: tally.byCat[c], places };
+});
 ---
 
 <section id="map" class="section wrap" aria-labelledby="map-title" data-map>
   <header class="section-head">
     <span class="num">04</span>
     <h2 id="map-title">World map</h2>
-    <p>Everywhere I've lived, worked or road-tripped. The main quest runs along I-80; the side quests go everywhere else.</p>
+    <p>Everywhere I've lived, worked or traveled. The main quest runs along I-80 with a summer detour to San Francisco; the side quests go everywhere else.</p>
   </header>
 
   <figure class="map panel">
     <ul class="legend" role="list">
-      <li><i class="key main"></i>Main quest</li>
-      <li><i class="key remote"></i>Remote</li>
-      <li><i class="key trip"></i>Road trip</li>
-      <li><i class="key husker"></i>Husker away game</li>
+      <li><i class="key" style={`--k: ${GOLD}`}></i>Main quest</li>
+      {catOrder.map((c) => <li><i class="key" style={`--k: ${cats[c].color[0]}`}></i>{cats[c].label}</li>)}
+      <li><i class="key dots"></i>Flight</li>
       <li><i class="key now"></i>Current save</li>
     </ul>
     <div class="frame" data-frame style={`--nx: ${(nebraska.x / W).toFixed(3)}`}>
       <div class="canvas">
-        <img src="/art/usmap.png" width={W} height={H} alt="Pixel-art map of the United States with Charlie's route from Kearney, Nebraska to New York and his road trips." loading="lazy" decoding="async" />
+        <img src="/art/usmap.png" width={W} height={H} alt="Pixel-art map of the United States with Charlie's route from Kearney, Nebraska to New York, a flight to San Francisco, and pins for his road trips, vacations, work trips, ski trips and Husker away games." loading="lazy" decoding="async" />
         <svg viewBox={`0 0 ${W} ${H}`} shape-rendering="crispEdges" aria-hidden="true" focusable="false">
           <defs>
-            <mask id="m-main" maskUnits="userSpaceOnUse"><path class="reveal" d={main} pathLength="1" style="--delay: 0.2s; --dur: 3.2s" /></mask>
-            <mask id="m-remote" maskUnits="userSpaceOnUse"><path class="reveal" d={remote} pathLength="1" style="--delay: 1.6s; --dur: 1.6s" /></mask>
-            {routes.map((r, i) => <mask id={`m-${r.id}`} maskUnits="userSpaceOnUse"><path class="reveal" d={r.d} pathLength="1" style={`--delay: ${3.4 + i * 0.6}s; --dur: 1.8s`} /></mask>)}
-            {flights.map((f, i) => <mask id={`m-f-${f.id}`} maskUnits="userSpaceOnUse"><path class="reveal" d={f.d} pathLength="1" style={`--delay: ${5.6 + i * 0.6}s; --dur: 1.4s`} /></mask>)}
-            <path id="p-main" d={main} />
-            <path id="p-remote" d={remote} />
-            {routes.map((r) => <path id={`p-${r.id}`} d={r.d} />)}
-            {flights.map((f) => <path id={`p-f-${f.id}`} d={f.d} />)}
+            <mask id="m-main" maskUnits="userSpaceOnUse"><path class="reveal" d={main.d} pathLength="1" style={`--delay: ${MAIN_REVEAL.delay}s; --dur: ${MAIN_REVEAL.dur}s`} /></mask>
+            {
+              routes.map((r) => (
+                <mask id={`m-${r.kind === 'flight' ? 'f-' : ''}${r.id}`} maskUnits="userSpaceOnUse">
+                  <path class="reveal" d={r.d} pathLength="1" style={`--delay: ${r.reveal.delay}s; --dur: ${r.reveal.dur}s`} />
+                </mask>
+              ))
+            }
+            <path id="p-main" d={main.d} />
+            {routes.map((r) => <path id={`p-${r.kind === 'flight' ? 'f-' : ''}${r.id}`} d={r.d} />)}
           </defs>
           <animate id="mapgo" attributeName="opacity" from="1" to="1" dur="0.1s" begin="indefinite" />
 
           <g class="routes" fill="none" stroke-linecap="square">
-            {routes.map((r) => (
-              <path d={r.d} mask={`url(#m-${r.id})`} class:list={['route', r.trip.husker ? 'husker' : 'trip']} />
-            ))}
-            {flights.map((f) => <path d={f.d} mask={`url(#m-f-${f.id})`} class:list={['route flight', f.id === 'la' ? 'husker' : 'trip']} />)}
-            <path d={remote} mask="url(#m-remote)" class="route remote" />
-            <path d={main} mask="url(#m-main)" class="route main" />
+            {
+              routes.map((r) => (
+                <path d={r.d} mask={`url(#m-${r.kind === 'flight' ? 'f-' : ''}${r.id})`} class:list={['route', r.kind, { mainline: r.cat === 'main' }]} style={`--c: ${colorOf(r.cat)}`} />
+              ))
+            }
+            <path d={main.d} mask="url(#m-main)" class="route mainline" style={`--c: ${GOLD}`} />
           </g>
           <g class="shield">{shield.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}</g>
 
@@ -91,12 +157,15 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
             {
               pins.map((p) => {
                 const l = label(p);
+                const w = 3 / p.fills.length;
                 return (
-                  <g class="pin" style={`--d: ${(0.25 + p.order * 0.35).toFixed(2)}s; transform-origin: ${p.x.toFixed(1)}px ${p.y.toFixed(1)}px`}>
+                  <g class="pin" style={`--d: ${(0.25 + p.order * 0.18).toFixed(2)}s; transform-origin: ${p.x.toFixed(1)}px ${p.y.toFixed(1)}px`}>
                     <rect x={p.x - 2.5} y={p.y - 2.5} width="5" height="5" fill="#0c0a18" />
-                    <rect x={p.x - 1.5} y={p.y - 1.5} width="3" height="3" fill={pinColor(p)} />
-                    <text x={l.x} y={l.y} text-anchor={l.a} class="lbl">
-                      {short(p.name)}
+                    {p.fills.map((f, i) => (
+                      <rect x={p.x - 1.5 + i * w} y={p.y - 1.5} width={w} height="3" fill={f} />
+                    ))}
+                    <text x={l.x} y={l.y} text-anchor={l.a} class:list={['lbl', { major: p.career }]}>
+                      {p.short}
                     </text>
                   </g>
                 );
@@ -106,31 +175,23 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
           </g>
 
           <g class="movers">
-            {[0, 0.8, 1.6].map((b) => (
-              <rect x="-1" y="-1" width="2" height="2" fill="#b99cff">
-                <animateMotion dur="2.4s" begin={`mapgo.begin+${b + 2}s`} repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
-                  <mpath href="#p-remote" />
-                </animateMotion>
-              </rect>
-            ))}
-            {routes.map((r, i) => (
-              <g>
-                {car.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}
-                <animateMotion dur={`${9 + i * 1.5}s`} begin={`mapgo.begin+${4 + i * 0.6}s`} repeatCount="indefinite" keyPoints="0;1;1;0;0" keyTimes="0;0.42;0.5;0.92;1" calcMode="linear">
-                  <mpath href={`#p-${r.id}`} />
-                </animateMotion>
-              </g>
-            ))}
-            {flights.map((f, i) => (
-              <g>
-                {plane.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />)}
-                <animateMotion dur={`${7 + i}s`} begin={`mapgo.begin+${6 + i * 0.6}s`} repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.7;1" calcMode="linear">
-                  <mpath href={`#p-f-${f.id}`} />
-                </animateMotion>
-              </g>
-            ))}
-            <g>
-              <g class="walk">
+            {
+              movers.map((m) => (
+                <g opacity="0">
+                  <g transform={m.west ? 'scale(-1 1)' : undefined}>
+                    {m.sprite.map((c) => (
+                      <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />
+                    ))}
+                  </g>
+                  <animateMotion dur={m.dur} begin={m.begin} repeatCount="indefinite" calcMode="linear" keyPoints={m.motion.keyPoints} keyTimes={m.motion.keyTimes}>
+                    <mpath href={m.href} />
+                  </animateMotion>
+                  <animate attributeName="opacity" dur={m.dur} begin={m.begin} repeatCount="indefinite" calcMode="linear" values={m.fade.values} keyTimes={m.fade.keyTimes} />
+                </g>
+              ))
+            }
+            <g opacity="0">
+              <g class="walk" transform="scale(1.4)">
                 {walker.map((frame, i) => (
                   <g class={`wf wf-${i}`}>
                     {frame.map((c) => (
@@ -139,9 +200,10 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
                   </g>
                 ))}
               </g>
-              <animateMotion dur="18s" begin="mapgo.begin+0.2s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.82;1" calcMode="linear">
+              <animateMotion dur={walk.dur} begin={walk.begin} repeatCount="indefinite" calcMode="linear" keyPoints={walk.motion.keyPoints} keyTimes={walk.motion.keyTimes}>
                 <mpath href="#p-main" />
               </animateMotion>
+              <animate attributeName="opacity" dur={walk.dur} begin={walk.begin} repeatCount="indefinite" calcMode="linear" values={walk.fade.values} keyTimes={walk.fade.keyTimes} />
             </g>
           </g>
 
@@ -188,20 +250,22 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
       <h3 id="sq-title" class="pixel">Side quests</h3>
       <ul role="list">
         {
-          trips.map((p) => (
+          summary.map((s) => (
             <li>
-              <i class:list={['key', p.husker ? 'husker' : 'trip']} />
+              <i class="key" style={`--k: ${s.color[0]}`} />
               <div>
                 <p class="place">
-                  <strong>{p.name}</strong> <span class="when">{p.when}</span>
-                  {p.husker && <span class="tag pixel">GBR</span>}
+                  <strong>{s.plural}</strong> <span class="when">{s.count}</span>
                 </p>
-                <p class="note">{p.note}</p>
+                <p class="note">{s.places.map((p) => (p.n > 1 ? `${p.name} ×${p.n}` : p.name)).join(' · ')}</p>
               </div>
             </li>
           ))
         }
       </ul>
+      <p class="more">
+        <a href="#side-quests">Every trip is stamped in the travel log ↓</a>
+      </p>
     </section>
   </div>
 </section>
@@ -253,27 +317,19 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
 
   .key {
     display: inline-block;
+    flex: none;
     width: 0.8em;
     height: 0.8em;
     margin-right: 0.45em;
     vertical-align: -0.05em;
+    background: var(--k);
     box-shadow: inset 0 0 0 2px #0c0a18;
   }
 
-  .key.main {
-    background: var(--gold);
-  }
-
-  .key.remote {
-    background: var(--violet);
-  }
-
-  .key.trip {
-    background: var(--teal);
-  }
-
-  .key.husker {
-    background: var(--red);
+  .key.dots {
+    width: 1.4em;
+    background: repeating-linear-gradient(90deg, var(--ink-soft) 0 2px, transparent 2px 5px) center / 100% 2px no-repeat;
+    box-shadow: none;
   }
 
   .key.now {
@@ -316,33 +372,24 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     }
   }
 
-  /* Routes: pixel-dotted lines. */
+  /* Routes: pixel-dotted lines; flights are sparser dots. */
   .route {
+    stroke: var(--c);
     stroke-width: 1.2;
     stroke-dasharray: 2 1.4;
   }
 
-  .route.main {
-    stroke: var(--gold);
+  .route.flight {
+    stroke-dasharray: 0.8 2.4;
+  }
+
+  .route.mainline {
     stroke-width: 1.6;
     stroke-dasharray: 2.4 1.2;
   }
 
-  .route.remote {
-    stroke: var(--violet);
-    stroke-dasharray: 0.8 2.2;
-  }
-
-  .route.trip {
-    stroke: var(--teal);
-  }
-
-  .route.husker {
-    stroke: var(--red);
-  }
-
-  .route.flight {
-    stroke-dasharray: 0.8 2.4;
+  .route.flight.mainline {
+    stroke-dasharray: 1.2 2;
   }
 
   /* Draw-on: the mask paths reveal each route. Without JS everything is drawn. */
@@ -363,14 +410,19 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
   }
 
   .lbl {
-    fill: var(--ink);
+    fill: var(--ink-soft);
     font-family: var(--font-pixel);
-    font-size: 6.5px;
+    font-size: 6px;
     paint-order: stroke;
     stroke: #0c0a18;
     stroke-width: 1.6px;
     stroke-linejoin: round;
     shape-rendering: auto;
+  }
+
+  .lbl.major {
+    fill: var(--ink);
+    font-size: 6.5px;
   }
 
   .pin {
@@ -536,16 +588,13 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     font-size: var(--step--1);
   }
 
-  .tag {
-    margin-left: 0.4em;
-    padding: 0 0.35em;
-    background: var(--red);
-    color: var(--bg);
+  .note {
+    color: var(--ink-soft);
     font-size: var(--step--1);
   }
 
-  .note {
-    color: var(--ink-soft);
+  .more {
+    margin-top: var(--space-s);
     font-size: var(--step--1);
   }
 

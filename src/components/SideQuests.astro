@@ -1,28 +1,125 @@
 ---
+// Side quests: a passport of every trip (stamps grouped by year, filterable by
+// category once JS loads), the hobbies Charlie keeps leveling, and the writing codex.
+// Trip and hobby data: src/data/sidequests.ts. The world map pins the same trips.
 import Icon from './Icon.astro';
-import { codex, sideQuests } from '../data/profile';
+import PixelArt from './PixelArt.astro';
+import { codex } from '../data/profile';
+import { cats, catOrder, hobbies, postmark, stampArt, tally, tripsByYear, when } from '../data/sidequests';
+
+const tiles = [
+  { n: tally.trips, label: 'trips' },
+  { n: tally.states, label: 'states' },
+  { n: tally.byCat.work, label: 'work trips' },
+  { n: tally.byCat.husker, label: 'Husker away games' },
+  { n: tally.byCat.ski, label: 'ski trips' },
+];
+const XP_SEGMENTS = 10;
 ---
 
-<section id="side-quests" class="section wrap" aria-labelledby="side-title">
+<section id="side-quests" class="section wrap" aria-labelledby="side-title" data-sq>
   <header class="section-head">
     <span class="num">10</span>
     <h2 id="side-title">Side quests</h2>
-    <p>Outside work I'm usually deep in something new. I switch often and keep notes on what sticks.</p>
+    <p>The trips and the hobbies. Every stamp below is a real trip, from Husker road games to ski weekends, conferences and a summer in San Francisco.</p>
   </header>
 
-  <ul class="quests" role="list">
+  <dl class="tally">
     {
-      sideQuests.map((s) => (
-        <li class="panel">
-          <Icon name={s.icon} color={s.color} scale={4} class="icon" />
-          <h3 class="pixel">{s.name}</h3>
-          <p>{s.note}</p>
+      tiles.map((t) => (
+        <div class="tile panel">
+          <dt>{t.label}</dt>
+          <dd class="pixel">{t.n}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <div class="log-head">
+    <h3 class="pixel sub" id="log-title">Travel log</h3>
+    <div class="filters" role="group" aria-label="Filter trips by type" data-filters hidden>
+      <button type="button" aria-pressed="true" data-f="all">All <span>{tally.trips}</span></button>
+      {
+        catOrder.map((c) => (
+          <button type="button" aria-pressed="false" data-f={c} style={`--c: ${cats[c].color[0]}`}>
+            <i class="dot" />
+            {cats[c].plural} <span>{tally.byCat[c]}</span>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+  <p class="visually-hidden" aria-live="polite" data-status></p>
+
+  <ol class="passport panel" role="list" aria-labelledby="log-title">
+    {
+      tripsByYear.map((g) => (
+        <li class="year" data-year>
+          <h4 class="pixel">{g.year}</h4>
+          <ul class="stamps" role="list">
+            {g.trips.map((t) => {
+              const [c1, c2, c3] = cats[t.cat].color;
+              return (
+                <li class="stamp" data-cat={t.cat} style={`--c: ${c1}; --c2: ${c2}; --c3: ${c3}`}>
+                  <article>
+                    <PixelArt art={stampArt(t.icon ?? cats[t.cat].icon, t.cat)} scale={3} class="art" />
+                    <p class="postmark pixel" aria-hidden="true">
+                      {postmark(t)}
+                    </p>
+                    <h5 class="pixel">
+                      {t.place}, {t.state}
+                    </h5>
+                    <p class="date">
+                      {when(t)}
+                      {t.by && <span class="by"> · {t.by === 'plane' ? 'flew' : 'drove'}</span>}
+                    </p>
+                    <p class="note">{t.note}</p>
+                    <p class="kind pixel">{cats[t.cat].label}</p>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
         </li>
       ))
     }
+  </ol>
+
+  <h3 class="pixel sub">Hobby quests</h3>
+  <ul class="hobbies" role="list">
+    {
+      hobbies.map((h) => {
+        const filled = h.xp && h.xp.value != null ? Math.round((h.xp.value / h.xp.max) * XP_SEGMENTS) : 0;
+        return (
+          <li class="hobby panel">
+            <div class="top">
+              <Icon name={h.icon} color={h.color} scale={3} class="icon" />
+              <h4 class="pixel">{h.name}</h4>
+              <span class="lv pixel">{h.level}</span>
+            </div>
+            {h.stat && (
+              <p class="stat">
+                <strong class="pixel">{h.stat}</strong> {h.unit}
+              </p>
+            )}
+            {h.xp && (
+              <div class="xp">
+                <span class:list={['bar', { wip: h.xp.value == null }]} aria-hidden="true">
+                  {Array.from({ length: XP_SEGMENTS }, (_, i) => (
+                    <i class:list={{ on: i < filled }} />
+                  ))}
+                </span>
+                <span class="xp-label">{h.xp.label}</span>
+              </div>
+            )}
+            <p class="note">{h.note}</p>
+          </li>
+        );
+      })
+    }
   </ul>
 
-  <h3 class="pixel codex-title">Codex</h3>
+  <h3 class="pixel sub codex-title">Codex</h3>
   <ul class="codex" role="list">
     {
       codex.map((c) => (
@@ -40,39 +137,401 @@ import { codex, sideQuests } from '../data/profile';
   </ul>
 </section>
 
+<script>
+  // Category filters. Without JS the buttons stay hidden and every stamp shows.
+  const root = document.querySelector<HTMLElement>('[data-sq]');
+  const bar = root?.querySelector<HTMLElement>('[data-filters]');
+  const status = root?.querySelector<HTMLElement>('[data-status]');
+  if (root && bar) {
+    const buttons = [...bar.querySelectorAll<HTMLButtonElement>('button')];
+    const stamps = [...root.querySelectorAll<HTMLElement>('.stamp')];
+    const years = [...root.querySelectorAll<HTMLElement>('[data-year]')];
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    bar.hidden = false;
+    bar.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('button');
+      if (!btn) return;
+      const f = btn.dataset.f!;
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      let shown = 0;
+      for (const s of stamps) {
+        const on = f === 'all' || s.dataset.cat === f;
+        s.hidden = !on;
+        if (on) {
+          shown++;
+          if (!calm) {
+            s.classList.remove('thunk');
+            void s.offsetWidth;
+            s.classList.add('thunk');
+          }
+        }
+      }
+      for (const y of years) y.hidden = !y.querySelector('.stamp:not([hidden])');
+      if (status) status.textContent = `Showing ${shown} ${f === 'all' ? 'trips' : btn.textContent!.replace(/\d+/, '').trim().toLowerCase()}.`;
+    });
+  }
+</script>
+
 <style>
-  .quests {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: var(--space-s);
+  .sub {
+    margin-bottom: var(--space-s);
+    color: var(--gold);
+    font-size: var(--step-2);
   }
 
-  .quests li {
+  /* Tally tiles. */
+  .tally {
     display: grid;
-    justify-items: start;
-    gap: 6px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-s);
+    margin-bottom: var(--space-xl);
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
     padding: var(--space-s);
   }
 
-  .quests :global(.icon) {
-    width: 48px;
-    height: 48px;
+  .tile dt {
+    color: var(--ink-soft);
+    font-size: var(--label);
   }
 
-  h3 {
+  .tile dd {
+    color: var(--gold);
+    font-size: var(--step-4);
+    line-height: 0.9;
+  }
+
+  /* Filters. */
+  .log-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xs) var(--space-m);
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-s);
+  }
+
+  .filters[hidden] {
+    display: none;
+  }
+
+  .filters button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.3rem 0.6rem;
+    border: 0;
+    background: var(--panel);
+    box-shadow: inset 0 0 0 2px var(--line);
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--label);
+    cursor: pointer;
+  }
+
+  .filters button span {
+    color: var(--ink);
+  }
+
+  .filters button:hover {
+    box-shadow: inset 0 0 0 2px var(--c, var(--gold));
+  }
+
+  .filters button[aria-pressed='true'] {
+    background: var(--c, var(--gold));
+    box-shadow: inset 0 0 0 2px #0c0a18;
+    color: var(--bg);
+  }
+
+  .filters button[aria-pressed='true'] span {
+    color: var(--bg);
+  }
+
+  .filters button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .dot {
+    width: 0.65em;
+    height: 0.65em;
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px #0c0a18;
+  }
+
+  /* The passport: one row of stamps per year. */
+  .passport {
+    display: grid;
+    gap: var(--space-m);
+    margin-bottom: var(--space-xl);
+    padding: var(--space-m);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 23px, rgb(255 255 255 / 0.025) 23px 24px),
+      var(--panel);
+  }
+
+  .year {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: var(--space-s);
+    align-items: start;
+  }
+
+  .year[hidden] {
+    display: none;
+  }
+
+  .year h4 {
+    position: sticky;
+    top: var(--space-s);
+    color: var(--ink-soft);
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .stamps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: var(--space-s);
+  }
+
+  /* A stamp: cream paper inside a perforated edge, framed in the category color. */
+  .stamp {
+    --paper: #fdf6e3;
+    position: relative;
+    padding: 6px;
+    background: var(--c);
+  }
+
+  .stamp[hidden] {
+    display: none;
+  }
+
+  .stamp::before {
+    position: absolute;
+    inset: -3px;
+    border: 4px dotted var(--panel);
+    content: '';
+    pointer-events: none;
+  }
+
+  .stamp article {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    height: 100%;
+    padding: 0.6rem 0.65rem 0.55rem;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 2px var(--c2);
+    color: #141026;
+  }
+
+  .stamp :global(.art) {
+    width: 42px;
+    height: auto;
+    margin-bottom: 4px;
+  }
+
+  .postmark {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.45rem;
+    display: grid;
+    place-items: center;
+    width: 3.4rem;
+    height: 3.4rem;
+    padding: 0.35rem;
+    border: 2px dashed var(--c2);
+    border-radius: 50%;
+    color: var(--c2);
+    font-size: 0.8rem;
+    line-height: 0.95;
+    text-align: center;
+    text-transform: uppercase;
+    opacity: 0.75;
+    transform: rotate(-14deg);
+  }
+
+  .stamp h5 {
+    margin: 0;
+    padding-right: 0.25rem;
     font-size: var(--step-1);
-    font-weight: 700;
+    line-height: 1.05;
   }
 
-  .quests p {
+  .date {
+    color: #4a3f6b;
+    font-size: var(--label);
+    font-weight: 600;
+  }
+
+  .by {
+    font-weight: 400;
+  }
+
+  .stamp .note {
+    margin-top: 2px;
+    color: #3b3256;
+    font-size: var(--label);
+    line-height: 1.35;
+  }
+
+  .kind {
+    align-self: end;
+    justify-self: start;
+    margin-top: 6px;
+    padding: 0 0.4em;
+    background: var(--c2);
+    color: var(--paper);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp {
+      transition: transform 0.12s steps(2);
+    }
+
+    .stamp:hover {
+      transform: translateY(-3px);
+    }
+
+    .stamp.thunk {
+      animation: side-thunk 0.24s steps(3);
+    }
+  }
+
+  @keyframes side-thunk {
+    0% {
+      transform: scale(1.08);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Hobby quests. */
+  .hobbies {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .hobby {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: var(--space-s);
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .hobby :global(.icon) {
+    flex: none;
+    width: 36px;
+    height: 36px;
+  }
+
+  .hobby h4 {
+    font-size: var(--step-1);
+  }
+
+  .lv {
+    margin-left: auto;
+    padding: 0 0.4em;
+    box-shadow: inset 0 0 0 2px var(--line);
+    color: var(--teal);
+    font-size: var(--label);
+    white-space: nowrap;
+  }
+
+  .stat {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .stat strong {
+    margin-right: 0.15em;
+    color: var(--ink);
+    font-size: var(--step-3);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .xp {
+    display: grid;
+    gap: 4px;
+  }
+
+  .bar {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+    height: 10px;
+    padding: 2px;
+    background: #0c0a18;
+  }
+
+  .bar i {
+    background: var(--panel-2);
+  }
+
+  .bar i.on {
+    background: var(--gold);
+    box-shadow: inset 0 -2px 0 #e0884a;
+  }
+
+  .bar.wip {
+    background: repeating-linear-gradient(90deg, var(--blue) 0 6px, #0c0a18 6px 12px);
+    background-size: 24px 100%;
+  }
+
+  .bar.wip i {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar.wip {
+      animation: side-load 1.2s steps(4) infinite;
+    }
+  }
+
+  @keyframes side-load {
+    to {
+      background-position: 24px 0;
+    }
+  }
+
+  .xp-label {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .hobby .note {
     color: var(--ink-soft);
     font-size: var(--label);
     line-height: 1.4;
   }
 
+  /* Codex. */
   .codex-title {
-    margin: var(--space-xl) 0 var(--space-s);
-    color: var(--gold);
+    margin-top: var(--space-xl);
   }
 
   .codex {
@@ -89,12 +548,12 @@ import { codex, sideQuests } from '../data/profile';
     border-bottom: 2px solid var(--line);
   }
 
-  .state {
+  .entry .state {
     color: var(--teal);
     font-size: var(--label);
   }
 
-  h4 {
+  .entry h4 {
     font-size: var(--step-1);
     font-weight: 600;
   }
@@ -105,19 +564,77 @@ import { codex, sideQuests } from '../data/profile';
   }
 
   @media (max-width: 999px) {
-    .quests {
+    .tally {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .hobbies {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (max-width: 559px) {
-    .quests {
+  @media (max-width: 639px) {
+    .tally {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tally {
+      gap: var(--space-xs);
+    }
+
+    .tally .tile:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .tile {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.6rem var(--space-s);
+    }
+
+    .tile dd {
+      font-size: var(--step-3);
+    }
+
+    .passport {
+      padding: var(--space-s);
+    }
+
+    .year {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-xs);
+    }
+
+    .year h4 {
+      position: static;
+    }
+
+    .stamps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .stamp article {
+      padding: 0.5rem;
+    }
+
+    .postmark {
+      width: 2.9rem;
+      height: 2.9rem;
+      font-size: 0.7rem;
     }
 
     .entry {
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .hobbies {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>
