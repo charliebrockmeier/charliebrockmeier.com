@@ -1,0 +1,45 @@
+{
+  "asOf": "2026-10-22",
+  "source": "Claude Code on the web, session usage",
+  "sessions": 6,
+  "firstSession": "2026-09-10",
+  "models": [
+    "Claude Opus 5",
+    "Claude Opus 5.5"
+  ],
+  "totals": {
+    "cacheRead": 4089154268,
+    "cacheWrite": 52089504,
+    "input": 7338155,
+    "output": 15450319,
+    "cost": 1890.03,
+    "total": 4164032246
+  },
+  "byProject": [
+    {
+      "name": "Faceless engine",
+      "sessions": 1,
+      "total": 2227897731,
+      "output": 9357398
+    },
+    {
+      "name": "Locus",
+      "sessions": 2,
+      "total": 1457048799,
+      "output": 4451677
+    },
+    {
+      "name": "This site",
+      "sessions": 1,
+      "total": 471161819,
+      "output": 1588162
+    },
+    {
+      "name": "Everything else",
+      "sessions": 2,
+      "total": 7923897,
+      "output": 53082
+    }
+  ],
+  "local": null
+}

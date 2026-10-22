@@ -28,6 +28,7 @@ npm run dev        # http://localhost:4321
 | `src/data/pixels.ts` | Hand-drawn sprite and icons, as rows of palette keys |
 | `scripts/art/` | The pixel scenes, map and journey, drawn in code. `npm run art` regenerates `public/art/*.png` |
 | `scripts/fetch-stats.mjs` | Pulls chess.com games and public GitHub repos into `src/data/live.json`. Runs before every `npm run build`, or alone with `npm run stats`; keeps the last numbers if a source is down |
+| `scripts/claude-stats.mjs` | Adds Claude Code usage from your own computer to `src/data/claude.json` (totals only). Run `npm run claude-stats`, then commit |
 | `src/scripts/chess/` | Charlie's Caro-Kann bot: chess.js rules, js-chess-engine in a worker, strength matched to his rating |
 | `src/components/` | One component per section |
 | `src/styles/tokens.css` | The "Dusk" palette, type scale and spacing |

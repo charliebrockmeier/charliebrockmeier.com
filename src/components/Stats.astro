@@ -2,6 +2,7 @@
 // "Stats nobody asked for": chess up top (live from chess.com at build), then a
 // card for everything else.
 import Chess from './Chess.astro';
+import ClaudeStats from './ClaudeStats.astro';
 import Icon from './Icon.astro';
 import { statBlocks } from '../data/profile';
 
@@ -12,11 +13,12 @@ const cards = statBlocks.filter((b) => b.id !== 'chess');
   <header class="section-head">
     <span class="num">05</span>
     <h2 id="stats-title">Stats</h2>
-    <p>Stats nobody asked for, pulled from chess.com and my apps' own recap emails.</p>
+    <p>Stats nobody asked for, pulled from chess.com, Claude Code and my apps' own recap emails.</p>
   </header>
 
   <Chess />
   <slot />
+  <ClaudeStats />
 
   <div class="cards">
     {

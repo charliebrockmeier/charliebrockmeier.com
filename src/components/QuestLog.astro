@@ -15,10 +15,12 @@ const TRACKS: { key: Track; label: string; color: string }[] = [
 const MAX = 10;
 const trackColor = Object.fromEntries(TRACKS.map((t) => [t.key, t.color]));
 
-// Chart geometry: one column per chapter, levels 0–10 bottom to top.
+// Chart geometry: one column per chapter plus one for the chapter that hasn't
+// happened yet, levels 0–10 bottom to top.
 const W = 640;
 const H = 196;
-const x = (i: number) => 60 + i * ((W - 104) / (quests.length - 1));
+const x = (i: number) => 60 + i * ((W - 104) / quests.length);
+const NEXT = quests.length;
 const y = (level: number) => 160 - level * 13;
 // Each track runs a few pixels off the others, like lines on a transit map, so two
 // tracks at the same level sit side by side instead of hiding one another.
@@ -36,19 +38,21 @@ const path = (key: Track, k: number) =>
 const meet = quests.findIndex((q) => q.title === 'Vantager');
 const short = (chapter: string) => (chapter === 'Prologue' ? 'Start' : chapter.replace('Chapter ', 'Ch '));
 const final = quests.at(-1)!.levels;
+// Where each track heads next: a dashed line out to the open column.
+const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off(k)} H ${x(NEXT) - 10}`;
 ---
 
 <section id="quests" class="section wrap" aria-labelledby="quests-title">
   <header class="section-head">
     <span class="num">03</span>
     <h2 id="quests-title">Quest log</h2>
-    <p>Finance at the core, then code, then AI. Every chapter leveled something up, and it all came together at Vantager.</p>
+    <p>Finance at the core, then code, then AI. Every chapter leveled something up, it all came together at Vantager, and the log is still being written.</p>
   </header>
 
   <figure class="tree panel" data-reveal>
     <figcaption>
       <span class="pixel">Skill tree</span>
-      <span class="hint">Levels after each chapter, out of 10</span>
+      <span class="hint">Levels after each chapter, out of 10. The last column is still open.</span>
     </figcaption>
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -57,6 +61,11 @@ const final = quests.at(-1)!.levels;
     >
       {[0, 2, 4, 6, 8, 10].map((lv) => <line x1="44" x2={W - 28} y1={y(lv)} y2={y(lv)} class="grid" />)}
       {quests.map((_, i) => <line x1={x(i)} x2={x(i)} y1={y(0)} y2={y(MAX)} class="grid col" />)}
+      <g class="next-col">
+        <rect x={x(NEXT) - 14} y={y(MAX) - 4} width="28" height={y(0) - y(MAX) + 8} />
+        <text x={x(NEXT)} y={y(5) + 6} text-anchor="middle">?</text>
+      </g>
+      {TRACKS.map((t, k) => <path d={ahead(t.key, k)} class="ahead" style={`--c: ${t.color}`} />)}
       {meet > -1 && (
         <g class="meet">
           <rect x={x(meet) - 24} y={y(9.7)} width="48" height={y(5.6) - y(9.7)} />
@@ -81,6 +90,9 @@ const final = quests.at(-1)!.levels;
           {short(q.chapter)}
         </text>
       ))}
+      <text class="tick next" x={x(NEXT)} y={H - 8} text-anchor="middle">
+        Next
+      </text>
       {[0, 5, 10].map((lv) => (
         <text class="tick lv" x="34" y={y(lv) + 4} text-anchor="end">
           {lv}
@@ -91,7 +103,7 @@ const final = quests.at(-1)!.levels;
       {TRACKS.map((t) => (
         <li style={`--c: ${t.color}`}>
           <i />
-          {t.label} <b class="pixel">Lv {final[t.key]}</b>
+          {t.label} <b class="pixel">Lv {final[t.key]} so far</b>
         </li>
       ))}
     </ul>
@@ -192,6 +204,30 @@ const final = quests.at(-1)!.levels;
         );
       })
     }
+    <li class="stop upcoming" data-reveal>
+      <span class="node" aria-hidden="true" />
+      <article class="quest panel next-quest">
+        <div class="next-art" aria-hidden="true">
+          <span class="pixel">?</span>
+        </div>
+        <div class="body">
+          <p class="meta pixel">
+            <span>Chapter {quests.length}</span>
+            <span class="chip">Not started</span>
+            <span class="when">Someday</span>
+          </p>
+          <h3>To be continued</h3>
+          <p class="summary">
+            7 World Trade is where I am now, not where this ends. The world keeps turning and this log keeps going: new chapters, new
+            skills and new side quests get added as they happen.
+          </p>
+          <p class="loot pixel">
+            <span>Unlocked: ???</span>
+            <span class="loading">Loading next chapter</span>
+          </p>
+        </div>
+      </article>
+    </li>
   </ol>
 </section>
 
@@ -253,6 +289,93 @@ const final = quests.at(-1)!.levels;
 
   .grid.col {
     stroke-dasharray: 1 5;
+  }
+
+  .next-col rect {
+    fill: color-mix(in srgb, var(--ink) 4%, transparent);
+    stroke: var(--line);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+  }
+
+  .next-col text {
+    fill: var(--ink-soft);
+    font-family: var(--font-pixel);
+    font-size: 22px;
+  }
+
+  .ahead {
+    fill: none;
+    stroke: var(--c);
+    stroke-width: 3;
+    stroke-dasharray: 4 5;
+    opacity: 0.55;
+  }
+
+  .tick.next {
+    fill: var(--ink-soft);
+  }
+
+  .next-quest {
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    opacity: 0.85;
+  }
+
+  .next-art {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3;
+    background: repeating-linear-gradient(45deg, var(--panel-2) 0 8px, var(--panel) 8px 16px);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .next-art span {
+    color: var(--ink-soft);
+    font-size: 2.5rem;
+  }
+
+  .upcoming .node {
+    background: transparent;
+    box-shadow:
+      inset 0 0 0 3px var(--line),
+      0 0 0 3px var(--bg);
+  }
+
+  .loading::after {
+    content: '...';
+    display: inline-block;
+    width: 1.5em;
+    overflow: hidden;
+    vertical-align: bottom;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ahead {
+      animation: quest-march 1.2s steps(4) infinite;
+    }
+
+    .next-col text {
+      animation: quest-glow 1.6s steps(2) infinite;
+    }
+
+    .loading::after {
+      animation: quest-dots 1.6s steps(4) infinite;
+    }
+  }
+
+  @keyframes quest-march {
+    to {
+      stroke-dashoffset: -9;
+    }
+  }
+
+  @keyframes quest-dots {
+    from {
+      width: 0;
+    }
+    to {
+      width: 1.5em;
+    }
   }
 
   .line {

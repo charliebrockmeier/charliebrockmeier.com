@@ -588,7 +588,7 @@ export const resume = {
       when: 'Mar 2026 – present',
       points: [
         'Work on MSCI’s AI-powered pre-investment diligence for private markets: tools that help pensions, endowments, foundations, family offices and wealth managers size up private funds before they commit capital.',
-        'Joined through MSCI’s March 2026 acquisition of Vantager, whose platform now anchors MSCI’s pre-investment diligence offering.',
+        'Joined through MSCI’s March 2026 acquisition of Vantager, an AI-native pre-investment diligence platform.',
         'Industry conferences for the business in 2026, including Future Proof and a CFA Institute conference.',
       ],
     },
@@ -599,10 +599,10 @@ export const resume = {
       when: 'Mar 2025 – Mar 2026',
       points: [
         'Early team member at an AI-native pre-investment diligence platform that turns GP data-room documents into diligence reports; part-time from March 2025, full-time in New York from June 2025, through the acquisition.',
-        'Built out the Template Marketplace: new diligence templates and easier access to them for customers.',
+        'Built out the platform’s library of diligence templates and made them easier for customers to find and use.',
         'Ran data-quality checks and platform QA on AI-generated diligence reports, focused on accuracy and user experience.',
         'Built golden datasets to evaluate and improve the AI system, and financial models for the business.',
-        'Turned customer feedback into product work: built the CEO’s meeting-note and customer-feedback system, ran product demos, and worked with the CEO on go-to-market and sales strategy.',
+        'Turned customer feedback into product work: built a system that rolled meeting notes and feedback into product tasks, ran product demos, and worked with the CEO on go-to-market and sales strategy.',
       ],
     },
     {
@@ -675,5 +675,5 @@ export const resume = {
     'Excel and VBA',
     'LLM apps, agents and evals',
   ],
-  awards: ['Regents Scholar', '6× Dean’s List', 'Mortar Board', 'Eagle Scout', 'UNL Homecoming Royalty finalist'],
+  awards: ['Regents Scholar', '6× Dean’s List', 'Mortar Board', 'Eagle Scout', 'UNL Homecoming Royalty Nominee'],
 };
