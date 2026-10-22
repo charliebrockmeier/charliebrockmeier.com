@@ -543,17 +543,6 @@ export const achievements: Achievement[] = [
   { icon: 'lock', color: 'gray', name: '???', note: 'Huskers win the Big Ten.', locked: true },
 ];
 
-export const sideQuests: { icon: IconName; color: string; name: string; note: string }[] = [
-  { icon: 'knight', color: 'gold', name: 'Chess', note: '567-day streak. Caro-Kann, always.' },
-  { icon: 'husker', color: 'red', name: 'Huskers', note: 'Home games, road games, every game.' },
-  { icon: 'note', color: 'teal', name: 'Piano', note: '10+ years at the keys.' },
-  { icon: 'gamepad', color: 'blue', name: 'Game dev', note: 'Building a game in Godot.' },
-  { icon: 'note', color: 'violet', name: 'Guitar', note: 'Self-taught, in progress.' },
-  { icon: 'spade', color: 'gray', name: 'Poker', note: 'Pot odds and people.' },
-  { icon: 'bolt', color: 'coral', name: 'Training', note: 'Logged on Strava.' },
-  { icon: 'book', color: 'gold', name: 'Writing', note: 'Short stories and essays.' },
-];
-
 export const codex = [
   {
     title: 'Scale delays disruption. It never cancels it.',

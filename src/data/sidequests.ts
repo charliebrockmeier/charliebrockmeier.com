@@ -52,7 +52,7 @@ export const trips: Trip[] = [
   { id: 'pebble-24', place: 'Pebble Beach', state: 'CA', year: 2024, month: null, season: 'Summer', cat: 'road', by: 'car', pin: 'monterey', note: '17-Mile Drive along the Monterey coast.' },
   { id: 'osu-24', place: 'Columbus', state: 'OH', year: 2024, month: 10, cat: 'husker', by: 'car', pin: 'columbus', note: 'Nebraska at No. 4 Ohio State. Lost 21–17 in the Shoe.' },
   { id: 'usc-24', place: 'Los Angeles', state: 'CA', year: 2024, month: 11, cat: 'husker', by: 'plane', pin: 'socal', note: 'Nebraska at USC in the Coliseum.' },
-  { id: 'sf-24', place: 'San Francisco', state: 'CA', year: 2024, month: 12, cat: 'work', by: 'plane', pin: 'sf', note: 'Back to the Bay for work, the week of my senior capstone.' },
+  { id: 'sf-24', place: 'San Francisco', state: 'CA', year: 2024, month: 12, cat: 'work', by: 'plane', pin: 'sf', note: 'Flew back to the Bay for a week of work during senior year.' },
   { id: 'breck-25', place: 'Breckenridge', state: 'CO', year: 2025, month: 1, cat: 'ski', by: 'car', pin: 'summit', note: 'Planned the Mortar Board ski trip for about 21 members: the doc and the budget.' },
   { id: 'dillon-25', place: 'Dillon', state: 'CO', year: 2025, month: 3, cat: 'ski', pin: 'summit', note: 'Spring skiing in Summit County.' },
   { id: 'maui-25', place: 'Maui', state: 'HI', year: 2025, month: 6, cat: 'vacation', by: 'plane', pin: 'maui', note: 'Family trip to the islands.' },
