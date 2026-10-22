@@ -1,5 +1,5 @@
 // Everything the site says about Charlie lives here. Facts come from his resume,
-// public sources and his own writing; TODO markers are open questions for him.
+// public sources and his own writing.
 import type { IconName } from './pixels';
 import type { LogoName } from './logos';
 

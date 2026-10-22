@@ -4,6 +4,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import ProjectMark from '../components/ProjectMark.astro';
+import Logo from '../components/Logo.astro';
 import photo from '../assets/photo/source.jpg';
 import { builds, character, email, links, resume, resumePdf, site } from '../data/profile';
 import { recruiter } from '../data/recruiter';
@@ -83,7 +84,7 @@ const edu = resume.education;
           <h2 id="role" class="label pixel">Current role</h2>
           <article class="job">
             <p class="when pixel">Now · {now.when}</p>
-            <h3>{character.title}, {character.guild}</h3>
+            <h3 class="with-logo"><Logo name="msci" scale={1.5} /> {character.title}, {character.guild}</h3>
             <p class="org">{now.org} · {now.where}</p>
             <ul>{now.points.map((pt) => <li>{pt}</li>)}</ul>
           </article>
@@ -91,8 +92,8 @@ const edu = resume.education;
             before && (
               <article class="job">
                 <p class="when pixel">Before · {before.when}</p>
-                <h3>
-                  {before.role}, {before.org.replace(/\s*\(.*\)$/, '')}
+                <h3 class="with-logo">
+                  <Logo name="vantager" scale={1.5} /> {before.role}, {before.org.replace(/\s*\(.*\)$/, '')}
                 </h3>
                 <p class="org">{recruiter.previous}</p>
                 <ul>
@@ -303,6 +304,12 @@ const edu = resume.education;
 </style>
 
 <style>
+  .with-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;

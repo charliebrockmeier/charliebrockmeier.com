@@ -159,7 +159,7 @@ export const stops: Stop[] = [
     place: 'San Francisco',
     when: 'Summer 2024',
     role: 'Three Bridge Wealth Advisors · Financial analyst',
-    line: 'In person for the summer: lived in the South Bay, worked in the city, coffees with founders and investors in the Financial District.',
+    line: 'In person for the summer: lived in the South Bay and worked on investment diligence in the city.',
   },
   {
     id: 'weekends',
@@ -176,7 +176,7 @@ export const stops: Stop[] = [
     chapter: 'Chapter 3',
     place: 'Union Square, New York',
     when: '2025 – 2026',
-    role: 'Vantager · Product & growth',
+    role: 'Vantager · Growth & Product Analyst',
     line: 'Joined Vantager, an AI diligence startup, working out of Tribeca and an office near Union Square.',
   },
   {

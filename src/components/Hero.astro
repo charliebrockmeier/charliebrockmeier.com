@@ -2,6 +2,7 @@
 import Icon from './Icon.astro';
 import Panorama from './Panorama.astro';
 import PixelArt from './PixelArt.astro';
+import Logo from './Logo.astro';
 import { sprite } from '../data/pixels';
 import live from '../data/live.json';
 import { character, chess, links, resumePdf, site } from '../data/profile';
@@ -30,11 +31,11 @@ const github = links.find((l) => l.label === 'GitHub');
       <dl class="status">
         <div>
           <dt class="pixel">Current quest</dt>
-          <dd>{character.title}, {character.guild}</dd>
+          <dd class="with-logo"><Logo name="msci" scale={1.25} /> {character.title}, {character.guild}</dd>
         </div>
         <div>
           <dt class="pixel">Previously</dt>
-          <dd>Vantager, acquired by MSCI</dd>
+          <dd class="with-logo"><Logo name="vantager" scale={1.25} /> Vantager, acquired by MSCI</dd>
         </div>
         <div>
           <dt class="pixel">Streak</dt>
@@ -62,6 +63,12 @@ const github = links.find((l) => l.label === 'GitHub');
 </section>
 
 <style>
+  .with-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .hero {
     container-type: inline-size;
     position: relative;

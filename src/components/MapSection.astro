@@ -4,6 +4,8 @@
 // Kearney to New York and flies out to San Francisco; every trip in the travel log
 // (src/data/sidequests.ts) gets a pin, and the drives and flights get a car or a plane.
 // Motion starts when the map scrolls into view and stays off for reduced motion.
+import Logo from './Logo.astro';
+import type { LogoName } from '../data/logos';
 import { career, tripPins, map, mainRoute, roads, flights, pathOf, lengthOf, xy, point } from '../data/travel';
 import { cats, catOrder, trips, tally, type Cat } from '../data/sidequests';
 
@@ -109,6 +111,14 @@ const summary = catOrder.map((c) => {
   }
   return { c, ...cats[c], count: tally.byCat[c], places };
 });
+// Who Charlie was with at each stop of the main quest.
+const stopLogos: Record<string, LogoName[]> = {
+  kearney: ['khs', 'cashwa', 'buckle'],
+  lincoln: ['unl'],
+  omaha: ['covisum'],
+  sf: ['threebridge'],
+  nyc: ['vantager', 'msci'],
+};
 ---
 
 <section id="map" class="section wrap" aria-labelledby="map-title" data-map>
@@ -239,6 +249,13 @@ const summary = catOrder.map((c) => {
                 <p class="place">
                   <strong>{p.name}</strong> <span class="when">{p.when}</span>
                 </p>
+                {stopLogos[p.id] && (
+                  <div class="stop-logos">
+                    {stopLogos[p.id].map((l) => (
+                      <Logo name={l} scale={1.5} caption />
+                    ))}
+                  </div>
+                )}
                 <p class="note">{p.note}</p>
               </div>
             </li>
@@ -301,6 +318,13 @@ const summary = catOrder.map((c) => {
 </script>
 
 <style>
+  .stop-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
   .map {
     padding: var(--space-s);
     background: #1e2557;

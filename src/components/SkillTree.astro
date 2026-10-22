@@ -3,6 +3,8 @@
 // capstone. Pips show level out of 5; "Needs" chips show which skills in other
 // branches came first. Off-the-clock skills sit underneath.
 import Icon from './Icon.astro';
+import Logo from './Logo.astro';
+import { logosIn } from '../data/logos';
 import { branches, hobbies, tiers, MAX_LEVEL } from '../data/skills';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
@@ -55,7 +57,12 @@ const maxed = branches.reduce((n, b) => n + b.skills.filter((s) => s.level === M
               >
                 <p class="top">
                   <span class="tier pixel">{ROMAN[t]}</span>
-                  <span class="from">{s.from}</span>
+                  <span class="from">
+                    {logosIn(s.from).map((l) => (
+                      <Logo name={l} scale={1} />
+                    ))}
+                    {s.from}
+                  </span>
                 </p>
                 <p class="name">{s.name}</p>
                 <span class="pips" aria-hidden="true">
@@ -261,6 +268,10 @@ const maxed = branches.reduce((n, b) => n + b.skills.filter((s) => s.level === M
   }
 
   .from {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
     overflow: hidden;
     color: var(--ink-soft);
     font-size: 0.6875rem;

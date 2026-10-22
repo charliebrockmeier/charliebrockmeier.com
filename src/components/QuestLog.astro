@@ -2,8 +2,7 @@
 // The career as a progression, oldest chapter first. A skill tree up top shows four
 // tracks leveling up chapter by chapter (finance and AI meet at Vantager); each card
 // lists what leveled up there and where it paid off later.
-import PixelArt from './PixelArt.astro';
-import { logos } from '../data/logos';
+import Logo from './Logo.astro';
 import { quests, type Track } from '../data/profile';
 
 const TRACKS: { key: Track; label: string; color: string }[] = [
@@ -131,7 +130,7 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
                   <h3>{q.title}</h3>
                   <span class="emblems">
                     {q.emblems.map((name) => (
-                      <PixelArt art={logos[name]} scale={2} label={logos[name].label} class="emblem" />
+                      <Logo name={name} scale={2} caption class="emblem" />
                     ))}
                   </span>
                 </div>
@@ -541,12 +540,8 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
 
   .emblems {
     display: flex;
-    gap: 6px;
-  }
-
-  .emblems :global(.emblem) {
-    width: 40px;
-    height: auto;
+    align-items: start;
+    gap: 8px;
   }
 
   .sub {

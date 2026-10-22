@@ -193,6 +193,14 @@ export const logos = {
 
 export type LogoName = keyof typeof logos;
 
+/** The emblems a free-text source such as "Vantager · MSCI" or "UNL · Buckle" names, in order. */
+export const logosIn = (text: string): LogoName[] =>
+  text
+    .split('·')
+    .map((part) => part.trim().toLowerCase())
+    .map((part) => (Object.keys(logos) as LogoName[]).find((k) => logos[k].short.toLowerCase() === part || logos[k].label.toLowerCase() === part))
+    .filter((k): k is LogoName => k !== undefined);
+
 // Marks for personal projects, redrawn from each project's own logo.
 export const marks = {
   // Locus: the cicada. Crossed antennae run down into the wings around a round head.

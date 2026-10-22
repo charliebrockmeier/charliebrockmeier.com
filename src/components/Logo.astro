@@ -1,0 +1,49 @@
+---
+// A company or school emblem from logos.ts, optionally with its short name under it.
+// `logosIn` finds the emblems a free-text source like "Vantager · MSCI" refers to.
+import PixelArt from './PixelArt.astro';
+import { logos, type LogoName } from '../data/logos';
+
+interface Props {
+  name: LogoName;
+  /** Size of one art pixel in CSS pixels; the badge is 20×14 art pixels. */
+  scale?: number;
+  caption?: boolean;
+  class?: string;
+}
+
+const { name, scale = 1.5, caption = false, class: className } = Astro.props;
+const logo = logos[name];
+---
+
+{
+  caption ? (
+    <figure class:list={['logo', className]}>
+      <PixelArt art={logo} scale={scale} label={logo.label} />
+      <figcaption>{logo.short}</figcaption>
+    </figure>
+  ) : (
+    <PixelArt art={logo} scale={scale} label={logo.label} class:list={['logo', className]} />
+  )
+}
+
+<style>
+  figure.logo {
+    display: inline-grid;
+    justify-items: center;
+    gap: 2px;
+    margin: 0;
+  }
+
+  figcaption {
+    color: var(--ink-soft);
+    font-size: 0.6875rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .logo :global(svg),
+  svg.logo {
+    flex: none;
+  }
+</style>
