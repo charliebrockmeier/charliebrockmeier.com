@@ -1,0 +1,988 @@
+---
+// "The road so far": scroll to walk from a Kearney front yard to 7 World Trade.
+// The scene is three PNG layers drawn in code (scripts/art/journey.mjs) plus an
+// SVG overlay for everything that moves. Scrolling pans the layers at different
+// speeds, walks the walker and moves the time of day from morning to night.
+// Without JS, or with reduced motion, it's a static strip you can swipe, with
+// the captions listed underneath.
+import { camera, journeyArt, stops, timeKeys } from '../data/journey';
+
+const { nearWidth: NW, farWidth: FW, height: H, feet, farSpeed, farAlignView, walker } = journeyArt;
+const config = { start: camera.start, end: camera.end, h: H, farSpeed, farOffset: (farAlignView / 2) * (1 - farSpeed), keys: timeKeys };
+
+// Sun and moon as little pixel discs, one rect per horizontal run.
+const disc = (r: number, bite = false) =>
+  Array.from({ length: 2 * r }, (_, y) => {
+    const on = Array.from({ length: 2 * r }, (_, x) => {
+      const [dx, dy] = [x - r + 0.5, y - r + 0.5];
+      return dx * dx + dy * dy <= r * r && !(bite && (dx + r * 0.55) ** 2 + (dy - r * 0.2) ** 2 <= (r * 0.8) ** 2);
+    });
+    const runs: { x: number; y: number; w: number }[] = [];
+    on.forEach((v, x) => v && (on[x - 1] ? runs[runs.length - 1].w++ : runs.push({ x, y, w: 1 })));
+    return runs;
+  }).flat();
+const sun = disc(8);
+const moon = disc(7, true);
+
+// Stars: fixed spots in the upper sky, some of which twinkle.
+let seed = 41;
+const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+const stars = Array.from({ length: 70 }, () => ({ x: rand() * 100, y: rand() * 55, big: rand() > 0.9, tw: rand() > 0.6, d: rand() * 3 }));
+
+// Clouds: chunky pixel shapes that drift across the sky.
+const cloudShape = ['....XXXX........', '..XXXXXXXX.XXX..', '.XXXXXXXXXXXXXX.', 'XXXXXXXXXXXXXXXX', '.SSSSSSSSSSSSSS.'];
+const clouds = [
+  { top: 10, dur: 95, delay: -10, size: 1 },
+  { top: 22, dur: 130, delay: -70, size: 1.5 },
+  { top: 6, dur: 160, delay: -120, size: 0.8 },
+  { top: 30, dur: 110, delay: -40, size: 1.2 },
+];
+
+// Overlay details, all in near-layer art pixels.
+const tug = ['....YYYYY.....', '...YccYccY....', '.YYYYYYYYYYYY.', 'YYKYYYYYYYYKYY', '.KKK......KKK.'];
+const truck = ['....RRRR......', '...RccRR......', 'RRRRRRRRRRRRRR', 'RRKKRRRRRRKKRR', '..KK......KK..'];
+const sprite = (rows: string[], palette: Record<string, string>) =>
+  rows.flatMap((row, y) => [...row].flatMap((k, x) => (palette[k] ? [{ x, y, fill: palette[k] }] : [])));
+const taxi = sprite(tug, { Y: '#ffcd75', c: '#73eff7', K: '#0c0a18' });
+const pickup = sprite(truck, { R: '#e43b44', c: '#c6e6f2', K: '#0c0a18' });
+
+const birds = [0, 9, 17, 6, 25].map((dx, i) => ({ x: dx, y: [0, 4, 1, 8, 5][i] }));
+const walkupWindows = [
+  [1606, 104, 'off'],
+  [1648, 104, 'on'],
+  [1620, 116, 'off'],
+  [1662, 116, 'on'],
+  [1634, 128, 'off'],
+  [1606, 140, 'on'],
+  [1662, 140, 'off'],
+] as const;
+const glassLights = Array.from({ length: 14 }, (_, i) => ({ x: 1832 + ((i * 37) % 70), y: 46 + ((i * 53) % 86), d: (i * 0.73) % 4 }));
+const flashes = Array.from({ length: 14 }, (_, i) => ({ x: 960 + ((i * 47) % 110), y: 89 + ((i * 7) % 13), d: (i * 0.61) % 3 }));
+// Fog banks around the Golden Gate: puffs above the deck and over the water.
+const fog = [
+  { x: 1192, y: 136, w: 40, k: 1, fill: '#efe4f4' },
+  { x: 1236, y: 141, w: 54, k: 2, fill: '#e2d4ec' },
+  { x: 1296, y: 134, w: 46, k: 1, fill: '#efe4f4' },
+  { x: 1346, y: 140, w: 60, k: 3, fill: '#e2d4ec' },
+  { x: 1404, y: 135, w: 44, k: 2, fill: '#efe4f4' },
+  { x: 1210, y: 167, w: 70, k: 3, fill: '#e2d4ec' },
+  { x: 1300, y: 169, w: 64, k: 1, fill: '#efe4f4' },
+  { x: 1370, y: 166, w: 72, k: 2, fill: '#e2d4ec' },
+  { x: 1250, y: 112, w: 34, k: 3, fill: '#efe4f4' },
+];
+const shimmer = Array.from({ length: 10 }, (_, i) => ({ x: 1210 + ((i * 71) % 230), y: 168 + ((i * 5) % 11), d: (i * 0.45) % 2 }));
+
+const O = { O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['101', '111', '111', '111', '101'] };
+const neon = [...'OPEN'].flatMap((ch, i) =>
+  O[ch as keyof typeof O].flatMap((row, y) => [...row].flatMap((b, x) => (b === '1' ? [{ x: 1741 + i * 4 + x, y: 141 + y }] : []))),
+);
+
+const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 100;
+---
+
+<section id="journey" class="journey section" aria-labelledby="journey-title" data-journey data-config={JSON.stringify(config)}>
+  <header class="wrap section-head">
+    <span class="num">02</span>
+    <h2 id="journey-title">The road so far</h2>
+    <p>From a Kearney front yard to 7 World Trade Center, one street at a time.</p>
+  </header>
+
+  <div class="track" data-track>
+    <div class="stage" data-stage style={`--nw:${NW};--fw:${FW};--h:${H};--feet:${feet}`}>
+      <div class="sky" aria-hidden="true">
+        <div class="sky-layer morning"></div>
+        <div class="sky-layer day" data-sky></div>
+        <div class="sky-layer sunset" data-sky></div>
+        <div class="sky-layer night" data-sky></div>
+        <div class="stars">
+          {stars.map((s) => <i class:list={{ big: s.big, tw: s.tw }} style={`left:${s.x.toFixed(1)}%;top:${s.y.toFixed(1)}%;animation-delay:${-s.d.toFixed(2)}s`} />)}
+        </div>
+        <svg class="sun" data-sun viewBox="0 0 16 16" shape-rendering="crispEdges">
+          {sun.map((p) => <rect x={p.x} y={p.y} width={p.w} height="1" />)}
+        </svg>
+        <svg class="moon" data-moon viewBox="0 0 14 14" shape-rendering="crispEdges">
+          {moon.map((p) => <rect x={p.x} y={p.y} width={p.w} height="1" />)}
+        </svg>
+        {
+          clouds.map((c) => (
+            <svg
+              class="cloud"
+              viewBox="0 0 16 5"
+              shape-rendering="crispEdges"
+              style={`top:${c.top}%;--size:${c.size};animation-duration:${c.dur}s;animation-delay:${c.delay}s`}
+            >
+              {cloudShape.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [<rect x={x} y={y} width="1" height="1" class={k === 'S' ? 'shade' : ''} />])))}
+            </svg>
+          ))
+        }
+      </div>
+
+      <div class="viewport" role="img" aria-label="A pixel-art street that runs from a house in Kearney, Nebraska, past Kearney High, the Archway, the Nebraska Capitol and Memorial Stadium, across the Golden Gate Bridge, to a New York walk-up and 7 World Trade Center.">
+        <div class="layer far" data-far>
+          <img src="/art/journey-far.png" width={FW} height={H} alt="" loading="lazy" decoding="async" />
+        </div>
+        <div class="layer near" data-near>
+          <img src="/art/journey-near.png" width={NW} height={H} alt="" loading="lazy" decoding="async" />
+          <svg class="fx" viewBox={`0 0 ${NW} ${H}`} shape-rendering="crispEdges" aria-hidden="true">
+            <!-- Kearney: windmill, birds, the flag at KHS, a pickup on the street. -->
+            <g class="blades">
+              {[0, 45, 90, 135].map((deg) => <rect x="190" y="91.4" width="20" height="1.2" fill="#3d4a62" transform={`rotate(${deg} 200 92)`} />)}
+              <rect x="199" y="91" width="2" height="2" fill="#94a0c2" />
+            </g>
+            <g class="birds">
+              {
+                birds.map((b) => (
+                  <g transform={`translate(${b.x} ${b.y})`} fill="#2b2150">
+                    <g class="wing-up">
+                      <rect x="0" y="0" width="1" height="1" />
+                      <rect x="1" y="1" width="1" height="1" />
+                      <rect x="2" y="0" width="1" height="1" />
+                    </g>
+                    <g class="wing-down">
+                      <rect x="0" y="1" width="1" height="1" />
+                      <rect x="1" y="0" width="1" height="1" />
+                      <rect x="2" y="1" width="1" height="1" />
+                    </g>
+                  </g>
+                ))
+              }
+            </g>
+            <g class="flag">
+              <g class="flag-a">
+                <rect x="613" y="72" width="12" height="8" fill="#e43b44" />
+                {[73, 75, 77, 79].map((y) => <rect x="613" y={y} width="12" height="1" fill="#fdf6e3" />)}
+                <rect x="613" y="72" width="5" height="4" fill="#29366f" />
+              </g>
+              <g class="flag-b">
+                <rect x="613" y="72" width="11" height="8" fill="#e43b44" />
+                {[73, 75, 77, 79].map((y) => <rect x="613" y={y} width="11" height="1" fill="#fdf6e3" />)}
+                <rect x="613" y="72" width="5" height="4" fill="#29366f" />
+                <rect x="618" y="80" width="6" height="1" fill="#e43b44" />
+                <rect x="620" y="71" width="4" height="1" fill="#e43b44" />
+              </g>
+            </g>
+            <g class="truck">{pickup.map((p) => <rect x={p.x} y={p.y + 167} width="1" height="1" fill={p.fill} />)}</g>
+
+            <!-- Lincoln: stadium lights come on, camera flashes in the stands. -->
+            <g class="lights">
+              <rect class="lamp" x="931" y="53" width="10" height="5" fill="#fff3c4" />
+              <rect class="lamp" x="1087" y="53" width="10" height="5" fill="#fff3c4" />
+              {flashes.map((f) => <rect class="flash" x={f.x} y={f.y} width="1" height="1" fill="#ffffff" style={`animation-delay:${-f.d}s`} />)}
+            </g>
+
+            <!-- Remote: the laptop talks to San Francisco over Wi-Fi. -->
+            <g class="wifi">
+              <rect class="w1" x="1159" y="90" width="2" height="2" fill="#73eff7" />
+              <g class="w2" fill="#73eff7">
+                <rect x="1156" y="87" width="2" height="1" />
+                <rect x="1158" y="86" width="4" height="1" />
+                <rect x="1162" y="87" width="2" height="1" />
+              </g>
+              <g class="w3" fill="#73eff7">
+                <rect x="1153" y="84" width="2" height="1" />
+                <rect x="1155" y="83" width="2" height="1" />
+                <rect x="1157" y="82" width="6" height="1" />
+                <rect x="1163" y="83" width="2" height="1" />
+                <rect x="1165" y="84" width="2" height="1" />
+              </g>
+            </g>
+            <path class="signal" d="M1160 80 Q1214 4 1262 28" fill="none" stroke="#73eff7" stroke-width="1" stroke-dasharray="2 3" shape-rendering="auto" />
+            <rect class="screen" x="1149" y="117" width="22" height="15" fill="#c6fff5" />
+
+            <!-- San Francisco: fog rolling under the deck, warning lights on the towers. -->
+            <g class="fog">
+              {
+                fog.map((f) => (
+                  <g class={`puff f${f.k}`} transform={`translate(${f.x} ${f.y})`} fill={f.fill}>
+                    <rect x="5" y="0" width={f.w - 12} height="1" />
+                    <rect x="2" y="1" width={f.w - 5} height="1" />
+                    <rect x="0" y="2" width={f.w} height="2" />
+                    <rect x="3" y="4" width={f.w - 7} height="1" />
+                  </g>
+                ))
+              }
+            </g>
+            {shimmer.map((s) => <rect class="shimmer" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:${-s.d}s`} />)}
+            <rect class="beacon" x="1259" y="29" width="1" height="1" fill="#ff3b4f" />
+            <rect class="beacon" x="1385" y="29" width="1" height="1" fill="#ff3b4f" />
+
+            <!-- New York: windows going on and off, the bodega's neon, a cab, the beacons. -->
+            {
+              walkupWindows.map(([x, y, kind], i) => (
+                <rect class={`win ${kind}`} x={x} y={y} width="7" height="8" style={`animation-delay:${-i * 1.3}s`} />
+              ))
+            }
+            {glassLights.map((g) => <rect class="glass" x={g.x} y={g.y} width="3" height="1" fill="#c6fff5" style={`animation-delay:${-g.d}s`} />)}
+            <rect class="lobby" x="1828" y="138" width="80" height="14" fill="#ffffff" />
+            <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
+            <g class="taxi">{taxi.map((p) => <rect x={p.x} y={p.y + 168} width="1" height="1" fill={p.fill} />)}</g>
+            <rect class="beacon" x="1950" y="0" width="1" height="1" fill="#ff3b4f" />
+          </svg>
+        </div>
+      </div>
+
+      <p class="hint" aria-hidden="true">Swipe along the street →</p>
+
+      <div class="walker" data-walker aria-hidden="true"></div>
+
+      <div class="progress" aria-hidden="true">
+        <div class="bar"><span class="fill" data-fill></span></div>
+        {stops.map((s, i) => <button type="button" class="mark" tabindex="-1" style={`left:${pct(s.x)}%`} data-goto={i} title={s.place} />)}
+      </div>
+
+      <ol class="stops" role="list">
+        {
+          stops.map((s) => (
+            <li class="stop" data-stop data-x={s.x}>
+              <p class="chapter pixel">{s.chapter}</p>
+              <h3>{s.place}</h3>
+              <p class="meta">
+                {s.role} · {s.when}
+              </p>
+              <p class="line">{s.line}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Scroll drives the camera: the layers pan (the far one at half speed), the
+  // walker steps, the sky moves through the day and the nearest stop's caption shows.
+  const root = document.querySelector<HTMLElement>('[data-journey]');
+  if (root && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    const cfg = JSON.parse(root.dataset.config!);
+    const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const track = q<HTMLElement>('[data-track]');
+    const stage = q<HTMLElement>('[data-stage]');
+    const near = q<HTMLElement>('[data-near]');
+    const far = q<HTMLElement>('[data-far]');
+    const walker = q<HTMLElement>('[data-walker]');
+    const fill = q<HTMLElement>('[data-fill]');
+    const sun = q<SVGElement>('[data-sun]');
+    const moon = q<SVGElement>('[data-moon]');
+    const skies = [...root.querySelectorAll<HTMLElement>('[data-sky]')];
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-stop]')];
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+    const timeAt = (x: number) => {
+      const k = cfg.keys as [number, number][];
+      for (let i = 1; i < k.length; i++) if (x <= k[i][0]) return k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * Math.max(0, x - k[i - 1][0])) / (k[i][0] - k[i - 1][0]);
+      return k[k.length - 1][1];
+    };
+    let s = 2;
+    let vw = 0;
+    let travel = 1;
+    let last: number | null = null;
+    let dist = 0;
+    let frame = 4;
+    let idle = 0;
+    let queued = false;
+    let active = -1;
+
+    root.classList.add('live');
+
+    const setFrame = (f: number) => {
+      frame = f;
+      walker.style.backgroundPosition = `${-f * 16 * s}px 0`;
+    };
+
+    const update = () => {
+      queued = false;
+      const top = parseFloat(getComputedStyle(stage).top) || 0;
+      const p = clamp((top - track.getBoundingClientRect().top) / travel);
+      const c = cfg.start + (cfg.end - cfg.start) * p;
+      near.style.transform = `translate3d(${-Math.round((c - vw / 2) * s)}px,0,0)`;
+      far.style.transform = `translate3d(${-Math.round((c * cfg.farSpeed + cfg.farOffset - vw / 2) * s)}px,0,0)`;
+
+      if (last !== null && Math.abs(c - last) > 0.01) {
+        walker.classList.toggle('back', c < last);
+        dist += Math.abs(c - last);
+        setFrame(Math.floor(dist / 6) % 4);
+        clearTimeout(idle);
+        idle = window.setTimeout(() => setFrame(4), 160);
+      }
+      last = c;
+
+      const t = timeAt(c);
+      skies.forEach((el, i) => (el.style.opacity = String(clamp(t - i))));
+      root.style.setProperty('--night', clamp(t - 2).toFixed(3));
+      const arc = clamp(t / 2.6);
+      sun.style.transform = `translate(${(0.12 + arc * 0.7) * stage.clientWidth}px, ${(0.62 - Math.sin(arc * Math.PI) * 0.5) * stage.clientHeight}px)`;
+      sun.style.opacity = String(clamp((2.7 - t) * 3));
+      sun.classList.toggle('low', t > 1.5 || t < 0.4);
+      moon.style.opacity = String(clamp((t - 2.5) * 2));
+      root.classList.toggle('game-on', c > 900);
+
+      let best = Infinity;
+      let next = 0;
+      cards.forEach((el, i) => {
+        const d = Math.abs(c - Number(el.dataset.x));
+        if (d < best) [best, next] = [d, i];
+      });
+      if (next !== active) {
+        cards[active]?.classList.remove('on');
+        cards[next].classList.add('on');
+        active = next;
+      }
+      fill.style.transform = `scaleX(${p.toFixed(4)})`;
+    };
+
+    const layout = () => {
+      const w = stage.clientWidth;
+      s = Math.max(2, Math.floor(Math.min((stage.clientHeight * 0.8) / cfg.h, w / 120)));
+      vw = w / s;
+      root.style.setProperty('--s', String(s));
+      travel = (cfg.end - cfg.start) * s;
+      track.style.height = `${stage.clientHeight + travel}px`;
+      setFrame(frame);
+      update();
+    };
+
+    // The stop markers on the progress bar jump to that stop.
+    root.querySelector('.progress')!.addEventListener('click', (e) => {
+      const i = (e.target as HTMLElement).dataset.goto;
+      if (i === undefined) return;
+      const x = Number(cards[Number(i)].dataset.x);
+      const top = parseFloat(getComputedStyle(stage).top) || 0;
+      scrollTo({ top: track.getBoundingClientRect().top + scrollY - top + ((x - cfg.start) / (cfg.end - cfg.start)) * travel, behavior: 'smooth' });
+    });
+    addEventListener('scroll', () => queued || ((queued = true), requestAnimationFrame(update)), { passive: true });
+    addEventListener('resize', layout);
+    layout();
+  }
+</script>
+
+<style>
+  .journey {
+    --s: 2;
+    --night: 0;
+  }
+
+  /* Static strip (no JS or reduced motion): swipe sideways, captions below. */
+  .stage {
+    position: relative;
+  }
+
+  .sky,
+  .far,
+  .walker,
+  .progress {
+    display: none;
+  }
+
+  .viewport {
+    position: relative;
+    height: calc(var(--h) * var(--s) * 1px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-block: 2px solid var(--line);
+    scrollbar-width: thin;
+  }
+
+  /* The static strip carries its own sky, morning on the left to night on the right. */
+  .near {
+    background: linear-gradient(90deg, #7a92c8 0 27%, #73c6f7 38% 45%, #ef7d57 55% 63%, #2f2552 70%, #141026);
+  }
+
+  .journey:global(.live) .near {
+    background: none;
+  }
+
+  .hint {
+    max-width: calc(var(--wrap) + 2 * var(--gutter));
+    margin: var(--space-xs) auto 0;
+    padding-inline: var(--gutter);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .journey:global(.live) .hint {
+    display: none;
+  }
+
+  .layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: calc(var(--h) * var(--s) * 1px);
+  }
+
+  .near {
+    width: calc(var(--nw) * var(--s) * 1px);
+  }
+
+  .far {
+    width: calc(var(--fw) * var(--s) * 1px);
+  }
+
+  .layer img,
+  .fx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  .stops {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+    gap: var(--space-s);
+    max-width: calc(var(--wrap) + 2 * var(--gutter));
+    margin: var(--space-m) auto 0;
+    padding-inline: var(--gutter);
+  }
+
+  .stop {
+    padding: 0.8rem 1rem;
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 2px var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .chapter {
+    color: var(--gold);
+    font-size: var(--label);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .stop h3 {
+    margin-top: 2px;
+    font-size: var(--step-1);
+    line-height: 1.2;
+  }
+
+  .meta {
+    margin-top: 2px;
+    color: var(--teal);
+    font-size: var(--step--1);
+  }
+
+  .line {
+    margin-top: var(--space-2xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    line-height: 1.45;
+  }
+
+  /* Live: a sticky stage the page scrolls through. */
+  .journey:global(.live) .track {
+    position: relative;
+  }
+
+  .journey:global(.live) .stage {
+    position: sticky;
+    top: var(--journey-top, 62px);
+    height: calc(100svh - var(--journey-top, 62px));
+    overflow: hidden;
+    border-block: 2px solid var(--line);
+  }
+
+  .journey:global(.live) .sky,
+  .journey:global(.live) .far,
+  .journey:global(.live) .walker,
+  .journey:global(.live) .progress {
+    display: block;
+  }
+
+  .journey:global(.live) .viewport {
+    position: absolute;
+    inset: auto 0 0;
+    overflow: hidden;
+    background: none;
+    border: 0;
+  }
+
+  .journey:global(.live) .layer {
+    will-change: transform;
+  }
+
+  .sky,
+  .sky-layer {
+    position: absolute;
+    inset: 0;
+  }
+
+  .sky-layer {
+    opacity: 0;
+  }
+
+  .sky-layer.morning {
+    opacity: 1;
+    background: linear-gradient(#3b5dc9 0 22%, #5a76d0 22% 40%, #7a92c8 40% 55%, #a8a8c0 55% 66%, #e8c0a0 66% 76%, #ffcd75 76%);
+  }
+
+  .sky-layer.day {
+    background: linear-gradient(#3b5dc9 0 25%, #418ae6 25% 45%, #41a6f6 45% 62%, #73c6f7 62% 76%, #a8e4f7 76%);
+  }
+
+  .sky-layer.sunset {
+    background: linear-gradient(#29366f 0 18%, #4a2a63 18% 34%, #85336b 34% 50%, #b13e53 50% 62%, #ef7d57 62% 74%, #ffcd75 74%);
+  }
+
+  .sky-layer.night {
+    background: linear-gradient(#0c0a18 0 30%, #141026 30% 52%, #1b1533 52% 70%, #2f2552 70%);
+  }
+
+  .stars {
+    position: absolute;
+    inset: 0;
+    opacity: var(--night);
+  }
+
+  .stars i {
+    position: absolute;
+    width: calc(var(--s) * 1px);
+    height: calc(var(--s) * 1px);
+    background: #fdf6e3;
+  }
+
+  .stars i.big {
+    width: calc(var(--s) * 2px);
+    height: calc(var(--s) * 2px);
+    background: #ffe9a8;
+  }
+
+  .sun,
+  .moon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--s) * 16px);
+    height: calc(var(--s) * 16px);
+  }
+
+  .sun {
+    fill: #fff3c4;
+    transition: fill 0.6s;
+  }
+
+  .sun:global(.low) {
+    fill: #ffb070;
+  }
+
+  .moon {
+    top: 9%;
+    left: 74%;
+    width: calc(var(--s) * 14px);
+    height: calc(var(--s) * 14px);
+    fill: #fdf6e3;
+    opacity: 0;
+  }
+
+  .cloud {
+    position: absolute;
+    left: 0;
+    width: calc(var(--s) * 16px * var(--size) * 2);
+    height: calc(var(--s) * 5px * var(--size) * 2);
+    fill: #fdf6e3;
+    opacity: calc(0.9 - var(--night) * 0.7);
+    transform: translateX(-30vw);
+  }
+
+  .cloud .shade {
+    fill: #c9bfd9;
+  }
+
+  .walker {
+    position: absolute;
+    left: 50%;
+    bottom: calc((var(--h) - var(--feet)) * var(--s) * 1px);
+    width: calc(var(--s) * 16px);
+    height: calc(var(--s) * 24px);
+    margin-left: calc(var(--s) * -8px);
+    background: url('/art/journey-walker.png') 0 0 / calc(var(--s) * 80px) calc(var(--s) * 24px) no-repeat;
+    image-rendering: pixelated;
+  }
+
+  .walker:global(.back) {
+    transform: scaleX(-1);
+  }
+
+  .progress {
+    position: absolute;
+    top: var(--space-s);
+    left: var(--gutter);
+    right: var(--gutter);
+    height: 14px;
+  }
+
+  .bar {
+    position: absolute;
+    inset: 4px 0;
+    background: color-mix(in srgb, var(--shadow) 70%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .fill {
+    position: absolute;
+    inset: 2px;
+    background: var(--gold);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  .mark {
+    position: absolute;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    margin-left: -7px;
+    padding: 0;
+    border: 0;
+    background: var(--ink);
+    box-shadow: inset 0 0 0 3px var(--shadow);
+    cursor: pointer;
+  }
+
+  .journey:global(.live) .stops {
+    position: absolute;
+    top: calc(var(--space-s) + 26px);
+    left: var(--gutter);
+    right: var(--gutter);
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  .journey:global(.live) .stop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(100%, 380px);
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.12s steps(2),
+      transform 0.12s steps(2);
+  }
+
+  /* The old card clears before the new one steps in, so they never overlap. */
+  .journey:global(.live) .stop:global(.on) {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.12s;
+    transition-duration: 0.24s;
+  }
+
+  /* Things that move on their own. */
+  .blades {
+    transform-origin: 200px 92px;
+  }
+
+  .wing-down,
+  .flag-b,
+  .lamp,
+  .flash,
+  .win.on,
+  .glass {
+    opacity: 0;
+  }
+
+  .win.off {
+    fill: #1b1533;
+    opacity: 0;
+  }
+
+  .win.on {
+    fill: #ffcd75;
+  }
+
+  .birds {
+    transform: translate(60px, 64px);
+  }
+
+  .truck {
+    transform: translateX(40px);
+  }
+
+  .taxi {
+    transform: translateX(2000px);
+  }
+
+  .journey:global(.game-on) .lamp {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cloud {
+      animation: cloud linear infinite;
+    }
+
+    .stars i.tw {
+      animation: twinkle 2.6s steps(2) infinite;
+    }
+
+    .blades {
+      animation: spin 3s steps(12) infinite;
+    }
+
+    .birds {
+      animation: fly 26s linear infinite;
+    }
+
+    .wing-up,
+    .wing-down,
+    .flag-a,
+    .flag-b {
+      animation: frame 0.6s steps(1) infinite;
+    }
+
+    .wing-down,
+    .flag-b {
+      animation-delay: -0.3s;
+    }
+
+    .truck {
+      animation: drive 13s linear infinite;
+    }
+
+    .taxi {
+      animation: cab 10s linear infinite;
+    }
+
+    .journey:global(.game-on) .lamp {
+      animation: flicker 1.2s steps(1) 1;
+    }
+
+    .journey:global(.game-on) .flash {
+      animation: pop 2.2s steps(1) infinite;
+    }
+
+    .w1,
+    .w2,
+    .w3 {
+      animation: wifi 1.8s steps(1) infinite;
+    }
+
+    .w2 {
+      animation-delay: 0.3s;
+    }
+
+    .w3 {
+      animation-delay: 0.6s;
+    }
+
+    .signal {
+      animation: dash 1.2s linear infinite;
+    }
+
+    .screen {
+      animation: screen 3s steps(3) infinite;
+    }
+
+    .puff {
+      animation: fog 12s ease-in-out infinite alternate;
+    }
+
+    .puff.f2 {
+      animation-duration: 15s;
+      animation-direction: alternate-reverse;
+    }
+
+    .puff.f3 {
+      animation-duration: 9s;
+    }
+
+    .shimmer {
+      animation: twinkle 1.8s steps(2) infinite;
+    }
+
+    .glass {
+      animation: pop 2.4s steps(1) infinite;
+    }
+
+    .beacon {
+      animation: twinkle 1.4s steps(2) infinite;
+    }
+
+    .win {
+      animation: lights 9s steps(1) infinite;
+    }
+
+    .lobby {
+      animation: lobby 4s ease-in-out infinite alternate;
+    }
+
+    .neon {
+      animation: neon 3.2s steps(1) infinite;
+    }
+  }
+
+  .signal {
+    opacity: 0.8;
+  }
+
+  .screen {
+    opacity: 0.12;
+  }
+
+  .fog {
+    opacity: 0.62;
+  }
+
+  .lobby {
+    opacity: 0.15;
+  }
+
+  @keyframes cloud {
+    from {
+      transform: translateX(-30vw);
+    }
+    to {
+      transform: translateX(110vw);
+    }
+  }
+
+  @keyframes twinkle {
+    50% {
+      opacity: 0.15;
+    }
+  }
+
+  @keyframes pop {
+    0%,
+    49% {
+      opacity: 0;
+    }
+    50%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes fly {
+    from {
+      transform: translate(-40px, 70px);
+    }
+    50% {
+      transform: translate(380px, 58px);
+    }
+    to {
+      transform: translate(820px, 66px);
+    }
+  }
+
+  @keyframes frame {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes drive {
+    from {
+      transform: translateX(-20px);
+    }
+    to {
+      transform: translateX(780px);
+    }
+  }
+
+  @keyframes cab {
+    from {
+      transform: translateX(2240px);
+    }
+    to {
+      transform: translateX(1520px);
+    }
+  }
+
+  @keyframes flicker {
+    0%,
+    20%,
+    40% {
+      opacity: 1;
+    }
+    10%,
+    30%,
+    50% {
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes wifi {
+    0%,
+    60% {
+      opacity: 1;
+    }
+    61%,
+    100% {
+      opacity: 0.25;
+    }
+  }
+
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -10;
+    }
+  }
+
+  @keyframes screen {
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes fog {
+    from {
+      translate: -12px 0;
+    }
+    to {
+      translate: 14px 0;
+    }
+  }
+
+  @keyframes lights {
+    0%,
+    55% {
+      opacity: 0;
+    }
+    56%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes lobby {
+    to {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes neon {
+    0%,
+    70%,
+    80% {
+      opacity: 1;
+    }
+    75%,
+    90% {
+      opacity: 0.2;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .journey:global(.live) .stop {
+      width: 100%;
+    }
+
+    .line {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+</style>
