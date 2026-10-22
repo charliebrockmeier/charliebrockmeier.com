@@ -1,0 +1,38 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/tokens.css';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Load Newsreader for long-form pages. */
+  serif?: boolean;
+  noindex?: boolean;
+  /** Class on <body>, e.g. "paper" for the light resume page. */
+  theme?: string;
+}
+
+const { title, description, serif = false, noindex = false, theme } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content={theme === 'paper' ? '#f6f5f0' : '#0d0f1c'} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <Font cssVariable="--font-sans" preload />
+    <Font cssVariable="--font-pixel" preload />
+    {serif && <Font cssVariable="--font-serif" preload />}
+  </head>
+  <body class={theme}>
+    <slot />
+  </body>
+</html>

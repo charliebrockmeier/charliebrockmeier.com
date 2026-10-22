@@ -1,0 +1,126 @@
+---
+// A dot-matrix map of the lower 48, rasterized at build time from a rough
+// outline, with the places Charlie has played so far.
+import { places } from '../data/profile';
+
+// Rough outline of the contiguous US (longitude, latitude), clockwise from Washington.
+const outline: [number, number][] = [
+  [-124.7, 48.4], [-123, 49], [-95.2, 49], [-94.8, 49.4], [-89.6, 48], [-84.8, 46.5], [-83, 46],
+  [-82.5, 43], [-79, 43.3], [-76.5, 44.2], [-74.7, 45], [-71.5, 45], [-70, 46.7], [-69.2, 47.4],
+  [-67.8, 47.1], [-67, 44.8], [-70.2, 43.6], [-70.6, 42], [-73.9, 40.6], [-74.4, 39.4], [-75.5, 38.5],
+  [-76, 37], [-75.6, 35.2], [-77.9, 33.9], [-80, 32], [-81.4, 30.5], [-80, 26.5], [-80.4, 25.2],
+  [-81.8, 25.9], [-82.7, 27.8], [-84, 30], [-86.5, 30.4], [-88.5, 30.3], [-89.6, 29], [-91.5, 29.5],
+  [-93.8, 29.7], [-95, 29.2], [-97.2, 27.8], [-97.4, 25.9], [-99.5, 27.5], [-101.4, 29.8], [-103.3, 29],
+  [-104.5, 29.7], [-106.5, 31.8], [-108.2, 31.8], [-111.1, 31.3], [-114.8, 32.5], [-117.1, 32.5],
+  [-118.5, 34], [-120.6, 34.6], [-121.9, 36.6], [-122.5, 37.8], [-123.8, 39.8], [-124.2, 42], [-124, 46.3],
+];
+
+const LON0 = -125.5;
+const LAT0 = 49.8;
+const STEP = 0.9; // degrees per dot
+const k = Math.cos((39 * Math.PI) / 180); // squash longitude so the map isn't stretched
+const project = (lon: number, lat: number) => ({ x: ((lon - LON0) * k) / STEP, y: (LAT0 - lat) / STEP });
+
+const inside = (lon: number, lat: number) => {
+  let hit = false;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+    const [xi, yi] = outline[i];
+    const [xj, yj] = outline[j];
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+};
+
+const dots: { x: number; y: number }[] = [];
+for (let lat = LAT0; lat > 24; lat -= STEP)
+  for (let lon = LON0; lon < -66; lon += STEP / k) if (inside(lon, lat)) dots.push(project(lon, lat));
+
+const W = Math.ceil(((-66 - LON0) * k) / STEP) + 1;
+const H = Math.ceil((LAT0 - 24) / STEP) + 1;
+const pins = places.map((p) => ({ ...p, ...project(p.lon, p.lat) }));
+const route = pins.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+---
+
+<figure class="map panel">
+  <svg viewBox={`-1 -1 ${W + 2} ${H + 2}`} role="img" aria-labelledby="map-title" shape-rendering="crispEdges">
+    <title id="map-title">Map: Kearney, Omaha and Lincoln in Nebraska, San Francisco, and New York</title>
+    {dots.map((d) => <rect x={d.x - 0.32} y={d.y - 0.32} width="0.64" height="0.64" fill="#43386f" />)}
+    <path class="route" d={route} fill="none" stroke="#ffcd75" stroke-width="0.3" stroke-dasharray="0.8 0.6" shape-rendering="auto" />
+    {
+      pins.map((p, i) => (
+        <g class:list={['pin', { now: i === pins.length - 1 }]}>
+          <rect x={p.x - 0.7} y={p.y - 0.7} width="1.4" height="1.4" fill={i === pins.length - 1 ? '#ff6b7f' : '#73eff7'} />
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>
+    <ol role="list">
+      {
+        pins.map((p, i) => (
+          <li>
+            <span class:list={['dot', { now: i === pins.length - 1 }]} aria-hidden="true" />
+            <strong>{p.name}</strong> <span class="where">{p.note}</span>
+          </li>
+        ))
+      }
+    </ol>
+  </figcaption>
+</figure>
+
+<style>
+  .map {
+    padding: var(--space-m);
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .route {
+      animation: march 1.2s linear infinite;
+    }
+
+    .pin.now {
+      animation: pulse 1s steps(2) infinite;
+    }
+  }
+
+  @keyframes march {
+    to {
+      stroke-dashoffset: -1.4;
+    }
+  }
+
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs) var(--space-m);
+    margin-top: var(--space-s);
+    font-size: var(--label);
+  }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    background: var(--teal);
+  }
+
+  .dot.now {
+    background: var(--red);
+  }
+
+  .where {
+    color: var(--ink-soft);
+  }
+</style>

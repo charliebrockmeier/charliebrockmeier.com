@@ -1,0 +1,271 @@
+---
+// The title-screen panorama. The static scene is a 480×180 PNG drawn in code
+// (scripts/art/panorama.mjs); everything that moves is an SVG overlay on the same
+// grid: a tiny Charlie walking I-80, the windmill, sandhill cranes, tower beacons,
+// cars on the George Washington Bridge and a tug on the Hudson.
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+const W = 480;
+const H = 180;
+
+// Walker: Charlie at 8×12, two frames.
+const walker = {
+  palette: { H: '#5c3a2e', S: '#f2c4a2', E: '#0c0a18', J: '#2b2350', T: '#fdf6e3', L: '#1b1533', B: '#0c0a18' } as Record<string, string>,
+  frames: [
+    ['..HHHH..', '.HHHHHH.', '.HSSSSH.', '..SESE..', '..SSSS..', '.JJTTJJ.', 'JJJTTJJJ', 'SJJTTJJS', '.JJJJJJ.', '.LL..LL.', '.LL..LL.', '.BB..BB.'],
+    ['..HHHH..', '.HHHHHH.', '.HSSSSH.', '..SESE..', '..SSSS..', '.JJTTJJ.', 'JJJTTJJJ', '.SJTTJS.', '.JJJJJJ.', '..LLLL..', '.LL..LL.', 'BB....BB'],
+  ],
+};
+const frameRects = walker.frames.map((rows) =>
+  rows.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [{ x, y, fill: walker.palette[k] }]))),
+);
+
+// Sandhill cranes in flight: little Vs over the Platte.
+const cranes = [
+  [52, 92],
+  [60, 88],
+  [68, 94],
+  [77, 90],
+  [86, 96],
+  [140, 78],
+  [147, 75],
+];
+
+// Tower lights that blink: Empire State, One World Trade, 432 Park, the GWB tower.
+const beacons = [
+  { x: 380, y: 37, d: 0 },
+  { x: 459, y: 27, d: 0.5 },
+  { x: 336, y: 54, d: 0.9 },
+  { x: 293, y: 95, d: 0.3 },
+  { x: 301, y: 95, d: 0.3 },
+];
+
+// A handful of stars over Manhattan that twinkle.
+const twinkles = [
+  [252, 12],
+  [281, 30],
+  [318, 8],
+  [352, 22],
+  [396, 6],
+  [420, 44],
+  [470, 52],
+  [228, 20],
+  [196, 9],
+  [338, 36],
+];
+
+const tug = ['...W....', '..KKK...', '.KGKKK..', 'KKKKKKKK', '.kkkkkk.'];
+const tugPalette: Record<string, string> = { W: '#bdb3db', K: '#2b2350', G: '#ffcd75', k: '#e43b44' };
+---
+
+<div class:list={['panorama', className]}>
+  <img src="/art/panorama.png" width={W} height={H} alt="" decoding="async" fetchpriority="high" />
+  <svg viewBox={`0 0 ${W} ${H}`} shape-rendering="crispEdges" aria-hidden="true" focusable="false">
+    {twinkles.map(([x, y], i) => <rect class="twinkle" style={`animation-delay:${-i * 0.37}s`} x={x} y={y} width="1" height="1" fill="#fdf6e3" />)}
+    {beacons.map((b) => <rect class="beacon" style={`animation-delay:${-b.d}s`} x={b.x} y={b.y} width="1" height="1" fill="#ff3b4f" />)}
+    <g class="blades">
+      {[0, 45, 90, 135].map((deg) => <rect x="110" y="110.4" width="16" height="1.2" fill="#2a1a3c" transform={`rotate(${deg} 118 111)`} />)}
+      <rect x="117" y="110" width="2" height="2" fill="#4a3352" />
+    </g>
+    <g class="cranes">
+      {
+        cranes.map(([x, y]) => (
+          <g fill="#2a1a3c">
+            <rect x={x} y={y} width="1" height="1" />
+            <rect x={x + 1} y={y + 1} width="1" height="1" />
+            <rect x={x + 2} y={y} width="1" height="1" />
+            <rect x={x - 1} y={y - 1} width="1" height="1" />
+            <rect x={x + 3} y={y - 1} width="1" height="1" />
+          </g>
+        ))
+      }
+    </g>
+    <g class="cars">
+      <rect class="car eastbound" x="268" y="127" width="2" height="1" fill="#fff3c4" />
+      <rect class="car eastbound late" x="268" y="127" width="2" height="1" fill="#fff3c4" />
+      <rect class="car westbound" x="366" y="129" width="2" height="1" fill="#ff6b7f" />
+    </g>
+    <g class="tug">
+      {tug.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [<rect x={x} y={y} width="1" height="1" fill={tugPalette[k]} />])))}
+    </g>
+    <g class="walker">
+      {
+        frameRects.map((frame, i) => (
+          <g class={`frame frame-${i}`}>
+            {frame.map((p) => (
+              <rect x={p.x} y={p.y} width="1" height="1" fill={p.fill} />
+            ))}
+          </g>
+        ))
+      }
+    </g>
+  </svg>
+  <p class="label pixel west">Kearney, NE</p>
+  <p class="label pixel east">New York, NY</p>
+</div>
+
+<style>
+  .panorama {
+    position: relative;
+    aspect-ratio: 480 / 180;
+  }
+
+  img,
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  .label {
+    position: absolute;
+    bottom: 0.4%;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: clamp(0.75rem, 0.6rem + 0.5vw, 1rem);
+    text-shadow: 2px 2px 0 var(--shadow);
+  }
+
+  .west {
+    left: 1.2%;
+  }
+
+  .east {
+    right: 1.2%;
+  }
+
+  .walker {
+    transform: translate(-12px, 161px);
+  }
+
+  .frame-1 {
+    opacity: 0;
+  }
+
+  .blades {
+    transform-origin: 118px 111px;
+  }
+
+  .tug {
+    transform: translate(470px, 150px);
+  }
+
+  .car {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .walker {
+      animation: walk 48s linear infinite;
+    }
+
+    .frame-0,
+    .frame-1 {
+      animation: frame 0.5s linear infinite;
+    }
+
+    .frame-1 {
+      animation-delay: -0.25s;
+    }
+
+    .blades {
+      animation: spin 3s steps(12) infinite;
+    }
+
+    .cranes {
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+
+    .twinkle {
+      animation: twinkle 2.8s steps(2) infinite;
+    }
+
+    .beacon {
+      animation: twinkle 1.6s steps(2) infinite;
+    }
+
+    .tug {
+      animation: tug 70s linear infinite;
+    }
+
+    .car {
+      opacity: 1;
+    }
+
+    .eastbound {
+      animation: eastbound 9s linear infinite;
+    }
+
+    .eastbound.late {
+      animation-delay: -4.2s;
+    }
+
+    .westbound {
+      animation: westbound 11s linear infinite;
+    }
+  }
+
+  @keyframes walk {
+    from {
+      transform: translate(-12px, 161px);
+    }
+    to {
+      transform: translate(488px, 161px);
+    }
+  }
+
+  @keyframes frame {
+    0%,
+    49.9% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes drift {
+    to {
+      transform: translate(18px, -4px);
+    }
+  }
+
+  @keyframes twinkle {
+    50% {
+      opacity: 0.15;
+    }
+  }
+
+  @keyframes tug {
+    from {
+      transform: translate(480px, 150px);
+    }
+    to {
+      transform: translate(310px, 150px);
+    }
+  }
+
+  @keyframes eastbound {
+    to {
+      transform: translateX(100px);
+    }
+  }
+
+  @keyframes westbound {
+    to {
+      transform: translateX(-100px);
+    }
+  }
+</style>

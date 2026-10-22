@@ -1,0 +1,356 @@
+---
+// The resume: everything on one clean, printable page. /recruiter redirects here.
+import Base from '../layouts/Base.astro';
+import { character, email, links, resume, resumePdf, site } from '../data/profile';
+
+const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
+---
+
+<Base title={`Resume | ${site.name}`} description={resume.summary} theme="paper">
+  <div class="toolbar">
+    <a href="/" class="back">Back to the game</a>
+    <span class="actions">
+      <a class="print" href={resumePdf} download>Download PDF</a>
+      <button type="button" class="print ghost" data-print>Print</button>
+    </span>
+  </div>
+
+  <main class="cv">
+    <header>
+      <h1>{site.name}</h1>
+      <p class="role">{site.tagline}</p>
+      <p class="contact">
+        {character.base}
+        <span aria-hidden="true"> · </span>
+        <a href={`mailto:${email}`}>{email}</a>
+        {
+          contact.map((l) => (
+            <>
+              <span aria-hidden="true"> · </span>
+              <a href={l.url}>{l.url.replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>
+            </>
+          ))
+        }
+      </p>
+    </header>
+
+    <p class="summary">{resume.summary}</p>
+
+    <section aria-labelledby="exp">
+      <h2 id="exp">Experience</h2>
+      {
+        resume.experience.map((job) => (
+          <article class="item">
+            <div class="item-head">
+              <h3>
+                {job.org} <span class="sub">{job.role}</span>
+              </h3>
+              <p class="when">
+                {job.where} · {job.when}
+              </p>
+            </div>
+            <ul>
+              {job.points.map((pt) => (
+                <li>{pt}</li>
+              ))}
+            </ul>
+          </article>
+        ))
+      }
+    </section>
+
+    <section aria-labelledby="proj">
+      <h2 id="proj">Personal projects</h2>
+      <ul class="plain">
+        {
+          resume.projects.map((pr) => (
+            <li>
+              <strong>{pr.name}.</strong> {pr.line}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="edu">
+      <h2 id="edu">Education</h2>
+      <article class="item">
+        <div class="item-head">
+          <h3>{resume.education.school}</h3>
+          <p class="when">{resume.education.when}</p>
+        </div>
+        <p class="degree">
+          {resume.education.program}
+          <br />
+          {resume.education.degree}
+          <br />
+          <strong>{resume.education.honors}</strong>
+        </p>
+        <ul>
+          {resume.education.points.map((pt) => (
+            <li>{pt}</li>
+          ))}
+        </ul>
+      </article>
+    </section>
+
+    <section class="cols" aria-label="Leadership, skills and awards">
+      <div>
+        <h2>Leadership</h2>
+        <ul class="plain">{resume.leadership.map((l) => <li>{l}</li>)}</ul>
+      </div>
+      <div>
+        <h2>Skills</h2>
+        <p>{resume.skills.join(' · ')}</p>
+        <h2 class="gap">Awards</h2>
+        <p>{resume.awards.join(' · ')}</p>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  document.querySelector('[data-print]')?.addEventListener('click', () => print());
+</script>
+
+<style is:global>
+  body.paper {
+    --bg: #fbf7ee;
+    --ink: #1b1533;
+    --ink-soft: #4f4868;
+    --rule: #e2dccd;
+    --accent: #7a3460;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.paper a {
+    color: var(--accent);
+  }
+
+  body.paper :focus-visible {
+    outline-color: var(--accent);
+  }
+</style>
+
+<style>
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: var(--space-m) var(--gutter) 0;
+  }
+
+  .back {
+    font-family: var(--font-pixel);
+    font-size: var(--step-1);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-xs);
+  }
+
+  .print {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: var(--label);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  body.paper .print {
+    color: #fff;
+  }
+
+  body.paper .print.ghost {
+    border-color: var(--rule);
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .cv {
+    max-width: 820px;
+    margin: var(--space-m) auto var(--space-2xl);
+    padding: clamp(1.5rem, 5vw, 3.5rem) var(--gutter);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .role {
+    margin-top: 4px;
+    font-size: var(--step-1);
+  }
+
+  .contact {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .summary {
+    margin-top: var(--space-m);
+    padding-top: var(--space-m);
+    border-top: 2px solid var(--ink);
+  }
+
+  section {
+    margin-top: var(--space-l);
+  }
+
+  h2 {
+    margin-bottom: var(--space-s);
+    color: var(--accent);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .gap {
+    margin-top: var(--space-m);
+  }
+
+  .item + .item {
+    margin-top: var(--space-m);
+  }
+
+  .item-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0 var(--space-s);
+  }
+
+  h3 {
+    font-size: var(--step-0);
+    font-weight: 700;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  .when {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .degree {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  ul {
+    margin-top: 6px;
+    padding-left: 1.1em;
+    list-style: disc;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+
+  ul.plain {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  ul.plain li + li {
+    margin-top: 6px;
+  }
+
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-l);
+  }
+
+  @media (max-width: 639px) {
+    .cols {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media print {
+    .toolbar {
+      display: none;
+    }
+
+    .cv {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      font-size: 9pt;
+      line-height: 1.35;
+    }
+
+    h1 {
+      font-size: 20pt;
+    }
+
+    .role {
+      font-size: 11pt;
+    }
+
+    .contact,
+    .when,
+    .degree {
+      font-size: 8.5pt;
+    }
+
+    .summary {
+      margin-top: 8pt;
+      padding-top: 8pt;
+    }
+
+    section {
+      margin-top: 11pt;
+      break-inside: avoid;
+    }
+
+    h2 {
+      margin-bottom: 4pt;
+      font-size: 8pt;
+    }
+
+    h3 {
+      font-size: 9.5pt;
+    }
+
+    .item + .item {
+      margin-top: 6pt;
+    }
+
+    ul {
+      margin-top: 2pt;
+    }
+
+    .gap {
+      margin-top: 8pt;
+    }
+
+    a {
+      color: inherit;
+    }
+  }
+</style>

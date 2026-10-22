@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+import Achievements from '../components/Achievements.astro';
+import CharacterSheet from '../components/CharacterSheet.astro';
+import Footer from '../components/Footer.astro';
+import Hero from '../components/Hero.astro';
+import Hud from '../components/Hud.astro';
+import Inventory from '../components/Inventory.astro';
+import Party from '../components/Party.astro';
+import QuestLog from '../components/QuestLog.astro';
+import SideQuests from '../components/SideQuests.astro';
+import Stats from '../components/Stats.astro';
+import Talk from '../components/Talk.astro';
+import { site } from '../data/profile';
+---
+
+<Base title={site.title} description={site.positioning}>
+  <Hud />
+  <main>
+    <Hero />
+    <CharacterSheet />
+    <Stats />
+    <QuestLog />
+    <Party />
+    <Inventory />
+    <Achievements />
+    <SideQuests />
+    <Talk />
+  </main>
+  <Footer />
+</Base>
+
+<script>
+  // Game-style shortcuts: E jumps to the dialogue box, R opens the resume.
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+    const key = e.key.toLowerCase();
+    if (key === 'e') {
+      document.getElementById('talk')?.scrollIntoView();
+      document.querySelector<HTMLElement>('[data-choice]')?.focus({ preventScroll: true });
+    } else if (key === 'r') {
+      location.href = '/resume';
+    }
+  });
+</script>

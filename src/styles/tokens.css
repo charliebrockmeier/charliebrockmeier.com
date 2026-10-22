@@ -1,0 +1,56 @@
+/*
+ * Design tokens: a dusk-colored game UI. Every color, size and space comes from here.
+ * Font families (--font-sans, --font-pixel, --font-serif) come from Astro's <Font />
+ * component, configured in astro.config.mjs.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces: dusk violet, matched to the pixel art (scripts/art/lib.mjs) */
+  --bg: #141026;
+  --bg-2: #1b1533;
+  --panel: #221b3f;
+  --panel-2: #2b2350;
+  --line: #43386f;
+  --shadow: #0a0815;
+
+  /* Text */
+  --ink: #fdf6e3;
+  --ink-soft: #bdb3db;
+
+  /* Accents: sunset gold, coral, rose, neon cyan, sky blue, violet, lime */
+  --gold: #ffcd75;
+  --coral: #ff8e5e;
+  --red: #ff6b7f;
+  --teal: #73eff7;
+  --blue: #5cb8ff;
+  --violet: #b99cff;
+  --green: #a7f070;
+  --gray: #9aa3c7;
+
+  /* Type scale */
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.6875rem;
+  --step-3: 2.125rem;
+  --step-4: 3.25rem;
+  --label: 0.9375rem;
+  --display: clamp(3.5rem, 1.5rem + 7vw, 7.5rem);
+
+  /* Space */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2.5rem;
+  --space-xl: 4rem;
+  --space-2xl: 6rem;
+
+  /* Layout */
+  --wrap: 1180px;
+  --column: 680px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --px: 4px; /* one "pixel" in UI chrome */
+}

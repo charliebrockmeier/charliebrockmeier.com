@@ -1,28 +1,24 @@
-# macOS
+# Build output and dependencies
+node_modules/
+dist/
+.astro/
+.vercel/
+
+# Secrets
+.env*
+EMAILJS_SETUP.md
+
+# OS and editors
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-
-# Editor directories and files
 .vscode/
 .idea/
 *.swp
-*.swo
 
-# Temporary files
+# Logs and temp files
+*.log
+npm-debug.log*
 *.tmp
-*.temp
-
-# Zip files (we don't need to track the deployment zip)
 *.zip
-
-# EmailJS setup docs (contains sensitive info)
-EMAILJS_SETUP.md

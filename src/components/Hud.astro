@@ -1,0 +1,145 @@
+---
+import Icon from './Icon.astro';
+import PixelArt from './PixelArt.astro';
+import { sprite } from '../data/pixels';
+import { links } from '../data/profile';
+
+// Just the head, cropped from the sprite, for the HUD badge.
+const head = { rows: sprite.rows.slice(0, 22).map((r) => r.slice(7, 26)), palette: sprite.palette };
+
+const socials = links.filter((l) => l.label === 'LinkedIn' || l.label === 'Instagram');
+
+const nav = [
+  { href: '#character', label: 'Character' },
+  { href: '#stats', label: 'Stats' },
+  { href: '#quests', label: 'Quests' },
+  { href: '#party', label: 'Party' },
+  { href: '#inventory', label: 'Inventory' },
+  { href: '#achievements', label: 'Achievements' },
+];
+---
+
+<header class="hud">
+  <div class="wrap bar">
+    <a class="me pixel" href="#top" aria-label="Charlie Brockmeier, back to top">
+      <PixelArt art={head} scale={1.6} />
+      <span>Charlie</span>
+    </a>
+    <nav aria-label="Sections">
+      <ul role="list">
+        {
+          nav.map((n) => (
+            <li>
+              <a class="pixel" href={n.href}>
+                {n.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="actions">
+      <ul class="socials" role="list">
+        {
+          socials.map((l) => (
+            <li>
+              <a href={l.url} aria-label={l.label} title={l.label}>
+                <Icon name={l.icon} color={l.color} scale={2.5} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="btn ghost talk-link" href="#talk" data-talk>Talk <kbd>E</kbd></a>
+      <a class="btn" href="/resume">Resume <kbd>R</kbd></a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .hud {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 2px solid var(--line);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    min-height: 60px;
+  }
+
+  .me {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ink);
+    font-size: var(--step-1);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  nav {
+    flex: 1;
+  }
+
+  nav ul {
+    display: flex;
+    gap: var(--space-m);
+  }
+
+  nav a {
+    color: var(--ink-soft);
+    font-size: var(--step-0);
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--gold);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-left: auto;
+  }
+
+  .socials {
+    display: flex;
+    gap: 6px;
+    margin-right: var(--space-2xs);
+  }
+
+  .socials a {
+    display: block;
+    transition: transform 80ms steps(2);
+  }
+
+  .socials a:hover {
+    transform: translateY(-2px);
+  }
+
+  .actions .btn {
+    padding: 0.45rem 0.75rem;
+    font-size: var(--label);
+  }
+
+  @media (max-width: 999px) {
+    nav {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .socials,
+    .talk-link,
+    .actions kbd {
+      display: none;
+    }
+  }
+</style>

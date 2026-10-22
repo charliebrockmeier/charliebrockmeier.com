@@ -1,0 +1,257 @@
+---
+import PixelArt from './PixelArt.astro';
+import { sprite } from '../data/pixels';
+import { dialogue } from '../data/profile';
+
+const face = { rows: sprite.rows.slice(0, 22).map((r) => r.slice(7, 26)), palette: sprite.palette };
+---
+
+<section id="talk" class="section wrap" aria-labelledby="talk-title">
+  <header class="section-head">
+    <span class="num">08</span>
+    <h2 id="talk-title">Talk to Charlie</h2>
+    <p>Pick a line. Free-form questions, answered by Claude using only what's on this site, unlock soon.</p>
+  </header>
+
+  <div class="box panel" data-dialog>
+    <div class="face">
+      <PixelArt art={face} scale={5} />
+      <p class="pixel">Charlie</p>
+    </div>
+    <div class="body">
+      <p class="line" data-line aria-live="polite">{dialogue.greeting}</p>
+      <ul class="choices" role="list">
+        {
+          dialogue.options.map((o, i) => (
+            <li>
+              <a href={`#answer-${i + 1}`} data-choice={i}>
+                <kbd>{i + 1}</kbd> {o.q}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <form class="ask" aria-label="Ask a question">
+        <label for="ask" class="visually-hidden">Ask anything</label>
+        <input id="ask" type="text" placeholder="Ask anything… (unlocks soon)" disabled />
+        <span class="lock pixel" aria-hidden="true">Locked</span>
+      </form>
+    </div>
+  </div>
+
+  <details class="transcript">
+    <summary class="pixel">Read the whole conversation</summary>
+    <dl>
+      {
+        dialogue.options.map((o, i) => (
+          <div id={`answer-${i + 1}`}>
+            <dt>{o.q}</dt>
+            <dd>{o.a}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </details>
+</section>
+
+<script type="application/json" id="dialogue-data" set:html={JSON.stringify(dialogue)} />
+
+<script>
+  const box = document.querySelector<HTMLElement>('[data-dialog]');
+  const line = box?.querySelector<HTMLElement>('[data-line]');
+  const data = JSON.parse(document.getElementById('dialogue-data')?.textContent ?? '{}') as {
+    options: { q: string; a: string }[];
+  };
+
+  if (box && line && data.options) {
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+    let timer = 0;
+
+    // Type the answer out like an RPG text box; a second press finishes it.
+    const say = (text: string) => {
+      clearInterval(timer);
+      if (still.matches) {
+        line.textContent = text;
+        return;
+      }
+      let n = 0;
+      line.textContent = '';
+      timer = window.setInterval(() => {
+        n += 2;
+        line.textContent = text.slice(0, n);
+        if (n >= text.length) clearInterval(timer);
+      }, 16);
+    };
+
+    const choose = (i: number) => {
+      const option = data.options[i];
+      if (!option) return;
+      box.querySelectorAll('[data-choice]').forEach((c) => c.classList.toggle('picked', Number((c as HTMLElement).dataset.choice) === i));
+      say(option.a);
+    };
+
+    box.addEventListener('click', (e) => {
+      const choice = (e.target as Element).closest<HTMLElement>('[data-choice]');
+      if (!choice) return;
+      e.preventDefault();
+      choose(Number(choice.dataset.choice));
+    });
+
+    // Number keys pick a line while the box is on screen.
+    let visible = false;
+    new IntersectionObserver(([entry]) => (visible = entry.isIntersecting)).observe(box);
+    addEventListener('keydown', (e) => {
+      if (!visible || e.metaKey || e.ctrlKey || e.altKey) return;
+      if ((e.target as HTMLElement).closest('input, textarea, select')) return;
+      const n = Number(e.key);
+      if (n >= 1 && n <= data.options.length) choose(n - 1);
+    });
+  }
+</script>
+
+<style>
+  .box {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-m);
+    padding: var(--space-m);
+    background: #110d22;
+    box-shadow:
+      inset 0 0 0 var(--px) var(--ink),
+      inset 0 0 0 calc(var(--px) * 2) #0f1226,
+      inset 0 0 0 calc(var(--px) * 3) var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .face {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 6px;
+    padding: 10px;
+    background: radial-gradient(circle at 50% 40%, #4a2a63, var(--panel) 75%);
+  }
+
+  .face p {
+    color: var(--gold);
+  }
+
+  .line {
+    min-height: 5.5em;
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+
+  .line::after {
+    content: '▼';
+    display: inline-block;
+    margin-left: 0.4em;
+    color: var(--gold);
+    font-size: 0.7em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .line::after {
+      animation: nudge 0.8s steps(2) infinite;
+    }
+  }
+
+  @keyframes nudge {
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px var(--space-m);
+    margin-top: var(--space-m);
+  }
+
+  .choices a {
+    display: block;
+    padding: 6px 8px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .choices a:hover,
+  .choices a.picked {
+    background: var(--panel-2);
+    color: var(--gold);
+  }
+
+  .choices a.picked::before {
+    content: '▶ ';
+    color: var(--gold);
+  }
+
+  .ask {
+    position: relative;
+    margin-top: var(--space-m);
+  }
+
+  .ask input {
+    width: 100%;
+    padding: 0.75rem 6rem 0.75rem 0.9rem;
+    border: 2px dashed var(--line);
+    background: transparent;
+    color: var(--ink-soft);
+    font: inherit;
+  }
+
+  .lock {
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    translate: 0 -50%;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .transcript {
+    margin-top: var(--space-m);
+  }
+
+  summary {
+    color: var(--gold);
+    cursor: pointer;
+  }
+
+  .transcript dl {
+    display: grid;
+    gap: var(--space-s);
+    margin-top: var(--space-s);
+    max-width: var(--column);
+  }
+
+  dt {
+    font-weight: 700;
+  }
+
+  dd {
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 639px) {
+    .box {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .face {
+      grid-auto-flow: column;
+      justify-content: start;
+      align-items: center;
+    }
+
+    .face :global(svg) {
+      width: 64px;
+      height: auto;
+    }
+
+    .choices {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

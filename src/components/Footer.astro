@@ -1,0 +1,129 @@
+---
+import Icon from './Icon.astro';
+import { links, resumePdf, site } from '../data/profile';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="save">
+  <div class="wrap inner">
+    <div class="intro">
+      <p class="pixel title">Save point</p>
+      <p class="sub">Progress saved. Come say hi, or take the resume with you.</p>
+      <div class="resume">
+        <a class="btn" href={resumePdf} download><Icon name="doc" color="cream" scale={2} /> Download resume (PDF)</a>
+        <a class="btn ghost" href="/resume">Read it here <kbd>R</kbd></a>
+      </div>
+    </div>
+    <ul class="links" role="list">
+      {
+        links.map((link) => (
+          <li>
+            <a class="link panel" href={link.url}>
+              <Icon name={link.icon} color={link.color} scale={3} />
+              <span class="label pixel">{link.label}</span>
+              <span class="handle">{link.handle}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <div class="wrap fine">
+    <p>© {year} {site.name}. Hand-placed pixels, no cookies.</p>
+    <p>Keys: <kbd>E</kbd> talk · <kbd>R</kbd> resume · <kbd>1</kbd>–<kbd>6</kbd> pick a line</p>
+  </div>
+</footer>
+
+<style>
+  .save {
+    margin-top: clamp(4rem, 9vw, 7rem);
+    padding-block: var(--space-xl) var(--space-l);
+    background: var(--bg-2);
+    border-top: 2px solid var(--line);
+  }
+
+  .inner {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: start;
+    gap: var(--space-l);
+  }
+
+  .title {
+    color: var(--gold);
+    font-size: var(--step-3);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .sub {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+  }
+
+  .resume {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-top: var(--space-m);
+  }
+
+  .links {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: var(--space-s);
+  }
+
+  .link {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'icon label' 'icon handle';
+    align-items: center;
+    column-gap: 0.85rem;
+    padding: 0.8rem 1rem;
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform 80ms steps(2);
+  }
+
+  .link:hover {
+    text-decoration: none;
+    transform: translate(-2px, -2px);
+  }
+
+  .link :global(svg) {
+    grid-area: icon;
+  }
+
+  .label {
+    grid-area: label;
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .handle {
+    grid-area: handle;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fine {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-xs) var(--space-m);
+    margin-top: var(--space-l);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  @media (max-width: 899px) {
+    .inner {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

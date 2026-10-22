@@ -1,0 +1,31 @@
+---
+import PixelArt from './PixelArt.astro';
+import { icons, type IconName } from '../data/pixels';
+
+interface Props {
+  name: IconName;
+  color?: string;
+  scale?: number;
+  class?: string;
+}
+
+// Main, shade and highlight for each badge color.
+const colors: Record<string, [string, string, string]> = {
+  gold: ['#ffcd75', '#e0884a', '#fff3c4'],
+  coral: ['#ff8e5e', '#b8405e', '#ffd0b0'],
+  red: ['#ff6b7f', '#a8304e', '#ffc2cb'],
+  teal: ['#73eff7', '#2fa8b5', '#d8fdff'],
+  blue: ['#5cb8ff', '#3b5dc9', '#d0ecff'],
+  violet: ['#b99cff', '#6b4f96', '#ece2ff'],
+  green: ['#a7f070', '#38b764', '#e4ffc8'],
+  gray: ['#9aa3c7', '#566c86', '#dfe3f2'],
+  cream: ['#fdf6e3', '#bdb3db', '#ffffff'],
+  ink: ['#2b2350', '#141026', '#fdf6e3'],
+};
+
+const { name, color = 'gold', scale = 4, class: className } = Astro.props;
+const [main, shade, light] = colors[color] ?? colors.gold;
+const art = { rows: icons[name], palette: { '1': main, '2': shade, '3': light, K: '#0c0a18' } };
+---
+
+<PixelArt art={art} scale={scale} class={className} />

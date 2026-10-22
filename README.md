@@ -1,91 +1,32 @@
-# 🌊 Waves - Charlie Brockmeier Personal Website
+# charliebrockmeier.com
 
-A stunning desktop-only personal splash page featuring a fullscreen wave video background with elegant overlay content.
+Charlie Brockmeier's personal site: a video-game "player profile" with a one-page resume for anyone in a hurry.
 
-## Features
+- **Home (`/`)**: title screen, character sheet, stats, quest log, party (AI agents), inventory, achievements, side quests and a talk-to-Charlie dialogue box.
+- **Resume (`/resume`)**: the same facts on one printable page. Press <kbd>R</kbd> from home. The download is `public/charlie-brockmeier-resume.pdf`.
 
-- **Fullscreen Wave Video Background**: Autoplay, muted, looping video that covers the entire viewport
-- **Gradient Overlay**: Semi-transparent dark gradient for text readability
-- **Centered Content**: Elegant typography with smooth fade-in animations
-- **Interactive Button**: "Dive In" button with hover glow and ripple effects
-- **Subtle Parallax**: Mouse-based parallax movement for enhanced interactivity
-- **Performance Optimized**: Video pauses when tab is not visible
+Built with [Astro](https://astro.build), static output, about 2 KB of JavaScript.
 
-## Setup Instructions
+## Run it locally
 
-### 1. Video Background
+Requires Node 22 or later.
 
-You need to add a high-quality wave video file named `waves-background.mp4` to this directory. 
-
-**Recommended specifications:**
-- **Resolution**: 1920x1080 (Full HD) or higher
-- **Format**: MP4 (H.264 codec for best browser compatibility)
-- **Duration**: 10-30 seconds (will loop seamlessly)
-- **Content**: Ocean waves crashing on a sandy beach with white foam
-- **File size**: Aim for under 50MB for good loading performance
-
-**Where to find wave videos:**
-- **Free options**: Pexels, Pixabay, Unsplash (search for "ocean waves", "beach waves")
-- **Premium options**: Shutterstock, Getty Images, Adobe Stock
-- **Recommended search terms**: "ocean waves beach", "waves crashing shore", "sea waves loop"
-
-### 2. File Structure
-
-```
-Waves/
-├── index.html          # Main HTML structure
-├── styles.css          # All styling and animations
-├── script.js           # Interactive functionality
-├── waves-background.mp4 # Your wave video (you need to add this)
-└── README.md           # This file
+```sh
+npm install
+npm run dev        # http://localhost:4321
 ```
 
-### 3. Running the Website
+`npm run build` writes the static site to `dist/`; `npm run preview` serves that build.
 
-1. Add your `waves-background.mp4` file to this directory
-2. Open `index.html` in a modern web browser
-3. The video should autoplay and loop seamlessly
+## Where things live
 
-**Note**: Some browsers may block autoplay. If the video doesn't start automatically, the fallback gradient background will display.
+| Path | What |
+|---|---|
+| `src/data/profile.ts` | Every fact and line of copy on the site |
+| `src/data/pixels.ts` | Hand-drawn sprite and icons, as rows of palette keys |
+| `scripts/art/` | The pixel scenes, drawn in code. `npm run art` regenerates `public/art/*.png` |
+| `src/components/` | One component per section |
+| `src/styles/tokens.css` | The "Dusk" palette, type scale and spacing |
+| `PLAN.md` | The plan and what's next |
 
-## Customization
-
-### Colors
-- Gradient overlay: Modify `rgba` values in `.gradient-overlay` class
-- Text colors: Adjust in `.main-heading` and `.sub-heading` classes
-- Button styling: Customize in `.dive-button` class
-
-### Typography
-- Font sizes: Adjust `font-size` values for different screen sizes
-- Font family: Change in the `body` selector
-
-### Animations
-- Timing: Modify `animation-delay` values in CSS
-- Effects: Adjust `@keyframes` animations
-
-## Browser Compatibility
-
-- Chrome 60+
-- Firefox 55+
-- Safari 11+
-- Edge 79+
-
-**Note**: This is designed for desktop viewing only and may not display optimally on mobile devices.
-
-## Performance Tips
-
-- Keep video file size under 50MB
-- Use H.264 codec for best compatibility
-- Consider using a CDN for faster loading
-- The video automatically pauses when the tab is not visible to save resources
-
-## Troubleshooting
-
-**Video not playing?**
-- Check that `waves-background.mp4` exists in the same directory as `index.html`
-- Ensure the video file is in MP4 format with H.264 codec
-- Some browsers require user interaction before playing video - this is handled by the fallback background
-
-**Performance issues?**
-- Reduce video file size or resolution
-- Check browser developer tools for any console errors
+The previous version of the site (the waves splash page and Rocky the pet rock) is in this repo's history before the "Player profile" commit.

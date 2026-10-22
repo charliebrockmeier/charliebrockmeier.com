@@ -1,0 +1,81 @@
+---
+import Icon from './Icon.astro';
+import { achievements } from '../data/profile';
+
+const unlocked = achievements.filter((a) => !a.locked).length;
+---
+
+<section id="achievements" class="section wrap" aria-labelledby="achievements-title">
+  <header class="section-head">
+    <span class="num">06</span>
+    <h2 id="achievements-title">Achievements</h2>
+    <p class="pixel count">{unlocked} / {achievements.length} unlocked</p>
+  </header>
+  <ul class="grid" role="list">
+    {
+      achievements.map((a) => (
+        <li class:list={['badge panel', { locked: a.locked }]}>
+          <Icon name={a.icon} color={a.color} scale={5} class="icon" />
+          <div>
+            <h3 class="pixel">{a.name}</h3>
+            <p>{a.note}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .count {
+    color: var(--gold);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-s);
+  }
+
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+    padding: var(--space-s);
+  }
+
+  .badge :global(.icon) {
+    flex: none;
+    width: 60px;
+    height: 60px;
+    padding: 6px;
+    background: var(--bg);
+  }
+
+  h3 {
+    font-size: var(--step-1);
+    font-weight: 700;
+  }
+
+  p {
+    color: var(--ink-soft);
+    font-size: var(--label);
+    line-height: 1.4;
+  }
+
+  .locked {
+    opacity: 0.6;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .badge:not(.locked):hover :global(.icon) {
+      animation: hop 0.4s steps(2);
+    }
+  }
+
+  @keyframes hop {
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+</style>

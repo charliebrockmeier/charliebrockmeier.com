@@ -1,0 +1,123 @@
+---
+import Icon from './Icon.astro';
+import { codex, sideQuests } from '../data/profile';
+---
+
+<section id="side-quests" class="section wrap" aria-labelledby="side-title">
+  <header class="section-head">
+    <span class="num">07</span>
+    <h2 id="side-title">Side quests</h2>
+    <p>Outside work I'm usually deep in something new. I switch often and keep notes on what sticks.</p>
+  </header>
+
+  <ul class="quests" role="list">
+    {
+      sideQuests.map((s) => (
+        <li class="panel">
+          <Icon name={s.icon} color={s.color} scale={4} class="icon" />
+          <h3 class="pixel">{s.name}</h3>
+          <p>{s.note}</p>
+        </li>
+      ))
+    }
+  </ul>
+
+  <h3 class="pixel codex-title">Codex</h3>
+  <ul class="codex" role="list">
+    {
+      codex.map((c) => (
+        <li class="entry">
+          <p class="state pixel">{c.status}</p>
+          <div>
+            <h4>{c.url ? <a href={c.url}>{c.title}</a> : c.title}</h4>
+            <p>
+              {c.where} · {c.when}
+            </p>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .quests {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .quests li {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    padding: var(--space-s);
+  }
+
+  .quests :global(.icon) {
+    width: 48px;
+    height: 48px;
+  }
+
+  h3 {
+    font-size: var(--step-1);
+    font-weight: 700;
+  }
+
+  .quests p {
+    color: var(--ink-soft);
+    font-size: var(--label);
+    line-height: 1.4;
+  }
+
+  .codex-title {
+    margin: var(--space-xl) 0 var(--space-s);
+    color: var(--gold);
+  }
+
+  .codex {
+    display: grid;
+    border-top: 2px solid var(--line);
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: var(--space-s);
+    align-items: baseline;
+    padding-block: var(--space-s);
+    border-bottom: 2px solid var(--line);
+  }
+
+  .state {
+    color: var(--teal);
+    font-size: var(--label);
+  }
+
+  h4 {
+    font-size: var(--step-1);
+    font-weight: 600;
+  }
+
+  .entry p:not(.state) {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  @media (max-width: 999px) {
+    .quests {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 559px) {
+    .quests {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .entry {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
+</style>
