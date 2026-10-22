@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { panorama } from './panorama.mjs';
 import { msci, vantager, threebridge, raikes, tutorial, prologue } from './scenes.mjs';
 import { usmap } from './usmap.mjs';
-import { journeyNear, journeyFar, journeyWalker } from './journey.mjs';
+import { journeyNear, journeyFar, journeyWalker, journeyVehicles, journeyClouds } from './journey.mjs';
 
 const scenes = {
   panorama,
@@ -19,6 +19,8 @@ const scenes = {
   'journey-near': journeyNear,
   'journey-far': journeyFar,
   'journey-walker': journeyWalker,
+  'journey-vehicles': journeyVehicles,
+  'journey-clouds': journeyClouds,
 };
 
 const out = new URL('../../public/art/', import.meta.url).pathname;
