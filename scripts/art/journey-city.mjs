@@ -1,11 +1,35 @@
 // New York: Union Square at blue hour (Washington on horseback, the Greenmarket,
 // the Vantager office, the subway), the Flatiron and the Empire State Building,
-// a hot dog cart and a Con Ed steam stack, the walk-up, then 7 World Trade.
+// a hot dog cart and a Con Ed steam stack, the walk-up, then 7 World Trade with
+// MSCI's sign over the lobby.
 import { C } from './lib.mjs';
 import { LAWN, WALK, STREET, text, textWidth, bricks, windowGrid, tree } from './journey-kit.mjs';
 import { vantagerMark } from '../../src/data/journey.ts';
+import { logos } from '../../src/data/logos.ts';
 
 export const WTC7 = { x: 3990, w: 100, top: 30 };
+
+/** MSCI's lockup as on its logo: the wordmark, then the globe (lifted from the emblem in logos.ts). */
+const MSCI_LETTERS = {
+  M: ['##...##', '###.###', '#######', '##.#.##', '##...##', '##...##', '##...##'],
+  S: ['.####', '##...', '##...', '.###.', '...##', '...##', '####.'],
+  C: ['.####', '##...', '##...', '##...', '##...', '##...', '.####'],
+  I: ['##', '##', '##', '##', '##', '##', '##'],
+};
+const MSCI_WORD = MSCI_LETTERS.M.map((_, y) => ['M', 'S', 'C', 'I'].map((k) => MSCI_LETTERS[k][y]).join('.'));
+const MSCI_GLOBE = logos.msci.rows.slice(1, 14).map((r) => r.slice(3, 16).replace(/[KW]/g, '.'));
+
+function msciSign(cv, cx, bottom) {
+  const w = 3 + MSCI_WORD[0].length + 3 + MSCI_GLOBE[0].length + 3;
+  const h = MSCI_GLOBE.length + 4;
+  const x = cx - Math.floor(w / 2);
+  const y = bottom - h;
+  cv.rect(x - 1, y - 1, w + 2, h + 2, '#566c86');
+  cv.rect(x, y, w, h, '#f4f4f4');
+  cv.rect(x, y + h - 1, w, 1, '#c9cfe0');
+  cv.sprite(x + 3, y + 2 + (MSCI_GLOBE.length - MSCI_WORD.length) / 2, MSCI_WORD, { '#': '#141026' });
+  cv.sprite(x + 3 + MSCI_WORD[0].length + 3, y + 2, MSCI_GLOBE, { G: '#4a64b8', D: '#29366f' });
+}
 export const SUBWAY = { x0: 3060, x1: 4380, platform: [3330, 3476] };
 /** The signpost past 7 WTC: the road keeps going. */
 export const NEXT_SIGN = { x: 4100, y: 112 };
@@ -293,6 +317,8 @@ function downtown(cv, rand) {
   for (let x = sx; x < sx + sw; x += 8) cv.rect(x, 136, 1, LAWN - 136, '#73eff7');
   cv.rect(sx - 2, 134, sw + 4, 2, '#94a0c2');
   text(cv, sx + 4, 128, '7 WTC', '#c6fff5');
+  // MSCI, the tenant: its sign over the lobby, right above where the walk ends.
+  msciSign(cv, sx + sw / 2, 133);
   tree(cv, 3976, LAWN, 6, ['#1c4a43', '#257156', '#38b764']);
 
   // The Oculus: a white spine with ribs rising like wings.
@@ -325,7 +351,7 @@ function downtown(cv, rand) {
   nextChapter(cv);
   // Street lamps along the block.
   for (let x = 3600; x < 4400; x += 46) {
-    if (x > 4090 && x < 4150) continue;
+    if (x > WTC7.x - 4 && x < 4150) continue; // clear of 7 WTC's signs and the signpost
     cv.rect(x, 126, 1, WALK - 126, '#566c86');
     cv.rect(x - 2, 124, 5, 2, '#3d4a62');
     cv.rect(x - 1, 126, 3, 1, C.sun);

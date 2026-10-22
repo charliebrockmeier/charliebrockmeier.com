@@ -312,12 +312,12 @@ const FRONT = [
   '..KjJJJJJJJJJJjK..',
   '..KSJJJJJJJJJJSK..',
   '...KjjjjjjjjjjK...',
-  '....KLLLKKLLLK....',
-  '....KLLLKKLLLK....',
-  '....KLLLKKLLLK....',
-  '....KLLLKKLLLK....',
-  '...KBBBBKKBBBBK...',
-  '...KKKKKKKKKKKK...',
+  '...KLLLlKKlLLLK...',
+  '...KLLLlKKlLLLK...',
+  '...KLLLlKKlLLLK...',
+  '...KLLLlKKlLLLK...',
+  '..KBBBBBKKBBBBBK..',
+  '..KKKKKKKKKKKKKK..',
 ];
 // [near foot dx, near lift, far foot dx, far lift, bob, near hand dx]
 const WALK_FRAMES = [
@@ -345,6 +345,7 @@ const PAL = {
   a: '#141a36',
   L: '#24305a',
   l: '#161e3c',
+  k: '#10152c',
   B: '#3a2430',
   b: '#241820',
 };
@@ -356,21 +357,25 @@ export function journeyWalker() {
   WALK_FRAMES.forEach(([nd, nl, fd, fl, bob, swing], i) => {
     const ox = i * WW;
     const hip = 20 + bob;
-    const leg = (dx, lift, color, shoe) => {
+    // A trouser leg four pixels wide, hip to knee to ankle, with a darker back edge;
+    // `edge` outlines the front edge too (the near leg, so it reads over the far one).
+    // The shoe is six wide: an upper over a dark sole.
+    const leg = (dx, lift, [main, back, edge], [shoe, sole]) => {
       const fx = cx + dx;
       const fy = WH - 1 - lift;
-      const kx = Math.round((cx + fx) / 2 + (lift > 0 ? 1 : 0));
-      const ky = Math.round((hip + fy) / 2);
-      for (const [ax, ay, bx, by] of [
-        [cx, hip, kx, ky],
-        [kx, ky, fx, fy - 1],
-      ]) {
-        cv.line(ox + ax, ay, ox + bx, by, color);
-        cv.line(ox + ax - 1, ay, ox + bx - 1, by, color);
+      const kx = (cx + fx) / 2 + (lift > 0 ? 1.5 : 0);
+      const ky = (hip + fy) / 2;
+      const ankle = fy - 2;
+      for (let y = hip; y <= ankle; y++) {
+        const t = y <= ky ? (y - hip) / Math.max(1, ky - hip) : (y - ky) / Math.max(1, ankle - ky);
+        const c = Math.round(y <= ky ? cx + (kx - cx) * t : kx + (fx - kx) * t);
+        cv.rect(ox + c - 2, y, 4, 1, main);
+        cv.px(ox + c - 2, y, back);
+        if (edge && y > hip) cv.px(ox + c + 2, y, edge);
       }
-      cv.rect(ox + fx - 2, fy, 5, 1, shoe);
-      cv.rect(ox + fx - 2, fy - 1, 3, 1, shoe);
-      cv.px(ox + fx + 3, fy, PAL.K);
+      cv.rect(ox + fx - 2, fy - 1, 5, 1, shoe);
+      cv.rect(ox + fx - 2, fy, 6, 1, sole);
+      cv.px(ox + fx + 3, fy - 1, edge ?? sole);
     };
     // Far arm and leg behind the body, then the body, then the near leg and arm.
     const limb = (dx, color, hand) => {
@@ -380,10 +385,10 @@ export function journeyWalker() {
       cv.rect(ox + cx + dx, 19 + bob, 2, 2, hand);
     };
     limb(-swing, PAL.a, PAL.s);
-    leg(fd, fl, PAL.l, PAL.b);
+    leg(fd, fl, [PAL.l, PAL.k, null], [PAL.b, PAL.K]);
     cv.sprite(ox, bob, HEAD, PAL);
     cv.sprite(ox, 13 + bob, TORSO, PAL);
-    leg(nd, nl, PAL.L, PAL.B);
+    leg(nd, nl, [PAL.L, PAL.l, PAL.K], [PAL.B, PAL.K]);
     limb(swing, PAL.j, PAL.S);
   });
   // Facing out, then waving with the raised arm in two positions.
