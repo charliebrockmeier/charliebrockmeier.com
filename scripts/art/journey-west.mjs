@@ -1,7 +1,7 @@
 // Nebraska, west to east: the Platte at sunrise, home, Kearney High, the Archway
 // over I-80, Lincoln on game day, and the Omaha riverfront. Then fast travel west.
 import { C, SKY, ramp } from './lib.mjs';
-import { LAWN, WALK, text, textWidth, bricks, windowGrid, tree, tod } from './journey-kit.mjs';
+import { GROUND, LAWN, Layer, WALK, text, textWidth, bricks, windowGrid, tree, tod } from './journey-kit.mjs';
 
 export function nebraska(cv, rand) {
   platte(cv, rand);
@@ -55,7 +55,15 @@ function platte(cv, rand) {
       const t = 0.85 - Math.abs(x - 70) / 200 - (y - 138) * 0.03 + (Math.sin(x * 0.45 + y * 1.3) > 0.75 ? 0.1 : 0);
       cv.px(x, y, ramp(water, y % 2 ? t : t - 0.15, x, y));
     }
-  cv.rect(0, 137, 172, 1, '#4a7a5a');
+  cv.rect(0, 137, 160, 1, '#4a7a5a');
+  // The east bank: prairie grass sloping down to the water.
+  for (let y = 136; y < LAWN; y++)
+    for (let x = 150; x < 174; x++) if (x > 172 - (y - 136) * 0.15 - (LAWN - y) * 1.3) cv.px(x, y, (x + y) % 3 ? '#c9a26b' : '#a8865e');
+  for (let x = 150; x < 174; x += 2) {
+    let y = 136;
+    while (y < LAWN && cv.get(x, y) !== '#c9a26b' && cv.get(x, y) !== '#a8865e') y++;
+    cv.px(x, y - 1, C.gold);
+  }
   for (const [x, w, y] of [
     [8, 30, 144],
     [60, 36, 147],
@@ -242,7 +250,7 @@ function archway(cv) {
   // The Great Platte River Road Archway: two eight-story towers on either side
   // of I-80, joined by a span built to look like a covered bridge at sunset:
   // weathered-steel trusses over sunset-colored cladding, a trellis along the
-  // roof, and wing ornaments crowning both towers.
+  // roof, and Kent Bloomer's aluminum ornaments crowning the towers.
   const towers = [786, 964];
   const tw = 24;
   const top = 46;
@@ -250,35 +258,21 @@ function archway(cv) {
   const steelD = '#5c3424';
   const steelL = '#a8643e';
   for (const tx of towers) {
-    cv.rect(tx, top, tw, 180 - top, steel);
-    cv.rect(tx, top, 2, 180 - top, steelL);
-    cv.rect(tx + tw - 2, top, 2, 180 - top, steelD);
-    for (let y = top + 6; y < 180; y += 16) {
+    cv.rect(tx, top, tw, GROUND - top, steel);
+    cv.rect(tx, top, 2, GROUND - top, steelL);
+    cv.rect(tx + tw - 2, top, 2, GROUND - top, steelD);
+    for (let y = top + 6; y < GROUND; y += 16) {
       cv.rect(tx, y, tw, 2, steelD);
       cv.line(tx + 2, y + 2, tx + tw - 3, y + 15, steelD);
       cv.line(tx + tw - 3, y + 2, tx + 2, y + 15, steelD);
       cv.rect(tx + 9, y + 6, 6, 4, '#ffcd75');
     }
-    // Wings: aluminum ornaments sweeping up and out from the tower top.
-    const cx = tx + tw / 2;
-    for (const d of [-1, 1]) {
-      cv.poly(
-        [
-          [cx, top - 2],
-          [cx + d * 6, top - 2],
-          [cx + d * 22, top - 30],
-          [cx + d * 17, top - 28],
-          [cx + d * 12, top - 18],
-          [cx + d * 2, top - 10],
-        ],
-        '#c9cfe0',
-      );
-      for (let k = 1; k <= 4; k++) cv.line(cx + d * 2, top - 3, cx + d * (6 + k * 4), top - 8 - k * 5, '#94a0c2');
-      cv.line(cx + d * 6, top - 2, cx + d * 22, top - 30, '#f4f4f4');
-    }
-    cv.rect(cx - 2, top - 10, 4, 10, '#94a0c2');
     cv.rect(tx - 2, top - 2, tw + 4, 2, steelD);
   }
+  // Kent Bloomer's aluminum ornaments: a pair of 25-foot wings on each tower, and on
+  // the north tower a horse leaping out of them, westward, for the Pony Express.
+  for (const tx of towers) wings(cv, tx + tw / 2, top - 3);
+  horse(cv, towers[0] + tw / 2 - 19, top - 39);
   // The covered-bridge span: an arched roof over sunset bands, steel truss on top.
   const x0 = towers[0] + tw;
   const x1 = towers[1];
@@ -304,6 +298,88 @@ function archway(cv) {
   for (let x = x0 + 2; x < x1; x += 4) cv.line(x, roofY(x) - 2, x + 2, roofY(x) - 5, '#c9cfe0');
 }
 
+/** Stamp a shape drawn by `draw` (on a scratch layer) onto cv with a one-pixel outline. */
+function outlined(cv, w, h, ox, oy, outline, draw) {
+  const tmp = new Layer(w, h);
+  draw(tmp);
+  const on = (x, y) => (tmp.get(x, y) ?? 'none') !== 'none';
+  for (let y = -1; y <= h; y++)
+    for (let x = -1; x <= w; x++) {
+      if (on(x, y)) cv.px(ox + x, oy + y, tmp.get(x, y));
+      else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) cv.px(ox + x, oy + y, outline);
+    }
+}
+
+/** A pair of upswept aluminum wings: a curved leading edge and long feathers behind it. */
+function wings(cv, cx, hub) {
+  const lit = '#f4f4f4';
+  const mid = '#c9cfe0';
+  const shade = '#94a0c2';
+  outlined(cv, 60, 34, cx - 30, hub - 32, '#6a7494', (t) => {
+    const c = 30;
+    const b = 32;
+    for (const d of [-1, 1]) {
+      const X = (dx) => c + d * dx;
+      t.poly(
+        [
+          [X(1), b],
+          [X(6), b - 8],
+          [X(10), b - 20],
+          [X(13), b - 30],
+          [X(17), b - 25],
+          [X(21), b - 22],
+          [X(24), b - 16],
+          [X(26), b - 10],
+          [X(23), b - 8],
+          [X(18), b - 4],
+          [X(10), b - 1],
+        ],
+        mid,
+      );
+      // Feathers fan back from the leading edge; the edge itself catches the light.
+      for (const [ax, ay, ex, ey] of [
+        [9, b - 19, 18, b - 24],
+        [8, b - 14, 22, b - 19],
+        [7, b - 10, 25, b - 12],
+        [5, b - 6, 22, b - 7],
+        [3, b - 3, 16, b - 3],
+      ])
+        t.line(X(ax), ay, X(ex), ey, shade);
+      t.line(X(1), b, X(6), b - 8, lit);
+      t.line(X(6), b - 8, X(10), b - 20, lit);
+      t.line(X(10), b - 20, X(13), b - 30, lit);
+    }
+    t.rect(c - 2, b - 4, 5, 5, mid);
+  });
+}
+
+/** The horse leaping out of the north tower's wings, westward, in aluminum. */
+const HORSE = [
+  '.....OO...........................',
+  '....OLLO..........................',
+  '...OLMMLO.........................',
+  '..OLMEMMLO........................',
+  '.OLMMMMMMLO.......................',
+  'OLMMMOOMMMLO......................',
+  'OMMMO..OMMMLOOOOOOOOOO.......OO...',
+  '.OOO....OMMMLLLLLLLLLLLOO...OSSO..',
+  '........OMMMMMMMMMMMMMMMMOOOSSO...',
+  '.......OMMMMMMMMMMMMMMMMMMMLSSO...',
+  '.......OMMMMMMMMMMMMMMMMMMMOOO....',
+  '......OMMOMMMMMMMMMMMMMMMMMO......',
+  '..OOOOMMO.OSSSSSSSSSSSOMMMMO......',
+  '.OMMMMMO..OSO.OOOOOOOOOMMMMMO.....',
+  'OMMOOOO..OSO.........OOOOSMMMO....',
+  'OSO......OO...............OSMMO...',
+  '.O.........................OSMMO..',
+  '............................OSSO..',
+  '.............................OO...',
+];
+
+function horse(cv, ox, oy) {
+  cv.sprite(ox, oy, HORSE, { O: '#2b2f48', M: '#b8c0d4', L: '#f4f4f4', S: '#8a94b4', E: '#141026' });
+}
+
 function guideSign(cv, x, lines) {
   const w = Math.max(...lines.map(textWidth)) + 8;
   cv.rect(x + 6, 124, 2, LAWN - 124, C.steel);
@@ -320,31 +396,99 @@ function guideSign(cv, x, lines) {
 // --- Lincoln -----------------------------------------------------------------
 
 function capitol(cv, rand) {
+  // The Nebraska State Capitol: a 400-foot limestone tower over a low, wide base
+  // (a cross inside a square). The tower steps back, runs tall window bays up its
+  // faces, then carries an octagonal drum, the gold-tiled dome and the Sower.
   const cx = 1132;
   const lime = '#e2c89a';
-  const limeS = '#bfa070';
-  cv.rect(cx - 44, 126, 89, LAWN - 126, lime);
-  cv.rect(cx - 44, 126, 89, 2, limeS);
-  for (let x = cx - 40; x < cx + 42; x += 6) cv.rect(x, 131, 3, 14, rand() > 0.7 ? C.gold : '#7a6a8a');
-  cv.rect(cx + 43, 126, 2, LAWN - 126, '#8a6a5a');
-  cv.rect(cx - 18, 112, 37, 14, lime);
-  cv.rect(cx + 17, 112, 2, 14, limeS);
-  cv.rect(cx - 12, 52, 25, 60, lime);
-  cv.rect(cx - 12, 52, 2, 60, '#f0dcb4');
-  cv.rect(cx + 11, 52, 2, 60, limeS);
-  for (let x = cx - 7; x <= cx + 7; x += 4) cv.rect(x, 56, 2, 52, '#6e5a7a');
-  for (let x = cx - 7; x <= cx + 7; x += 4) cv.px(x, 80, C.gold);
-  cv.rect(cx - 10, 48, 21, 4, limeS);
-  for (let y = 0; y < 8; y++) {
-    const half = Math.round(Math.sqrt(64 - y * y) * 1.15);
-    cv.rect(cx - half, 47 - y, half * 2 + 1, 1, y === 3 ? C.teal : y > 5 ? C.sun : C.gold);
+  const limeL = '#f2e0b8';
+  const limeS = '#c4a676';
+  const limeD = '#a8885c';
+  const bay = '#5a4a6e';
+  const bayL = '#7a6a8e';
+  // The base: wings out to corner pavilions, a taller center pavilion with the portal.
+  const b0 = cx - 58;
+  const b1 = cx + 58;
+  cv.rect(b0, 124, b1 - b0, LAWN - 124, lime);
+  cv.rect(b0, 124, b1 - b0, 1, limeL);
+  cv.rect(b0, 127, b1 - b0, 1, limeS);
+  for (let x = b0 + 4; x < b1 - 4; x += 5) {
+    if (Math.abs(x - cx) < 22) continue;
+    cv.rect(x, 131, 2, 15, (x * 7) % 3 ? bay : bayL);
+    cv.px(x, 130, limeS);
   }
-  cv.rect(cx, 30, 1, 10, '#3d2f4a');
-  cv.rect(cx - 1, 32, 3, 4, '#3d2f4a');
-  cv.px(cx + 2, 33, '#3d2f4a');
-  cv.px(cx - 2, 34, '#3d2f4a');
-  tree(cv, cx - 52, LAWN, 6);
-  tree(cv, cx + 54, LAWN, 7);
+  cv.rect(b0, 146, b1 - b0, 1, limeS);
+  for (const px of [b0, b1 - 12]) {
+    cv.rect(px, 120, 12, LAWN - 120, lime);
+    cv.rect(px, 120, 12, 1, limeL);
+    cv.rect(px + 3, 124, 2, 18, bay);
+    cv.rect(px + 7, 124, 2, 18, bay);
+    cv.rect(px + 11, 120, 1, LAWN - 120, limeS);
+  }
+  cv.rect(b1 - 1, 124, 1, LAWN - 124, limeD);
+  // Center pavilion: a deep portal of three tall bays, and the steps.
+  cv.rect(cx - 22, 112, 45, LAWN - 112, lime);
+  cv.rect(cx - 22, 112, 45, 1, limeL);
+  cv.rect(cx + 21, 112, 2, LAWN - 112, limeS);
+  for (const dx of [-12, -1, 10]) {
+    cv.rect(cx + dx, 120, 4, 24, '#4a3a5e');
+    cv.rect(cx + dx, 120, 4, 1, limeD);
+    cv.px(cx + dx + 1, 119, limeS);
+    cv.px(cx + dx + 2, 119, limeS);
+  }
+  for (let i = 0; i < 4; i++) cv.rect(cx - 16 - i * 2, 144 + i * 2, 33 + i * 4, 2, i % 2 ? limeS : limeL);
+  // Tower foot: a broad block that steps back twice.
+  cv.rect(cx - 19, 100, 39, 12, lime);
+  cv.rect(cx - 19, 100, 39, 1, limeL);
+  cv.rect(cx + 18, 100, 2, 12, limeS);
+  cv.rect(cx - 16, 94, 33, 6, lime);
+  cv.rect(cx - 16, 94, 33, 1, limeL);
+  cv.rect(cx + 15, 94, 2, 6, limeS);
+  for (const dx of [-13, -7, 6, 12]) cv.rect(cx + dx, 102, 2, 8, bay);
+  // The shaft: lit face, shaded side, and four tall window bays between piers.
+  const t0 = 36;
+  cv.rect(cx - 13, t0, 27, 94 - t0, lime);
+  cv.rect(cx - 13, t0, 2, 94 - t0, limeL);
+  cv.rect(cx + 10, t0, 4, 94 - t0, limeS);
+  cv.rect(cx + 13, t0, 1, 94 - t0, limeD);
+  for (const dx of [-9, -4, 1, 6]) {
+    cv.rect(cx + dx, t0 + 8, 3, 94 - t0 - 12, bay);
+    cv.rect(cx + dx, t0 + 8, 1, 94 - t0 - 12, bayL);
+    for (let y = t0 + 14; y < 90; y += 9) cv.rect(cx + dx, y, 3, 1, limeS);
+  }
+  // Corner piers rise past the parapet as buttresses around the drum.
+  cv.rect(cx - 13, t0 - 4, 27, 4, lime);
+  cv.rect(cx - 13, t0 - 4, 27, 1, limeL);
+  for (const dx of [-13, 10]) {
+    cv.rect(cx + dx, t0 - 9, 4, 5, dx < 0 ? limeL : limeS);
+    cv.px(cx + dx + 1, t0 - 10, dx < 0 ? limeL : limeS);
+    cv.px(cx + dx + 2, t0 - 10, dx < 0 ? limeL : limeS);
+  }
+  // The octagonal drum with its thunderbird frieze, then the dome and the lantern.
+  const d0 = t0 - 12;
+  cv.rect(cx - 9, d0, 19, 9, lime);
+  cv.rect(cx - 9, d0, 2, 9, limeL);
+  cv.rect(cx + 7, d0, 3, 9, limeS);
+  for (const dx of [-6, -2, 2, 5]) cv.rect(cx + dx, d0 + 3, 2, 5, bay);
+  cv.rect(cx - 9, d0 + 1, 19, 1, C.teal);
+  for (let x = cx - 8; x < cx + 10; x += 3) cv.px(x, d0 + 1, C.red);
+  cv.rect(cx - 10, d0 - 1, 21, 1, limeS);
+  for (let y = 0; y < 9; y++) {
+    const half = Math.round(Math.sqrt(81 - (y - 0.5) * (y - 0.5)) * 1.05);
+    const yy = d0 - 2 - y;
+    cv.rect(cx - half, yy, half * 2 + 1, 1, C.gold);
+    cv.rect(cx - half, yy, Math.max(1, Math.round(half * 0.6)), 1, C.sun);
+    cv.rect(cx + half - Math.round(half * 0.4), yy, Math.round(half * 0.4) + 1, 1, C.orange);
+    for (let x = cx - half + ((y & 1) ? 1 : 0); x <= cx + half; x += 3) cv.px(x, yy, y > 2 ? '#e0a040' : C.gold);
+  }
+  cv.rect(cx - 1, d0 - 12, 3, 2, C.gold);
+  cv.rect(cx - 2, d0 - 13, 5, 1, C.orange);
+  // The Sower, in bronze, striding west and casting seed.
+  cv.sprite(cx - 3, d0 - 22, ['...KK.', '...KK.', '..KKK.', '.KKKKK', 'K.KKK.', '..KKK.', '..KKK.', '..K.K.', '.K..K.'], { K: '#4a3a3a' });
+  cv.px(cx - 4, d0 - 18, '#4a3a3a');
+  // Elms on the grounds.
+  tree(cv, b0 - 8, LAWN, 7);
+  rand();
 }
 
 function haymarket(cv, rand) {
@@ -368,46 +512,105 @@ function haymarket(cv, rand) {
 }
 
 function stadium(cv, rand) {
-  // Memorial Stadium on game day: brick arches, a red upper deck, light towers.
+  // Memorial Stadium on game day. The 1923 stadium's red brick and limestone, tall
+  // arched windows between pilasters, MEMORIAL STADIUM across the frieze and an
+  // inscription over the gate; over the wall, the sea of red in the stands, the
+  // north end zone's video board, and the tall West Stadium with its suites and
+  // press box. Light banks and the balloons are in the overlay.
   const x0 = 1284;
   const x1 = 1460;
-  cv.poly(
-    [
-      [x0 + 6, 104],
-      [x0 + 22, 84],
-      [x1 - 22, 84],
-      [x1 - 6, 104],
-    ],
-    '#b8303a',
-  );
-  for (let y = 86; y < 104; y += 2)
-    for (let x = x0 + 8; x < x1 - 8; x++) {
-      const inside = x > x0 + 6 + (104 - y) * 0.8 && x < x1 - 6 - (104 - y) * 0.8;
-      if (!inside) continue;
+  const stone = '#e8dcc0';
+  const stoneS = '#bfae8e';
+  // The far stands: rows of red, rising from the wall to the rim.
+  cv.poly([[x0 + 4, 106], [x0 + 18, 80], [x1 - 60, 80], [x1 - 60, 106]], '#a82a34');
+  for (let y = 82; y < 106; y++)
+    for (let x = x0 + 4; x < x1 - 60; x++) {
+      if (cv.get(x, y) !== '#a82a34') continue;
       const r = rand();
-      cv.px(x, y, r > 0.86 ? C.cream : r > 0.6 ? '#e43b44' : '#a82a34');
+      cv.px(x, y, y % 3 === 0 ? '#7a2030' : r > 0.9 ? C.cream : r > 0.55 ? '#e43b44' : r > 0.25 ? '#c83040' : '#a82a34');
     }
-  cv.rect(1346, 74, 54, 10, '#d6ccb8');
-  cv.rect(1348, 76, 50, 5, '#29366f');
-  for (let x = 1350; x < 1396; x += 4) cv.rect(x, 77, 2, 3, '#73eff7');
-  bricks(cv, x0, 104, x1 - x0, LAWN - 104, '#9a4a3e', '#843e34');
-  cv.rect(x0, 104, x1 - x0, 2, '#c45a4a');
-  for (let x = x0 + 6; x < x1 - 8; x += 14) {
-    cv.rect(x, 116, 8, LAWN - 116, '#3d2030');
-    cv.rect(x + 1, 114, 6, 2, '#3d2030');
-    cv.rect(x + 2, 113, 4, 1, '#3d2030');
-    cv.fill(x, 118, 8, LAWN - 118, (px, py) => ((px + py) % 5 === 0 ? '#e43b44' : null));
+  cv.rect(x0 + 18, 78, x1 - 78 - x0, 2, '#d6ccb8');
+  cv.rect(x0 + 18, 77, x1 - 78 - x0, 1, '#f4ecdc');
+  // The north end zone video board on its legs (the overlay plays the replays).
+  const vb = x0 + 12;
+  cv.rect(vb + 8, 70, 2, 9, '#3d2f4a');
+  cv.rect(vb + 36, 70, 2, 9, '#3d2f4a');
+  cv.rect(vb, 46, 46, 24, '#141026');
+  cv.rect(vb + 2, 48, 42, 15, '#1b2448');
+  text(cv, vb + 4, 53, 'GO BIG RED', C.cream);
+  cv.rect(vb + 2, 64, 42, 5, '#e43b44');
+  text(cv, vb + 9, 64, 'HUSKERS', C.cream);
+  // The West Stadium: suites and the press box stacked high over the old wall.
+  const wx = x1 - 64;
+  cv.rect(wx, 56, 64, 50, '#c9bfb0');
+  cv.rect(wx, 56, 64, 1, '#f4ecdc');
+  cv.rect(wx + 62, 56, 2, 50, '#8a7f80');
+  cv.rect(wx + 2, 60, 60, 8, '#29366f');
+  for (let x = wx + 3; x < wx + 61; x += 3) cv.rect(x, 61, 2, 6, (x * 3) % 7 < 2 ? '#ffe9a8' : '#73c6f7');
+  cv.rect(wx, 69, 64, 2, '#e43b44');
+  text(cv, wx + 16, 72, 'NEBRASKA', '#7a2030');
+  for (const sy of [80, 90]) {
+    cv.rect(wx + 2, sy, 60, 6, '#3b4a7a');
+    for (let x = wx + 3; x < wx + 61; x += 4) cv.rect(x, sy + 1, 3, 4, (x + sy) % 3 ? '#94b0e0' : '#ffe9a8');
+    cv.rect(wx + 2, sy + 6, 60, 1, '#8a7f80');
   }
-  cv.rect(1356, 107, 32, 8, '#e43b44');
-  cv.rect(1356, 115, 32, 1, '#a82a34');
-  text(cv, 1366, 109, 'GBR', C.cream);
-  for (const lx of [x0 + 2, x1 - 4]) {
-    cv.rect(lx, 56, 2, 48, '#566c86');
-    cv.rect(lx - 5, 50, 12, 7, '#3d2f4a');
+  for (let x = wx + 2; x < wx + 62; x += 10) cv.rect(x, 78, 2, 26, '#d6ccb8');
+  // Light banks on the roof and a light standard over the north stands.
+  for (const lx of [wx + 8, wx + 30, wx + 52]) {
+    cv.rect(lx, 48, 1, 8, '#566c86');
+    cv.rect(lx - 4, 44, 9, 5, '#3d2f4a');
+    for (let i = 0; i < 4; i++) cv.px(lx - 3 + i * 2, 46, '#c9cfe0');
   }
+  cv.rect(x0 + 2, 50, 2, 56, '#566c86');
+  cv.rect(x0 - 3, 44, 12, 7, '#3d2f4a');
+  for (let i = 0; i < 5; i++) cv.px(x0 - 2 + i * 2, 47, '#c9cfe0');
+  // The 1923 wall: brick between a limestone frieze and a limestone base.
+  bricks(cv, x0, 106, x1 - x0, LAWN - 106, '#a8483e', '#843a32');
+  cv.rect(x0 - 2, 104, x1 - x0 + 4, 2, stoneS);
+  cv.rect(x0 - 2, 103, x1 - x0 + 4, 1, stone);
+  cv.rect(x0, 106, x1 - x0, 9, stone);
+  cv.rect(x0, 114, x1 - x0, 1, stoneS);
+  const title = 'MEMORIAL STADIUM';
+  text(cv, Math.round((x0 + x1 - textWidth(title)) / 2), 108, title, '#7a2030');
+  cv.rect(x0, LAWN - 4, x1 - x0, 4, stone);
+  cv.rect(x0, LAWN - 4, x1 - x0, 1, '#f4ecdc');
+  // Tall arched windows between pilasters, a grand gate in the middle.
+  const gate = Math.round((x0 + x1) / 2);
+  for (let x = x0 + 4; x < x1 - 8; x += 12) {
+    if (Math.abs(x + 4 - gate) < 14) continue;
+    cv.rect(x - 2, 115, 2, LAWN - 119, stone);
+    cv.rect(x - 3, 115, 4, 1, stoneS);
+    cv.rect(x + 1, 121, 7, 25, '#3d2030');
+    cv.rect(x + 2, 119, 5, 2, '#3d2030');
+    cv.rect(x + 3, 118, 3, 1, '#3d2030');
+    cv.rect(x + 1, 120, 1, 1, stone);
+    cv.rect(x + 7, 120, 1, 1, stone);
+    cv.rect(x + 2, 118, 1, 1, stone);
+    cv.rect(x + 6, 118, 1, 1, stone);
+    cv.rect(x + 3, 117, 3, 1, stone);
+    cv.rect(x + 4, 121, 1, 25, '#5c3040');
+    cv.rect(x + 1, 132, 7, 1, '#5c3040');
+    cv.fill(x + 1, 121, 7, 25, (px, py) => ((px * 13 + py * 7) % 17 === 0 ? '#e43b44' : (px * 5 + py * 11) % 23 === 0 ? '#ffcd75' : null));
+    cv.rect(x + 1, 146, 7, 1, stone);
+  }
+  // The gate: a limestone surround, the inscription panel above, iron gates.
+  cv.rect(gate - 12, 115, 24, LAWN - 119, stone);
+  cv.rect(gate - 12, 115, 24, 1, '#f4ecdc');
+  cv.rect(gate - 10, 116, 20, 7, '#d6c8a8');
+  for (const [y, w] of [
+    [117, 16],
+    [119, 18],
+    [121, 12],
+  ])
+    for (let x = gate - w / 2; x < gate + w / 2; x += 2) cv.px(x, y, '#8a7a6a');
+  cv.rect(gate - 8, 128, 16, LAWN - 132, '#2b1828');
+  cv.rect(gate - 6, 126, 12, 2, '#2b1828');
+  cv.rect(gate - 4, 125, 8, 1, '#2b1828');
+  for (let x = gate - 7; x < gate + 8; x += 2) cv.rect(x, 128, 1, LAWN - 132, '#566c86');
+  cv.rect(gate - 8, 134, 16, 1, '#566c86');
+  // The big red N flying out front.
   cv.rect(1468, 96, 1, LAWN - 96, C.steel);
-  cv.rect(1469, 97, 16, 12, '#e43b44');
-  cv.sprite(1473, 99, ['KK..K', 'KKK.K', 'K.KKK', 'K..KK', 'K...K', 'K...K', 'K...K', 'K...K'], { K: C.cream });
+  cv.px(1468, 95, C.gold);
 }
 
 // --- Omaha -------------------------------------------------------------------
@@ -416,12 +619,26 @@ function omaha(cv, rand) {
   // The Missouri River behind a riverfront lawn, crossed by the Bob Kerrey
   // pedestrian bridge: a white deck on two pylons with fans of cables.
   const river = ['#29366f', '#3b5dc9', '#41a6f6', '#94b0c2'];
+  // Grassy banks slope down to the water at both ends, so the river bends away.
+  const bank = (x, y) => x < 1508 + (LAWN - y) * 0.9 || x > 1764 - (LAWN - y) * 0.9;
   for (let y = 124; y < LAWN; y++)
     for (let x = 1508; x < 1764; x++) {
+      if (bank(x, y)) {
+        const edge = !bank(x + 1, y) || !bank(x - 1, y) || !bank(x, y - 1);
+        cv.px(x, y, edge ? '#a7f070' : (x + y) % 4 ? '#38b764' : '#257156');
+        continue;
+      }
       const t = 0.7 - (y - 124) * 0.02 + (Math.sin(x * 0.3 + y) > 0.8 ? 0.15 : 0);
       cv.px(x, y, ramp(river, y % 2 ? t : t - 0.12, x, y));
     }
-  cv.rect(1508, 123, 256, 1, '#5a8a7a');
+  cv.rect(1534, 123, 205, 1, '#5a8a7a');
+  for (const [x, w] of [
+    [1514, 10],
+    [1744, 12],
+  ]) {
+    cv.disc(x + w / 2, LAWN - 6, 6, '#257156');
+    cv.disc(x + w / 2 - 2, LAWN - 8, 3, '#38b764');
+  }
   const deck = (x) => Math.round(118 + Math.sin((x - 1520) / 40) * 2);
   for (const px of [1590, 1690]) {
     cv.rect(px - 2, 46, 4, LAWN - 46, '#f4ecdc');
@@ -439,7 +656,11 @@ function omaha(cv, rand) {
     if (x % 3 === 0) cv.px(x, y - 1, '#c9c3d6');
   }
   // Riverfront park: lamps, benches and trees in front.
-  for (const x of [1530, 1612, 1714]) tree(cv, x, LAWN, 6, ['#2f6a4a', '#38b764', '#a7f070']);
+  for (const x of [1528, 1612, 1736]) tree(cv, x, LAWN, 6, ['#2f6a4a', '#38b764', '#a7f070']);
+  for (const x of [1520, 1756]) {
+    cv.rect(x - 2, 121, 5, LAWN - 121, '#c9c3d6');
+    cv.rect(x - 2, 121, 5, 1, '#f4ecdc');
+  }
   for (const x of [1566, 1652, 1736]) {
     cv.rect(x, 136, 1, 16, '#566c86');
     cv.rect(x - 1, 134, 3, 2, C.sun);
