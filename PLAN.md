@@ -10,7 +10,7 @@ The site is Charlie's **character screen**, as in a video game. Everything comes
 - an Eagle Scout who wanted to be MacGyver (his Common App essay);
 - a brainstorm list that includes "Stats you don't care about".
 
-The game frame carries the serious content (MSCI, Vantager, AI work) without feeling like a resume. **The resume** (`/resume`, the R key; `/recruiter` redirects) gives the plain one-page version for anyone in a hurry, and `/charlie-brockmeier-resume.pdf` is the downloadable PDF. The public PDF has no phone number.
+The game frame carries the serious content (MSCI, Vantager, AI work) without feeling like a resume. **The resume** (`/resume`, the R key) gives the plain one-page version for anyone in a hurry, `/recruiter` puts the pitch, projects and every way to reach out on one screen, and `/charlie-brockmeier-resume.pdf` is the downloadable PDF. The public PDF has no phone number.
 
 ## 2. Page map
 
