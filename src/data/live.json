@@ -1,0 +1,29 @@
+{
+  "chess": {
+    "source": "snapshot",
+    "asOf": "2026-10-22",
+    "year": 2026,
+    "streak": 567,
+    "months": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "games": 275,
+        "wins": 139
+      },
+      null,
+      null,
+      null
+    ]
+  },
+  "github": {
+    "source": "snapshot",
+    "repos": []
+  }
+}

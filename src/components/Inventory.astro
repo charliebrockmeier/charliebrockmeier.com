@@ -1,5 +1,5 @@
 ---
-import { builds, inventory, type Tier } from '../data/profile';
+import { inventory, type Tier } from '../data/profile';
 
 const tierColor: Record<Tier, string> = {
   legendary: 'var(--gold)',
@@ -11,9 +11,9 @@ const tierColor: Record<Tier, string> = {
 
 <section id="inventory" class="section wrap" aria-labelledby="inventory-title">
   <header class="section-head">
-    <span class="num">05</span>
+    <span class="num">08</span>
     <h2 id="inventory-title">Inventory</h2>
-    <p>What I build with, and what I've built.</p>
+    <p>What I build with.</p>
   </header>
 
   <div class="gear">
@@ -57,25 +57,6 @@ const tierColor: Record<Tier, string> = {
     </div>
   </div>
 
-  <h3 class="pixel crafted-title">Crafted items</h3>
-  <ul class="builds" role="list">
-    {
-      builds.map((b) => (
-        <li class="build panel">
-          <p class="status pixel">{b.status}</p>
-          <h4>{b.name}</h4>
-          <p class="line">{b.line}</p>
-          <p class="recipe">
-            <span class="pixel">Recipe</span> {b.recipe.join(' + ')}
-          </p>
-          <details>
-            <summary class="pixel">Inspect</summary>
-            <p>{b.detail}</p>
-          </details>
-        </li>
-      ))
-    }
-  </ul>
 </section>
 
 <style>
@@ -201,61 +182,6 @@ const tierColor: Record<Tier, string> = {
 
   .bag .slot:is(:hover, :focus-visible) .tip {
     display: block;
-  }
-
-  .crafted-title {
-    margin-top: var(--space-xl);
-  }
-
-  .builds {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--space-m);
-  }
-
-  .build {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    padding: var(--space-m);
-  }
-
-  .status {
-    align-self: start;
-    padding: 0 0.5em;
-    background: var(--panel-2);
-    color: var(--teal);
-    font-size: var(--step--1);
-  }
-
-  h4 {
-    font-size: var(--step-1);
-    font-weight: 700;
-  }
-
-  .line {
-    flex: 1;
-  }
-
-  .recipe {
-    color: var(--ink-soft);
-    font-size: var(--label);
-  }
-
-  .recipe .pixel {
-    color: var(--gold);
-  }
-
-  summary {
-    color: var(--gold);
-    cursor: pointer;
-    font-size: var(--label);
-  }
-
-  details p {
-    margin-top: var(--space-xs);
-    color: var(--ink-soft);
-    font-size: var(--label);
   }
 
   @media (max-width: 899px) {

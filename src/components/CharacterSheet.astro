@@ -1,9 +1,20 @@
 ---
 import { Image } from 'astro:assets';
 import photo from '../assets/photo/source.jpg';
+import Icon from './Icon.astro';
 import { character, stats } from '../data/profile';
 
 const SEGMENTS = 20;
+
+// Radar chart: one axis per attribute, on a 100×100 grid centered at 50,50.
+const R = 40;
+const point = (i: number, v: number) => {
+  const a = -Math.PI / 2 + (i * 2 * Math.PI) / stats.length;
+  return [50 + Math.cos(a) * R * v, 50 + Math.sin(a) * R * v].map((n) => n.toFixed(1)).join(',');
+};
+const ring = (v: number) => stats.map((_, i) => point(i, v)).join(' ');
+const shape = stats.map((s, i) => point(i, s.value / 100)).join(' ');
+const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', violet: '--violet', coral: '--coral', blue: '--blue', green: '--green' };
 ---
 
 <section id="character" class="section wrap" aria-labelledby="character-title">
@@ -21,7 +32,7 @@ const SEGMENTS = 20;
     <div class="bio">
       {character.bio.map((p) => <p>{p}</p>)}
       <dl class="facts">
-        <div><dt class="pixel">Class</dt><dd>{character.className}</dd></div>
+        <div><dt class="pixel">Class</dt><dd>{character.className}, subclass {character.subclass}</dd></div>
         <div><dt class="pixel">Guild</dt><dd>{character.guild}</dd></div>
         <div><dt class="pixel">Origin</dt><dd>{character.origin}</dd></div>
         <div><dt class="pixel">Base</dt><dd>{character.base}</dd></div>
@@ -29,12 +40,21 @@ const SEGMENTS = 20;
     </div>
 
     <div class="attrs panel">
-      <h3 class="pixel">Attributes</h3>
+      <div class="attrs-head">
+        <h3 class="pixel">Attributes</h3>
+        <svg class="radar" viewBox="0 0 100 100" role="img" aria-label={stats.map((s) => `${s.name} ${s.value}`).join(', ')}>
+          {[0.25, 0.5, 0.75, 1].map((v) => <polygon points={ring(v)} fill="none" stroke="var(--line)" stroke-width="0.8" />)}
+          {stats.map((_, i) => <line x1="50" y1="50" x2={point(i, 1).split(',')[0]} y2={point(i, 1).split(',')[1]} stroke="var(--line)" stroke-width="0.6" />)}
+          <polygon class="shape" points={shape} fill="color-mix(in srgb, var(--gold) 30%, transparent)" stroke="var(--gold)" stroke-width="1.4" stroke-linejoin="bevel" />
+          {stats.map((s, i) => <rect x={Number(point(i, s.value / 100).split(',')[0]) - 1.6} y={Number(point(i, s.value / 100).split(',')[1]) - 1.6} width="3.2" height="3.2" fill={`var(${colorVar[s.color]})`} />)}
+        </svg>
+      </div>
       <ul role="list">
         {
           stats.map((s) => (
-            <li>
+            <li style={`--c: var(${colorVar[s.color]})`}>
               <p class="attr-head">
+                <Icon name={s.icon} color={s.color} scale={1.5} />
                 <span class="pixel">{s.name}</span>
                 <span class="pixel value">{s.value}</span>
               </p>
@@ -105,27 +125,59 @@ const SEGMENTS = 20;
     padding: var(--space-m);
   }
 
-  .attrs h3,
+  .attrs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    margin-bottom: var(--space-s);
+  }
+
+  .attrs h3 {
+    color: var(--gold);
+    font-size: var(--step-1);
+  }
+
+  .radar {
+    width: 120px;
+    height: 120px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .radar .shape {
+      transform-origin: 50px 50px;
+      animation: grow 1.2s steps(8) both;
+    }
+  }
+
+  @keyframes grow {
+    from {
+      transform: scale(0.1);
+    }
+  }
 
   .attrs ul {
     display: grid;
-    gap: var(--space-s);
+    gap: var(--space-xs);
   }
 
   .attr-head {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: var(--step-0);
   }
 
   .value {
-    color: var(--gold);
+    margin-left: auto;
+    color: var(--c);
   }
 
   .bar {
     display: grid;
     grid-template-columns: repeat(20, 1fr);
     gap: 2px;
-    height: 12px;
+    height: 9px;
     margin-block: 4px 2px;
   }
 
@@ -134,7 +186,7 @@ const SEGMENTS = 20;
   }
 
   .bar span.on {
-    background: var(--teal);
+    background: var(--c);
     box-shadow: inset 0 -3px 0 color-mix(in srgb, #000 25%, transparent);
   }
 
@@ -159,11 +211,6 @@ const SEGMENTS = 20;
       background: var(--line);
     }
   }
-
-
-
-
-
 
   @media (max-width: 999px) {
     .sheet {

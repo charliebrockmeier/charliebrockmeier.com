@@ -43,23 +43,27 @@ export function panorama() {
   cv.fill(0, 0, W, HORIZON, (x, y) => ramp(SKY, skyT(x, y), x, y));
   stars(cv, 260, rand, 110, (x, y) => skyT(x, y) < 0.09);
 
-  // A few long clouds catching the last light: lit tops, shaded bellies.
-  for (const [cx, cy, len] of [
+  // Clouds catching the last light: lit tops, shaded bellies. They drift, so
+  // they go in the overlay (meta.clouds) rather than the PNG.
+  const clouds = [
     [30, 60, 58],
     [150, 46, 74],
     [104, 88, 44],
     [214, 70, 52],
-  ]) {
+    [258, 58, 40],
+  ].map(([cx, cy, len]) => {
     const t = skyT(cx + len / 2, cy);
-    const lit = t > 0.42 ? C.sun : t > 0.3 ? C.gold : C.coral;
-    const mid = t > 0.42 ? C.gold : t > 0.3 ? C.coral : C.rose;
-    const shade = t > 0.42 ? C.coral : t > 0.3 ? C.rose : C.berry;
-    cv.rect(cx + Math.round(len * 0.2), cy - 1, Math.round(len * 0.45), 1, lit);
-    cv.rect(cx, cy, len, 1, mid);
-    cv.rect(cx + 6, cy + 1, len - 4, 1, shade);
-    cv.rect(cx + Math.round(len * 0.55), cy + 2, Math.round(len * 0.35), 1, shade);
-    cv.px(cx - 1, cy + 1, shade);
-  }
+    const lit = t > 0.42 ? C.sun : t > 0.3 ? C.gold : t > 0.18 ? C.coral : C.haze;
+    const mid = t > 0.42 ? C.gold : t > 0.3 ? C.coral : t > 0.18 ? C.rose : C.dusk3;
+    const shade = t > 0.42 ? C.coral : t > 0.3 ? C.rose : t > 0.18 ? C.berry : C.dusk2;
+    return [
+      { x: cx + Math.round(len * 0.2), y: cy - 1, w: Math.round(len * 0.45), h: 1, fill: lit },
+      { x: cx, y: cy, w: len, h: 1, fill: mid },
+      { x: cx + 6, y: cy + 1, w: len - 4, h: 1, fill: shade },
+      { x: cx + Math.round(len * 0.55), y: cy + 2, w: Math.round(len * 0.35), h: 1, fill: shade },
+      { x: cx - 1, y: cy + 1, w: 1, h: 1, fill: shade },
+    ];
+  });
 
   // Moon over the city.
   for (let y = -8; y <= 8; y++)
@@ -81,6 +85,16 @@ export function panorama() {
   drawHudson(cv, rand);
   drawRoad(cv, rand);
   drawArchway(cv);
+
+  // Lit Manhattan windows the overlay can switch off and on again.
+  const lit = new Set([C.gold, C.orange, C.sun]);
+  const windows = [];
+  for (let y = 60; y < HORIZON - 1; y++)
+    for (let x = 318; x < W; x++) {
+      const off = cv.get(x + 1, y);
+      if (lit.has(cv.get(x, y)) && off && !lit.has(off) && !SKY.includes(off) && rand() < 0.16) windows.push({ x, y, off });
+    }
+  cv.meta = { clouds, windows: windows.slice(0, 70) };
   return cv;
 }
 

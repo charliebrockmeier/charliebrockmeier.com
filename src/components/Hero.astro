@@ -12,7 +12,10 @@ import { character, chess, resumePdf, site } from '../data/profile';
       <div class="frame panel">
         <PixelArt art={sprite} scale={9} label="Charlie Brockmeier, in pixel art" class="sprite" />
       </div>
-      <p class="plate pixel">P1 · {character.className}</p>
+      <dl class="plate">
+        <div><dt class="pixel">Class</dt><dd class="pixel">{character.className}</dd></div>
+        <div><dt class="pixel">Subclass</dt><dd class="pixel">{character.subclass}</dd></div>
+      </dl>
     </div>
 
     <div class="title">
@@ -72,7 +75,7 @@ import { character, chess, resumePdf, site } from '../data/profile';
   }
 
   .portrait :global(.sprite) {
-    width: clamp(168px, 22vw, 288px);
+    width: clamp(160px, 18vw, 240px);
     height: auto;
   }
 
@@ -87,10 +90,22 @@ import { character, chess, resumePdf, site } from '../data/profile';
   }
 
   .plate {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-m);
     margin-top: var(--space-s);
-    color: var(--gold);
     font-size: var(--step-0);
-    text-align: center;
+  }
+
+  .plate dt {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .plate dd {
+    color: var(--gold);
+    font-size: var(--step-1);
+    line-height: 1;
   }
 
   .kicker {
@@ -100,7 +115,7 @@ import { character, chess, resumePdf, site } from '../data/profile';
 
   h1 {
     margin-top: var(--space-xs);
-    font-size: clamp(3.25rem, 1.25rem + 6.2vw, 6.75rem);
+    font-size: var(--display);
     font-weight: 700;
     line-height: 0.92;
     letter-spacing: 0.005em;
@@ -210,7 +225,8 @@ import { character, chess, resumePdf, site } from '../data/profile';
     }
 
     .plate {
-      text-align: left;
+      flex-direction: column;
+      gap: var(--space-xs);
     }
   }
 </style>

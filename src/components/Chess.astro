@@ -1,0 +1,612 @@
+---
+// The chess panel. With live data (scripts/fetch-stats.mjs at build) it shows the
+// whole year; offline it falls back to the streak and the September snapshot.
+import Icon from './Icon.astro';
+import live from '../data/live.json';
+import { chess as known, statBlocks } from '../data/profile';
+
+type Month = { games: number; wins: number } | null;
+type Live = {
+  source: string;
+  asOf: string;
+  year: number;
+  streak: number;
+  games?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
+  months: Month[];
+  hours?: number[];
+  timeClasses?: Record<string, number>;
+  colors?: Record<'white' | 'black', { games: number; wins: number }>;
+  openings?: { name: string; games: number; wins: number }[];
+  hoursPlayed?: number;
+  accuracy?: number | null;
+  bestWin?: { rating: number; timeClass: string; date: string } | null;
+  longestWinStreak?: number;
+  busiestDay?: { date: string; games: number } | null;
+  daysPlayed?: number;
+  days?: Record<string, number>;
+  ratings?: Record<string, { current?: number; best?: number } | number | null>;
+  allTimeGames?: number;
+};
+
+const data = live.chess as Live;
+const isLive = data.source === 'live' && typeof data.games === 'number';
+const block = statBlocks.find((b) => b.id === 'chess')!;
+
+// The streak: the larger of the live count and the number Charlie gave us.
+const DAY = 86_400_000;
+const asOf = isLive ? data.asOf : known.streakAsOf;
+const streak = Math.max(data.streak ?? 0, known.streakDays);
+const end = new Date(`${asOf}T12:00:00Z`);
+const streakStart = new Date(end.getTime() - (streak - 1) * DAY);
+const fmt = (d: Date, opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' }) =>
+  d.toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
+
+// Calendar: every day of this year so far, weeks as columns. Shade by games that day
+// when we have them; otherwise every day inside the streak is simply lit.
+const yearStart = new Date(Date.UTC(data.year, 0, 1, 12));
+const total = Math.round((end.getTime() - yearStart.getTime()) / DAY) + 1;
+const offset = yearStart.getUTCDay();
+const weeks = Math.ceil((offset + total) / 7);
+const level = (n: number) => (n <= 0 ? 0 : n <= 3 ? 1 : n <= 8 ? 2 : n <= 15 ? 3 : 4);
+const cells = Array.from({ length: total }, (_, i) => {
+  const d = new Date(yearStart.getTime() + i * DAY);
+  const key = d.toISOString().slice(0, 10);
+  const n = isLive ? (data.days?.[key] ?? 0) : d >= streakStart ? 6 : 0;
+  return { x: Math.floor((offset + i) / 7), y: (offset + i) % 7, l: level(n), n, key };
+});
+const months = Array.from({ length: end.getUTCMonth() + 1 }, (_, m) => {
+  const first = new Date(Date.UTC(data.year, m, 1, 12));
+  const i = Math.round((first.getTime() - yearStart.getTime()) / DAY);
+  return { col: Math.floor((offset + i) / 7), label: first.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }) };
+});
+
+// Monthly bars (live, or whatever months we know).
+const monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const monthBars = data.months.map((m, i) => ({ label: monthNames[i], games: m?.games ?? 0, wins: m?.wins ?? 0, known: !!m }));
+const maxMonth = Math.max(1, ...monthBars.map((m) => m.games));
+const knownMonths = monthBars.filter((m) => m.known).length;
+const fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const busiestIndex = monthBars.reduce((best, m, i) => (m.games > monthBars[best].games ? i : best), 0);
+const busiest = { name: fullMonths[busiestIndex], games: monthBars[busiestIndex].games };
+
+const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(1)}%` : '–');
+const n = (v: number) => v.toLocaleString('en-US');
+
+// Headline tiles.
+const tiles: [string, string][] = isLive
+  ? [
+      [`Games in ${data.year}`, n(data.games!)],
+      ['Win rate', pct(data.wins!, data.games!)],
+      ['Hours at the board', data.hoursPlayed ? n(data.hoursPlayed) : '–'],
+      ['Days played', `${data.daysPlayed} / ${total}`],
+      ['Longest win streak', `${data.longestWinStreak ?? '–'}`],
+      ['Most games in a day', data.busiestDay ? `${data.busiestDay.games}` : '–'],
+      ['Best win', data.bestWin ? `${data.bestWin.rating} ${data.bestWin.timeClass}` : '–'],
+      ['All-time games', data.allTimeGames ? n(data.allTimeGames) : '–'],
+    ]
+  : block.rows;
+
+const ratingKeys = ['bullet', 'blitz', 'rapid', 'daily'] as const;
+const ratings = isLive
+  ? ratingKeys
+      .map((k) => ({ k, r: data.ratings?.[k] as { current?: number; best?: number } | null }))
+      .filter((x) => x.r?.current)
+  : [];
+const peakHour = isLive && data.hours ? data.hours.indexOf(Math.max(...data.hours)) : -1;
+const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`;
+const maxHour = isLive && data.hours ? Math.max(1, ...data.hours) : 1;
+const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
+---
+
+<article class="chess panel" aria-labelledby="chess-title">
+  <header class="head">
+    <Icon name="knight" color="gold" scale={2.5} />
+    <h3 id="chess-title" class="pixel">Chess</h3>
+    <p class="source">chess.com · {isLive ? `updated ${fmt(end, { month: 'short', day: 'numeric' })}` : block.source}</p>
+  </header>
+
+  <div class="top">
+    <div class="streak">
+      <p class="big pixel"><Icon name="fire" color="coral" scale={4} class="flame" />{n(streak)}</p>
+      <p class="label">day streak. Every single day since {fmt(streakStart)}.</p>
+    </div>
+    <dl class="tiles">
+      {
+        tiles.map(([k, v]) => (
+          <div>
+            <dd class="pixel">{v}</dd>
+            <dt>{k}</dt>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+
+  <figure class="calendar">
+    <div class="months" aria-hidden="true">
+      {months.map((m) => <span style={`left: ${(m.col / weeks) * 100}%`}>{m.label}</span>)}
+    </div>
+    <svg viewBox={`0 0 ${weeks} 7`} shape-rendering="crispEdges" role="img" aria-label={`Chess played every day of ${data.year} so far`}>
+      {
+        cells.map((c) => (
+          <rect class={`l${c.l}`} x={c.x + 0.1} y={c.y + 0.1} width="0.8" height="0.8">
+            {isLive && <title>{`${c.key}: ${c.n} games`}</title>}
+          </rect>
+        ))
+      }
+      <rect class="today" x={cells.at(-1)!.x} y={cells.at(-1)!.y} width="1" height="1" fill="none" stroke="var(--ink)" stroke-width="0.12" />
+    </svg>
+    <figcaption>
+      {data.year}, one square per day{isLive ? ', brighter means more games' : ''}. No gaps.
+      <span class="legend" aria-hidden="true">Less <i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</span>
+    </figcaption>
+  </figure>
+
+  <div class="charts">
+    {
+      knownMonths >= 3 && (
+        <figure class="months-chart">
+          <figcaption class="pixel">Games per month</figcaption>
+          <ol class="bars" role="list">
+            {monthBars.map((m) => (
+              <li class:list={{ unknown: !m.known }} style={`--h: ${(m.games / maxMonth) * 100}%; --w: ${m.games ? (m.wins / m.games) * 100 : 0}%`}>
+                <span class="bar" title={m.known ? `${m.games} games, ${m.wins} wins` : 'Not in this snapshot'}>
+                  <span class="bar-wins" />
+                </span>
+                <span class="m">{m.label}</span>
+              </li>
+            ))}
+          </ol>
+          <p class="key">
+            <i class="sw games" /> games <i class="sw wins" /> wins · busiest: {busiest.name} ({n(busiest.games)})
+          </p>
+        </figure>
+      )
+    }
+
+    {
+      isLive && ratings.length > 0 && (
+        <figure class="ratings">
+          <figcaption class="pixel">Ratings</figcaption>
+          <dl>
+            {ratings.map(({ k, r }) => (
+              <div>
+                <dt>{k}</dt>
+                <dd class="pixel">{r!.current}</dd>
+                <dd class="best">best {r!.best}</dd>
+              </div>
+            ))}
+          </dl>
+        </figure>
+      )
+    }
+
+    {
+      isLive && (data.openings?.length ?? 0) > 0 && (
+        <figure class="openings">
+          <figcaption class="pixel">Most-played openings</figcaption>
+          <ul role="list">
+            {data.openings!.map((o) => (
+              <li style={`--w: ${(o.games / maxOpening) * 100}%`}>
+                <span class="name">{o.name}</span>
+                <span class="track">
+                  <span class="fill" />
+                </span>
+                <span class="v">
+                  {o.games} · {pct(o.wins, o.games)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </figure>
+      )
+    }
+
+    {
+      isLive && data.hours && (
+        <figure class="hours">
+          <figcaption class="pixel">When I play</figcaption>
+          <ol class="hour-bars" role="list" aria-label={`Most games end around ${hourLabel(peakHour)}`}>
+            {data.hours.map((h, i) => (
+              <li style={`--h: ${(h / maxHour) * 100}%`} class:list={{ peak: i === peakHour }} title={`${hourLabel(i)}: ${h} games`} />
+            ))}
+          </ol>
+          <p class="key">
+            Midnight to midnight, Eastern. Peak: {hourLabel(peakHour)}.
+          </p>
+          {data.colors && (
+            <p class="key">
+              Win rate as white {pct(data.colors.white.wins, data.colors.white.games)}, as black {pct(data.colors.black.wins, data.colors.black.games)}.
+            </p>
+          )}
+        </figure>
+      )
+    }
+
+    {
+      !isLive && (
+        <figure class="waffle">
+          <figcaption class="pixel">{known.month}: every game</figcaption>
+          <svg viewBox="0 0 25 11" shape-rendering="crispEdges" role="img" aria-label={`${known.games} games: ${known.wins} wins`}>
+            {Array.from({ length: known.games }, (_, i) => (
+              <rect class={i < known.wins ? 'win' : 'other'} x={(i % 25) + 0.1} y={Math.floor(i / 25) + 0.1} width="0.8" height="0.8" />
+            ))}
+          </svg>
+          <p class="key">
+            <i class="sw wins" /> {known.wins} wins <i class="sw other" /> {known.games - known.wins} losses or draws
+          </p>
+        </figure>
+      )
+    }
+  </div>
+  {block.quip && <p class="quip">{block.quip}</p>}
+</article>
+
+<style>
+  .chess {
+    padding: clamp(1rem, 2.5vw, 1.6rem);
+    background: linear-gradient(160deg, #2b2350, var(--panel) 55%);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.7rem;
+  }
+
+  .head h3 {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .source {
+    margin-left: auto;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .top {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: center;
+    gap: var(--space-m);
+    margin-top: var(--space-s);
+  }
+
+  .big {
+    display: flex;
+    align-items: center;
+    gap: 0.2em;
+    color: var(--gold);
+    font-size: clamp(3rem, 2rem + 4vw, 5rem);
+    line-height: 0.9;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .big :global(.flame) {
+    width: 0.6em;
+    height: auto;
+  }
+
+  .label {
+    margin-top: var(--space-2xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .tiles div {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    padding: 0.55rem 0.7rem;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .tiles dd {
+    font-size: var(--step-1);
+    line-height: 1;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .tiles dt {
+    margin-bottom: 0.25rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .calendar {
+    margin-top: var(--space-m);
+  }
+
+  .months {
+    position: relative;
+    height: 1.3em;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .months span {
+    position: absolute;
+    white-space: nowrap;
+  }
+
+  .calendar svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .l0 {
+    fill: var(--line);
+    opacity: 0.45;
+  }
+
+  .l1,
+  .legend .l1 {
+    fill: #8a5a3c;
+    background: #8a5a3c;
+  }
+
+  .l2,
+  .legend .l2 {
+    fill: #e0884a;
+    background: #e0884a;
+  }
+
+  .l3,
+  .legend .l3 {
+    fill: var(--gold);
+    background: var(--gold);
+  }
+
+  .l4,
+  .legend .l4 {
+    fill: #fff3c4;
+    background: #fff3c4;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .today {
+      animation: pulse 1.2s steps(2) infinite;
+    }
+
+    .big :global(.flame) {
+      animation: flicker 0.9s steps(2) infinite;
+    }
+  }
+
+  .calendar figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+  }
+
+  .charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: var(--space-m);
+    margin-top: var(--space-m);
+  }
+
+  figcaption.pixel {
+    margin-bottom: var(--space-xs);
+    color: var(--teal);
+    font-size: var(--step-0);
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+    gap: 4px;
+    height: 120px;
+  }
+
+  .bars li {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100%;
+    text-align: center;
+  }
+
+  .bar {
+    position: relative;
+    align-self: end;
+    height: var(--h);
+    min-height: 2px;
+    background: var(--line);
+  }
+
+  .bars .unknown .bar {
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 4px);
+  }
+
+  .bar-wins {
+    position: absolute;
+    inset: auto 0 0;
+    height: var(--w);
+    background: var(--teal);
+  }
+
+  .m,
+  .v {
+    color: var(--ink-soft);
+    font-size: 0.6875rem;
+  }
+
+  .v {
+    position: relative;
+    top: -1px;
+  }
+
+  .key {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .sw {
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin: 0 0.25em 0 0.5em;
+    vertical-align: -0.05em;
+  }
+
+  .sw.games,
+  .sw.other {
+    background: var(--line);
+  }
+
+  .sw.wins {
+    background: var(--teal);
+  }
+
+  .ratings dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .ratings dl div {
+    padding: 0.5rem 0.7rem;
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .ratings dt {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    text-transform: capitalize;
+  }
+
+  .ratings dd.pixel {
+    font-size: var(--step-2);
+    line-height: 1;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .best {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .openings ul {
+    display: grid;
+    gap: 6px;
+  }
+
+  .openings li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 0.5rem;
+    font-size: var(--step--1);
+  }
+
+  .openings .track {
+    grid-column: 1 / -1;
+    height: 8px;
+    background: var(--bg);
+  }
+
+  .openings .fill {
+    display: block;
+    width: var(--w);
+    height: 100%;
+    background: repeating-linear-gradient(90deg, var(--gold) 0 6px, transparent 6px 8px);
+  }
+
+  .openings .v {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .hour-bars {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    align-items: end;
+    gap: 2px;
+    height: 80px;
+  }
+
+  .hour-bars li {
+    height: var(--h);
+    min-height: 2px;
+    background: var(--violet);
+  }
+
+  .hour-bars li.peak {
+    background: var(--gold);
+  }
+
+  .waffle svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .waffle .win {
+    fill: var(--teal);
+  }
+
+  .waffle .other {
+    fill: var(--line);
+  }
+
+  .quip {
+    margin-top: var(--space-m);
+    padding-top: var(--space-s);
+    border-top: 2px dashed var(--line);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    font-style: italic;
+  }
+
+  @keyframes pulse {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes flicker {
+    50% {
+      transform: translateY(-2px) scaleX(-1);
+    }
+  }
+
+  @media (max-width: 899px) {
+    .top {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tiles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

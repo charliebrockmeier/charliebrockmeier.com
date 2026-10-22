@@ -23,7 +23,7 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: var(--step-0);
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -131,7 +131,7 @@ a:hover {
 
 /* Section headers: [ 01 ] CHARACTER */
 .section {
-  padding-block: clamp(4rem, 9vw, 7rem) 0;
+  padding-block: clamp(3rem, 6vw, 4.75rem) 0;
 }
 
 .section-head {
@@ -144,7 +144,7 @@ a:hover {
 
 .section-head h2 {
   font-family: var(--font-pixel);
-  font-size: clamp(2.25rem, 1.4rem + 3vw, 4rem);
+  font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.75rem);
   font-weight: 400;
   font-synthesis: none;
   letter-spacing: 0.01em;

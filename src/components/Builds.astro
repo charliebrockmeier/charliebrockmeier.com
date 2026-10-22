@@ -1,0 +1,590 @@
+---
+// Crafted items: each personal project with an illustrated screen of what it does.
+// Every number inside a mock is synthetic unless it also appears in the build's stats.
+import Icon from './Icon.astro';
+import live from '../data/live.json';
+import { builds } from '../data/profile';
+
+const grades = 'ABBCABDACBFBACBADB'.split('');
+const gradeColor: Record<string, string> = { A: 'var(--green)', B: 'var(--teal)', C: 'var(--gold)', D: 'var(--coral)', F: 'var(--red)' };
+const publicRepos = (live.github?.repos ?? []) as { name: string; description: string | null; language: string | null; url: string; pushed: string }[];
+---
+
+<section id="builds" class="section wrap" aria-labelledby="builds-title">
+  <header class="section-head">
+    <span class="num">06</span>
+    <h2 id="builds-title">Crafted items</h2>
+    <p>Personal projects, built on nights and weekends. Here's what each one actually does.</p>
+  </header>
+
+  <ul class="grid" role="list">
+    {
+      builds.map((b) => (
+        <li class="build panel">
+          <div class="screen" aria-hidden="true">
+            {b.id === 'obituary' && (
+              <div class="mock mail">
+                <p class="bar">
+                  <i />
+                  <i />
+                  <i /> Weekly digest
+                </p>
+                <p class="subject">Obituaries: week of Oct 19</p>
+                <p class="chips">
+                  <span>10 sites</span>
+                  <span>78 obituaries</span>
+                  <span>1,654 names checked</span>
+                </p>
+                <ul>
+                  {[0.7, 0.5, 0.8, 0.6].map((w, i) => (
+                    <li>
+                      <span class="redact" style={`width:${w * 60}%`} />
+                      <span class:list={['tag', { hit: i === 2 }]}>{i === 2 ? 'match' : 'no match'}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {b.id === 'portfolio' && (
+              <div class="mock book">
+                <div class="tiles">
+                  {grades.map((g, i) => (
+                    <span style={`--g:${gradeColor[g]}`} class:list={{ sel: i === 6 }}>
+                      {g}
+                    </span>
+                  ))}
+                </div>
+                <div class="flags">
+                  <p class="pixel">Portfolio 07 · D</p>
+                  <p>⚑ Duplicate share classes</p>
+                  <p>⚑ Index overlap</p>
+                  <p>⚑ Cash drag</p>
+                  <p class="dim">27 rules checked</p>
+                </div>
+              </div>
+            )}
+            {b.id === 'locus' && (
+              <div class="mock locus">
+                <p class="brand">Locus</p>
+                <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+                  <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke" />
+                  <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4 L100 34 L0 34Z" fill="color-mix(in srgb, var(--teal) 18%, transparent)" />
+                </svg>
+                <ul>
+                  {['Checking', 'Brokerage', 'Retirement'].map((a, i) => (
+                    <li>
+                      <span>{a}</span>
+                      <span class="redact" style={`width:${[30, 55, 40][i]}%`} />
+                    </li>
+                  ))}
+                </ul>
+                <p class="trade">Trade</p>
+              </div>
+            )}
+            {b.id === 'phyt' && (
+              <div class="mock phone">
+                <div class="device">
+                  <img src="/brand/phyt.png" width="64" height="64" alt="" loading="lazy" />
+                  <p class="pixel">Today · Push</p>
+                  <ul>
+                    <li>
+                      Bench <span>4×8</span>
+                    </li>
+                    <li>
+                      Overhead press <span>3×10</span>
+                    </li>
+                    <li>
+                      Dips <span>3×12</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+            {b.id === 'faceless' && (
+              <div class="mock reel">
+                <div class="frame">
+                  <svg viewBox="0 0 60 50">
+                    {[12, 18, 15, 24, 22, 30, 34, 40].map((h, i) => (
+                      <rect x={4 + i * 7} y={48 - h} width="5" height={h} fill={i === 7 ? 'var(--gold)' : 'var(--violet)'} />
+                    ))}
+                  </svg>
+                  <p class="cap">What the data says, in 30 seconds.</p>
+                  <p class="src">FRED · BLS · NYC Open Data</p>
+                </div>
+              </div>
+            )}
+            {b.id === 'site' && (
+              <div class="mock site">
+                <img src="/art/panorama.png" width="480" height="180" alt="" loading="lazy" />
+                <p class="here pixel">▼ You are here</p>
+              </div>
+            )}
+          </div>
+
+          <div class="info">
+            <p class="meta">
+              <span class="status pixel">{b.status}</span>
+              {b.repo && (
+                <span class="repo">
+                  <Icon name={b.repo.visibility === 'public' ? 'github' : 'lock'} color="gray" scale={1.25} />
+                  {b.repo.visibility === 'public' ? <a href={`https://github.com/charliebrockmeier/${b.repo.name}`}>{b.repo.name}</a> : <span>{b.repo.name} · private</span>}
+                </span>
+              )}
+            </p>
+            <h3 class="pixel">{b.name}</h3>
+            <p class="line">{b.line}</p>
+            {b.stats && (
+              <dl class="stats">
+                {b.stats.map(([k, v]) => (
+                  <div>
+                    <dd class="pixel">{v}</dd>
+                    <dt>{k}</dt>
+                  </div>
+                ))}
+              </dl>
+            )}
+            <p class="stack">{b.stack.join(' · ')}</p>
+            <details>
+              <summary class="pixel">How it works</summary>
+              <p>{b.detail}</p>
+            </details>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+
+  <aside class="github panel">
+    <Icon name="github" color="violet" scale={3} />
+    <div>
+      <h3 class="pixel">On GitHub</h3>
+      <p>
+        Most of my side projects live in private repos: {builds.filter((b) => b.repo?.visibility === 'private').map((b) => b.repo!.name).join(', ')}.
+        {publicRepos.length > 0 ? ` ${publicRepos.length} public:` : ' This site is public.'}
+      </p>
+      {
+        publicRepos.length > 0 && (
+          <ul class="repos" role="list">
+            {publicRepos.slice(0, 8).map((r) => (
+              <li>
+                <a href={r.url}>{r.name}</a>
+                {r.language && <span>{r.language}</span>}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+    <a class="btn ghost" href="https://github.com/charliebrockmeier">github.com/charliebrockmeier</a>
+  </aside>
+</section>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .build {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    padding: var(--space-xs);
+  }
+
+  .screen {
+    height: 190px;
+    overflow: hidden;
+    background: #110d22;
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: var(--space-s) var(--space-xs) var(--space-xs);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .status {
+    padding: 0 0.45em;
+    background: var(--panel-2);
+    color: var(--teal);
+    font-size: var(--label);
+  }
+
+  .repo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--ink-soft);
+  }
+
+  h3 {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .line {
+    font-size: var(--step--1);
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    margin-block: 0.2rem;
+  }
+
+  .stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .stats dd {
+    color: var(--gold);
+    font-size: var(--step-2);
+    line-height: 1;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .stats dt {
+    color: var(--ink-soft);
+    font-size: 0.6875rem;
+  }
+
+  .stack {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  summary {
+    color: var(--gold);
+    cursor: pointer;
+    font-size: var(--label);
+  }
+
+  details p {
+    margin-top: 0.3rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  /* Mock screens */
+  .mock {
+    height: 100%;
+    padding: 12px;
+    color: var(--ink);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .redact {
+    display: inline-block;
+    height: 7px;
+    background: var(--line);
+  }
+
+  .mail .bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--ink-soft);
+  }
+
+  .mail .bar i {
+    width: 7px;
+    height: 7px;
+    background: var(--line);
+  }
+
+  .mail .subject {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .chips span {
+    padding: 1px 6px;
+    background: var(--panel-2);
+    color: var(--teal);
+  }
+
+  .mail ul {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .mail li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tag {
+    color: var(--ink-soft);
+    font-size: 10px;
+  }
+
+  .tag.hit {
+    padding: 0 5px;
+    background: var(--gold);
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  .book {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 10px;
+  }
+
+  .book .tiles {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    align-content: center;
+  }
+
+  .book .tiles span {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    background: color-mix(in srgb, var(--g) 25%, var(--bg));
+    color: var(--g);
+    font-family: var(--font-pixel);
+    font-size: 14px;
+  }
+
+  .book .tiles .sel {
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+
+  .flags {
+    display: grid;
+    align-content: center;
+    gap: 3px;
+    color: var(--coral);
+  }
+
+  .flags .pixel {
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .dim {
+    color: var(--ink-soft);
+  }
+
+  .locus {
+    display: grid;
+    grid-template-rows: auto 60px 1fr auto;
+    gap: 6px;
+  }
+
+  .locus .brand {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .locus svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .locus ul {
+    display: grid;
+    gap: 5px;
+  }
+
+  .locus li {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    align-items: center;
+    color: var(--ink-soft);
+  }
+
+  .trade {
+    justify-self: end;
+    padding: 2px 10px;
+    background: var(--teal);
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  .phone {
+    display: grid;
+    place-items: center;
+    padding: 8px;
+  }
+
+  .device {
+    width: 120px;
+    height: 100%;
+    padding: 8px;
+    border-radius: 14px;
+    background: #050409;
+    box-shadow: 0 0 0 3px var(--line);
+    text-align: center;
+  }
+
+  .device img {
+    width: 44px;
+    height: 44px;
+    margin: 2px auto 4px;
+  }
+
+  .device .pixel {
+    color: var(--gold);
+    font-size: 13px;
+  }
+
+  .device ul {
+    display: grid;
+    gap: 3px;
+    margin-top: 4px;
+    text-align: left;
+  }
+
+  .device li {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 5px;
+    background: #17142a;
+    font-size: 10px;
+  }
+
+  .device li span {
+    color: var(--teal);
+  }
+
+  .reel {
+    display: grid;
+    place-items: center;
+    padding: 8px;
+  }
+
+  .frame {
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    width: 104px;
+    height: 100%;
+    padding: 8px;
+    background: linear-gradient(#1b1533, #110d22);
+    box-shadow: 0 0 0 2px var(--line);
+  }
+
+  .frame svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .cap {
+    padding: 3px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .src {
+    margin-top: 3px;
+    color: var(--ink-soft);
+    font-size: 8px;
+  }
+
+  .site {
+    position: relative;
+    padding: 0;
+  }
+
+  .site img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 60% 100%;
+    image-rendering: pixelated;
+  }
+
+  .here {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    translate: -50% 0;
+    padding: 0 0.5em;
+    background: var(--gold);
+    color: var(--bg);
+    font-size: 13px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .here {
+      animation: bob 1.2s steps(2) infinite;
+    }
+  }
+
+  @keyframes bob {
+    50% {
+      translate: -50% 3px;
+    }
+  }
+
+  .github {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-m);
+    margin-top: var(--space-s);
+    padding: var(--space-s) var(--space-m);
+  }
+
+  .github h3 {
+    margin-bottom: 0.2rem;
+  }
+
+  .github p {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .repos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1rem;
+    margin-top: 0.4rem;
+    font-size: var(--step--1);
+  }
+
+  .repos span {
+    margin-left: 0.35rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 899px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .github {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
