@@ -1,11 +1,10 @@
 ---
-// Side quests: a passport of every trip (stamps grouped by year, filterable by
-// category once JS loads), the hobbies Charlie keeps leveling, and the writing codex.
-// Trip and hobby data: src/data/sidequests.ts. The world map pins the same trips.
+// Side quests: a passport of every trip, stamps grouped by year and filterable by
+// category once JS loads. Trip data: src/data/sidequests.ts. The world map pins the
+// same trips.
 import Icon from './Icon.astro';
 import PixelArt from './PixelArt.astro';
-import { codex } from '../data/profile';
-import { cats, catOrder, hobbies, postmark, stampArt, tally, tripsByYear, when } from '../data/sidequests';
+import { cats, catOrder, postmark, stampArt, tally, tripsByYear, when } from '../data/sidequests';
 
 const tiles = [
   { n: tally.trips, label: 'trips' },
@@ -14,14 +13,13 @@ const tiles = [
   { n: tally.byCat.husker, label: 'Husker games' },
   { n: tally.byCat.ski, label: 'ski trips' },
 ];
-const XP_SEGMENTS = 10;
 ---
 
 <section id="side-quests" class="section wrap" aria-labelledby="side-title" data-sq>
   <header class="section-head">
-    <span class="num">10</span>
+    <span class="num">08</span>
     <h2 id="side-title">Side quests</h2>
-    <p>The trips and the hobbies. Every stamp below is a real trip, from Husker road games to ski weekends, conferences and a summer in San Francisco.</p>
+    <p>Every trip, stamped: road trips, Husker games, ski weekends and work travel.</p>
   </header>
 
   <dl class="tally">
@@ -85,56 +83,6 @@ const XP_SEGMENTS = 10;
     }
   </ol>
 
-  <h3 class="pixel sub">Hobby quests</h3>
-  <ul class="hobbies" role="list">
-    {
-      hobbies.map((h) => {
-        const filled = h.xp && h.xp.value != null ? Math.round((h.xp.value / h.xp.max) * XP_SEGMENTS) : 0;
-        return (
-          <li class="hobby panel">
-            <div class="top">
-              <Icon name={h.icon} color={h.color} scale={3} class="icon" />
-              <h4 class="pixel">{h.name}</h4>
-              <span class="lv pixel">{h.level}</span>
-            </div>
-            {h.stat && (
-              <p class="stat">
-                <strong class="pixel">{h.stat}</strong> {h.unit}
-              </p>
-            )}
-            {h.xp && (
-              <div class="xp">
-                <span class:list={['bar', { wip: h.xp.value == null }]} aria-hidden="true">
-                  {Array.from({ length: XP_SEGMENTS }, (_, i) => (
-                    <i class:list={{ on: i < filled }} />
-                  ))}
-                </span>
-                <span class="xp-label">{h.xp.label}</span>
-              </div>
-            )}
-            <p class="note">{h.note}</p>
-          </li>
-        );
-      })
-    }
-  </ul>
-
-  <h3 class="pixel sub codex-title">Codex</h3>
-  <ul class="codex" role="list">
-    {
-      codex.map((c) => (
-        <li class="entry">
-          <p class="state pixel">{c.status}</p>
-          <div>
-            <h4>{c.url ? <a href={c.url}>{c.title}</a> : c.title}</h4>
-            <p>
-              {c.where} · {c.when}
-            </p>
-          </div>
-        </li>
-      ))
-    }
-  </ul>
 </section>
 
 <script>
@@ -423,154 +371,11 @@ const XP_SEGMENTS = 10;
   }
 
   /* Hobby quests. */
-  .hobbies {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-s);
-  }
-
-  .hobby {
-    display: grid;
-    align-content: start;
-    gap: 0.5rem;
-    padding: var(--space-s);
-  }
-
-  .top {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .hobby :global(.icon) {
-    flex: none;
-    width: 36px;
-    height: 36px;
-  }
-
-  .hobby h4 {
-    font-size: var(--step-1);
-  }
-
-  .lv {
-    margin-left: auto;
-    padding: 0 0.4em;
-    box-shadow: inset 0 0 0 2px var(--line);
-    color: var(--teal);
-    font-size: var(--label);
-    white-space: nowrap;
-  }
-
-  .stat {
-    color: var(--ink-soft);
-    font-size: var(--label);
-  }
-
-  .stat strong {
-    margin-right: 0.15em;
-    color: var(--ink);
-    font-size: var(--step-3);
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  .xp {
-    display: grid;
-    gap: 4px;
-  }
-
-  .bar {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 2px;
-    height: 10px;
-    padding: 2px;
-    background: #0c0a18;
-  }
-
-  .bar i {
-    background: var(--panel-2);
-  }
-
-  .bar i.on {
-    background: var(--gold);
-    box-shadow: inset 0 -2px 0 #e0884a;
-  }
-
-  .bar.wip {
-    background: repeating-linear-gradient(90deg, var(--blue) 0 6px, #0c0a18 6px 12px);
-    background-size: 24px 100%;
-  }
-
-  .bar.wip i {
-    background: transparent;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .bar.wip {
-      animation: side-load 1.2s steps(4) infinite;
-    }
-  }
-
-  @keyframes side-load {
-    to {
-      background-position: 24px 0;
-    }
-  }
-
-  .xp-label {
-    color: var(--ink-soft);
-    font-size: 0.75rem;
-  }
-
-  .hobby .note {
-    color: var(--ink-soft);
-    font-size: var(--label);
-    line-height: 1.4;
-  }
-
-  /* Codex. */
-  .codex-title {
-    margin-top: var(--space-xl);
-  }
-
-  .codex {
-    display: grid;
-    border-top: 2px solid var(--line);
-  }
-
-  .entry {
-    display: grid;
-    grid-template-columns: 9rem 1fr;
-    gap: var(--space-s);
-    align-items: baseline;
-    padding-block: var(--space-s);
-    border-bottom: 2px solid var(--line);
-  }
-
-  .entry .state {
-    color: var(--teal);
-    font-size: var(--label);
-  }
-
-  .entry h4 {
-    font-size: var(--step-1);
-    font-weight: 600;
-  }
-
-  .entry p:not(.state) {
-    color: var(--ink-soft);
-    font-size: var(--label);
-  }
-
   @media (max-width: 999px) {
     .tally {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .hobbies {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 
   @media (max-width: 639px) {
@@ -626,15 +431,6 @@ const XP_SEGMENTS = 10;
       font-size: 0.7rem;
     }
 
-    .entry {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 2px;
-    }
   }
 
-  @media (max-width: 479px) {
-    .hobbies {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
 </style>

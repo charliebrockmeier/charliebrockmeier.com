@@ -39,8 +39,6 @@ const pinDefs: PinDef[] = [
   { id: 'sedona', name: 'Sedona, AZ', lon: -111.76, lat: 34.87, label: 'e' },
   { id: 'monterey', name: 'Monterey Bay, CA', short: 'Monterey', lon: -121.89, lat: 36.6, label: 'e' },
   { id: 'socal', name: 'Southern California', short: 'L.A.', lon: -118.29, lat: 34.02, label: 's' },
-  { id: 'kc', name: 'Kansas City, MO', lon: -94.58, lat: 39.1, label: 's' },
-  { id: 'pella', name: 'Pella, IA', lon: -92.92, lat: 41.41, label: 's' },
   { id: 'blackhills', name: 'Black Hills, SD', lon: -103.7, lat: 44.2, label: 'n' },
   { id: 'summit', name: 'Summit County, CO', short: 'Summit Co.', lon: -106.04, lat: 39.48, label: 's' },
   { id: 'montana', name: 'Montana', lon: -110.4, lat: 46.2, label: 'n' },
@@ -73,11 +71,9 @@ const TO_DENVER: LonLat[] = [...LINCOLN_WEST, [-103.21, 40.63], [-104.99, 39.74]
 
 /** Drives. Each gets a car on the map, colored routes by category. */
 export const roads: { id: string; cat: Cat; pts: LonLat[] }[] = [
-  { id: 'kc', cat: 'road', pts: [[-96.7, 40.81], [-95.86, 40.68], [-94.85, 39.77], [-94.58, 39.1]] },
   { id: 'blackhills', cat: 'road', pts: [[-99.08, 40.7], [-100.77, 41.12], [-101.9, 41.9], [-103.0, 42.8], [-103.5, 43.45], [-103.7, 44.2]] },
   // Winter break 2024: west on I-70 through Grand Junction, south past Moab and Monument Valley.
   { id: 'sedona', cat: 'road', pts: [...TO_DENVER, [-106.37, 39.64], [-107.32, 39.55], [-108.55, 39.06], [-109.83, 38.95], [-109.55, 38.57], [-109.34, 37.87], [-109.55, 37.28], [-110.25, 36.73], [-111.24, 36.13], [-111.65, 35.2], [-111.76, 34.87]] },
-  { id: 'pella', cat: 'road', pts: [[-96.7, 40.81], [-96.3, 41.02], [-95.94, 41.26], [-93.62, 41.59], [-92.92, 41.41]] },
   { id: 'monterey', cat: 'road', pts: [[-122.42, 37.77], [-122.43, 37.46], [-122.03, 36.97], [-121.89, 36.6], [-121.95, 36.57]] },
   { id: 'montana', cat: 'road', pts: [...KEARNEY_WEST, [-104.82, 41.14], [-106.33, 42.85], [-106.7, 44.35], [-107.0, 44.8], [-108.5, 45.78], [-110.4, 46.2]] },
   { id: 'summit', cat: 'ski', pts: [...TO_DENVER, [-105.6, 39.65], [-106.04, 39.48]] },

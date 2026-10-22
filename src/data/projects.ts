@@ -78,13 +78,13 @@ export const projects: Record<Build['id'], Project> = {
 
   obituary: {
     what: [
-      'A personal project that reads 10 funeral-home sites every week and flags names on a watchlist in days, not months.',
+      'A personal project that checks 10 local funeral-home sites every week against a list of names, so nothing important gets missed.',
       'It runs itself every Monday, builds a workbook and drafts a digest email. I review it before anything goes out.',
     ],
     how: [
       { title: 'Adapters, not scrapers', text: 'One adapter per website platform instead of one scraper per site: a JSON API for one, a sitemap crawl for another, a headless browser for a third. Adding a site usually means zero new code.' },
       { title: 'Run weekly', text: 'GitHub Actions starts the run every Monday.' },
-      { title: 'Cross-check', text: 'Every name it reads is checked against the watchlist.' },
+      { title: 'Cross-check', text: 'Every name it reads is checked against the list.' },
       { title: 'Report', text: 'It builds a workbook and drafts the digest email.' },
       { title: 'Fail safe', text: 'If a site changes its layout, sanity checks stop the run instead of sending a wrong answer.' },
     ],

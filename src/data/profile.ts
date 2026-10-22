@@ -7,9 +7,9 @@ export const site = {
   url: 'https://charliebrockmeier.com',
   name: 'Charlie Brockmeier',
   title: 'Charlie Brockmeier | AI products for private markets',
-  tagline: 'Finance at the core. I build AI products for private markets.',
+  tagline: 'I work on private markets at MSCI and build software with AI.',
   positioning:
-    'I build AI products for private markets and wealth management. Currently at MSCI Private Assets; previously Vantager, acquired by MSCI.',
+    'Charlie Brockmeier works on private markets at MSCI in New York and builds software with AI. Previously at Vantager, which MSCI acquired in 2026.',
 };
 
 export const email = 'charliebrockmeier@gmail.com';
@@ -33,21 +33,19 @@ export const character = {
   origin: 'Kearney, Nebraska',
   school: 'University of Nebraska–Lincoln',
   bio: [
-    "I'm a finance guy at the core who builds with AI. I work on private markets at MSCI Private Assets in New York, where I landed when MSCI acquired Vantager, the AI-native diligence startup I joined early.",
-    'I grew up in Kearney, Nebraska, and studied finance and accounting at the University of Nebraska–Lincoln, with minors in computer science and math through the Raikes School honors program. Along the way I shipped production code at summer internships, built my first LLM product in 2023, wrote a paper on the illiquidity premium, and spent a summer in San Francisco doing private-investment diligence by hand. Vantager turned that manual job into software, and I helped build it.',
-    'Off the clock I build personal projects: Locus, a personal OS for my own money; an obituary monitor that has read 450+ obituaries; a short-video engine that runs on public data; and Phyt. I golf (peak handicap: 10), keep a 567-day chess streak, have played piano for over a decade, and follow the Huskers anywhere.',
+    "I'm Charlie. I work on private markets at MSCI in New York, and I build software, mostly with AI.",
+    'I grew up in Kearney, Nebraska, and studied finance and accounting at the University of Nebraska–Lincoln, with computer science through the Raikes School. I spent a summer in San Francisco doing investment diligence by hand, then joined Vantager, a small startup that used AI to do a lot of that work. MSCI bought Vantager in 2026, and I came with it.',
+    'Outside work: golf, a game of chess every day, piano, and Husker football.',
   ],
 };
 
-// Attribute bars. Values are for fun; the notes are true. Finance leads on purpose.
+// Attribute bars. Values are for fun; the notes are true.
 export const stats: { name: string; value: number; icon: IconName; color: string; note: string }[] = [
-  { name: 'Finance', value: 92, icon: 'coins', color: 'gold', note: 'Finance and accounting at UNL. Private-markets diligence for a living.' },
-  { name: 'AI', value: 88, icon: 'chip', color: 'teal', note: 'Shipping LLM products since GPT-3.5, in 2023.' },
-  { name: 'Private markets', value: 86, icon: 'chart', color: 'violet', note: 'Did diligence by hand, then helped build the AI that does it.' },
-  { name: 'Leadership', value: 84, icon: 'podium', color: 'coral', note: 'Ran an $850K budget as treasurer. TA, mentor, capstone PM.' },
-  { name: 'Code', value: 80, icon: 'bolt', color: 'blue', note: 'Python, TypeScript, SQL. Raikes School trained.' },
-  { name: 'Chess', value: 62, icon: 'knight', color: 'green', note: 'Rapid 1209, top 7%. 60.5% wins over the last 90 days.' },
-  { name: 'Golf', value: 70, icon: 'golf', color: 'red', note: 'Peak handicap: 10. Better at the range than the scorecard.' },
+  { name: 'Finance', value: 92, icon: 'coins', color: 'gold', note: 'Finance and accounting degree. Private-markets work since 2024.' },
+  { name: 'AI', value: 88, icon: 'chip', color: 'teal', note: 'Building with LLMs since 2023.' },
+  { name: 'Private markets', value: 86, icon: 'chart', color: 'violet', note: 'Did fund diligence by hand, then helped build software that does it.' },
+  { name: 'Leadership', value: 84, icon: 'podium', color: 'coral', note: 'Fraternity treasurer, TA, mentor, capstone PM.' },
+  { name: 'Code', value: 80, icon: 'bolt', color: 'blue', note: 'Python and TypeScript, mostly.' },
 ];
 
 // "Stats you don't care about" was on Charlie's own brainstorm list. Every number
@@ -82,109 +80,10 @@ export const statBlocks: StatBlock[] = [
       ['Win rate', '50.5%'],
       ['Games a day', '9.2'],
       ['Brilliant moves', '3'],
-      ['Games against bots', '2'],
-      ['Puzzles solved', '0'],
       ['On chess.com since', 'April 2021'],
     ],
-    quip: 'Username: CharlieCaro. Defense: the Caro-Kann, every time. Puzzles solved in all of 2023: three.',
-  },
-  {
-    id: 'huskers',
-    title: 'Huskers',
-    icon: 'husker',
-    color: 'red',
-    source: 'Go Big Red',
-    big: { value: 'GBR', label: 'Husker fan for life. I travel for it.' },
-    rows: [
-      ['Road game, 2024', 'Ohio State, Columbus'],
-      ['Road game, 2024', 'USC, Los Angeles'],
-      ['Seats bought for Columbus', '9'],
-      ['Student years in the Sea of Red', '2021–25'],
-    ],
-  },
-  {
-    id: 'music',
-    title: 'Music',
-    icon: 'note',
-    color: 'teal',
-    source: 'Spotify Wrapped',
-    big: { value: '53,153', label: 'minutes of music in 2020. That is 36.9 days.' },
-    bars: [
-      { label: '2017', value: 1160, display: '1,160 min' },
-      { label: '2020', value: 53153, display: '53,153 min' },
-    ],
-    rows: [
-      ['Piano', '10+ years'],
-      ['Guitar, self-taught since', '2022'],
-      ['Listening CAGR, 2017–20', '258%'],
-      ['Different songs, 2019', '4,423'],
-      ['Top fan, 2023', 'Post Malone'],
-      ['Top-listener badges', '9 artists'],
-    ],
-    quip: 'Yes, I computed the CAGR.',
-  },
-  {
-    id: 'builder',
-    title: 'Builder',
-    icon: 'chip',
-    color: 'violet',
-    source: 'My own projects',
-    big: { value: '6,000+', label: 'names my obituary monitor has cross-checked since August' },
-    rows: [
-      ['Obituaries read', '450+'],
-      ['Funeral-home sites, every week', '10'],
-      ['Weekly runs so far', '8'],
-      ['Tickets behind my first LLM product', '250,000'],
-      ['Issue rules in my portfolio engine', '27'],
-    ],
-  },
-  {
-    id: 'golf',
-    title: 'Golf',
-    icon: 'golf',
-    color: 'green',
-    source: 'My handicap card',
-    big: { value: '10', label: 'peak handicap' },
-    rows: [
-      ['Home course', 'Meadowlark Hills, Kearney'],
-      ['Charity scrambles', 'FarmHouse alumni, 2022 and 2023'],
-      ['Best club', 'Driver, most days'],
-      ['Worst club', 'Driver, other days'],
-      ['Pebble Beach', 'Drove 17-Mile Drive, 2024'],
-    ],
-    quip: 'Chess at night, golf on weekends. Both punish the same mistake: rushing.',
-  },
-  {
-    id: 'gaming',
-    title: 'Gaming',
-    icon: 'gamepad',
-    color: 'blue',
-    source: 'Steam, Godot',
-    big: { value: '1', label: 'game in progress, built in Godot' },
-    rows: [
-      ['Steam name', 'Chicken'],
-      ['Main game', 'Counter-Strike'],
-      ['Currently', 'Marvel Rivals'],
-      ['Games shipped', '0, so far'],
-    ],
-  },
-  {
-    id: 'life',
-    title: 'Life',
-    icon: 'crown',
-    color: 'gold',
-    source: 'Real life',
-    big: { value: '$850K', label: 'annual budget I ran as fraternity treasurer' },
-    rows: [
-      ['Kearney High, class of', '2021'],
-      ['State tennis', 'Medalist'],
-      ['Homecoming royalty', '2nd place'],
-      ['Strava activities, year one', '38'],
-      ['Highway that links my map', 'I-80'],
-    ],
-    quip: 'I-80 runs from San Francisco to the edge of New York City, through Kearney, Lincoln and Omaha on the way.',
-  },
-];
+    quip: 'Username: CharlieCaro. Opening as Black: the Caro-Kann, every time.',
+  },];
 
 // The career, oldest first. `levels` is where each track stands after the chapter
 // (0–10); `levelUps` are the specific things that grew, and `carries` names the later
@@ -222,7 +121,7 @@ export const quests: Quest[] = [
     role: 'Kearney High, class of 2021',
     status: 'complete',
     emblems: ['khs', 'cashwa'],
-    summary: 'State tennis medalist and Eagle Scout, then a summer in IT before college. Starting stats: low. Potential: high.',
+    summary: 'Grew up here. State tennis medalist, Eagle Scout, and an IT job the summer before college.',
     objectives: ['Medal at state in tennis', 'Eagle Scout', 'Cash-Wa Distributing, summer 2021: Python macros, and built the IT department’s PCs'],
     reward: 'A ticket to Lincoln',
     unlocked: 'Code',
@@ -230,7 +129,6 @@ export const quests: Quest[] = [
     levelUps: [
       { skill: 'Python', track: 'code', up: 'new', carries: 'automation at Three Bridge' },
       { skill: 'Leadership', track: 'lead', up: 2, carries: 'Treasurer, $850K budget' },
-      { skill: 'Grit', track: 'lead', up: 'new', carries: 'every chapter' },
     ],
     scene: { src: '/art/prologue.png', place: 'The Platte River', alt: 'Pixel art: a campfire by the Platte at night, a tent and sandhill cranes.' },
   },
@@ -243,7 +141,7 @@ export const quests: Quest[] = [
     status: 'complete',
     emblems: ['unl', 'buckle', 'covisum'],
     summary:
-      'Four years in Lincoln: finance and accounting in the College of Business, computer science through the Raikes School, an honors program of about 35 students a year, and two summers shipping real code. Finance became the core; AI showed up in 2023.',
+      'Finance and accounting in the College of Business, and computer science through the Raikes School honors program. Summers writing production code; first AI project in 2023.',
     objectives: [
       "Buckle, summer 2022: shipped the e-commerce site's favorites page to production",
       'Covisum, summer 2023: built financial-advisory tools and a client intake form with the CEO',
@@ -266,24 +164,15 @@ export const quests: Quest[] = [
       { skill: 'Teaching and mentoring', track: 'lead', up: 3 },
     ],
     extras: [
-      { name: 'FarmHouse Treasurer', note: 'Two terms on the executive board. $850K annual budget, 110 members' },
-      { name: 'FarmHouse Scholarship Chair', note: 'Kept the chapter on track academically' },
-      { name: 'FarmHouse Judicial Board', note: 'Chapter accountability, 2023' },
-      { name: 'Mortar Board', note: 'Senior honor society, social chair. Helped run its homecoming books' },
-      { name: 'NHRI Mentoring', note: 'Mentor from 2022: staff advisor, tri-chair, scholarship committee' },
-      { name: 'UCARE researcher', note: 'Studied what mentoring did for 75 years of NHRI alumni, 2024–25' },
-      { name: 'Raikes Student Advisory Board', note: 'Liaison between students and the program, through senior year' },
-      { name: 'Teaching assistant', note: 'Honors Computer Science I and II, from 2022' },
-      { name: 'Dance Marathon', note: 'Morale and corporate sponsorship, for Nebraska’s children’s hospital' },
-      { name: 'Regents Scholar', note: 'UNL’s top academic scholarship. Plus 6× Dean’s List' },
-      { name: 'University Honors Program', note: 'Graduated from that one too' },
+      { name: 'FarmHouse treasurer', note: 'Two terms. An $850K annual budget for 110 members' },
+      { name: 'Teaching assistant', note: 'Honors Computer Science I and II' },
+      { name: 'NHRI mentoring', note: 'Mentor, then staff advisor; UCARE research on the program' },
+      { name: 'Mortar Board', note: 'Senior honor society, social chair' },
+      { name: 'Raikes Student Advisory Board', note: 'Student voice to the program, through senior year' },
+      { name: 'Regents Scholar', note: 'UNL’s top academic scholarship; 6× Dean’s List' },
+      { name: 'University Honors Program', note: 'Graduated from it, May 2025' },
       { name: 'Tenaska case challenges', note: 'Energy-trading business cases, 2023 and 2024' },
-      { name: 'Berkshire Hathaway meeting', note: 'Omaha, 2023. Took notes' },
-      { name: 'Homecoming Royalty', note: '2024 finalist. Finished 2nd. Probably.' },
-      { name: 'Mortar Board ski trip', note: 'Breckenridge, Jan 2025. Planned it and built the budget for 21' },
-      { name: 'Philanthropy', note: 'Scoops for Schools, Waffles for Wishes, Floats for Goats' },
-      { name: 'Pickleball Club', note: 'Competitive about it' },
-      { name: 'Sea of Red', note: 'Four years of student-section Saturdays at Memorial Stadium' },
+      { name: 'Dance Marathon', note: 'Fundraising for Nebraska’s children’s hospital' },
     ],
     scene: { src: '/art/raikes.png', place: 'Lincoln, Nebraska', alt: 'Pixel art: the Nebraska State Capitol at dusk.' },
   },
@@ -295,9 +184,9 @@ export const quests: Quest[] = [
     role: 'Financial Analyst, Investment Committee',
     status: 'complete',
     emblems: ['threebridge'],
-    summary: 'A summer in San Francisco doing private-investment diligence for a multi-family office: intro calls, memos and committee overviews by day, hikes and Pebble Beach on weekends. Learned the job by hand, then automated the boring parts.',
-    objectives: ['Intro calls, investment memos and committee overviews', 'Kept the private-investments database honest', 'Automated research and reporting with Python and AI'],
-    reward: 'Diligence, the manual way',
+    summary: 'Investment diligence for a multi-family office, in person in San Francisco for the summer of 2024 and part-time after. Learned the job by hand, then automated the repetitive parts.',
+    objectives: ['Intro calls, investment memos and committee overviews', 'Kept the private-investments database up to date', 'Automated research and reporting with Python and AI'],
+    reward: 'How diligence actually works',
     unlocked: 'Private markets',
     levels: { finance: 7, code: 5, ai: 3, lead: 7 },
     levelUps: [
@@ -313,11 +202,11 @@ export const quests: Quest[] = [
     title: 'Vantager',
     when: '2025 – 2026',
     where: 'New York, NY',
-    role: 'Product & Growth Analyst',
+    role: 'Growth & Product Analyst',
     status: 'complete',
     emblems: ['vantager'],
-    summary: 'Joined an AI-native diligence startup early. Its platform read the documents GPs put in data rooms and turned them into diligence reports: the manual job I knew, rebuilt with AI.',
-    objectives: ['Shape product and growth strategy', 'Boss fight: acquired by MSCI, a Fortune 1000 company, in 2026'],
+    summary: 'Joined a small startup early. Its software read the documents fund managers share with investors and drafted diligence reports from them: the job I had done by hand, done with AI.',
+    objectives: ['Diligence templates, data quality and customer feedback', 'Acquired by MSCI in March 2026'],
     reward: 'Acquired',
     unlocked: 'Finance × AI',
     levels: { finance: 8, code: 6, ai: 7, lead: 8 },
@@ -325,8 +214,8 @@ export const quests: Quest[] = [
       { skill: 'AI diligence', track: 'ai', up: 'new', carries: 'MSCI' },
       { skill: 'Product', track: 'lead', up: 'new' },
       { skill: 'Growth', track: 'lead', up: 1 },
-      { skill: 'Data rooms at scale', track: 'finance', up: 1 },
-      { skill: 'Startup speed', track: 'code', up: 1 },
+      { skill: 'Fund documents', track: 'finance', up: 1 },
+      { skill: 'Shipping fast', track: 'code', up: 1 },
     ],
     scene: { src: '/art/vantager.png', place: 'Brooklyn Bridge, New York', alt: 'Pixel art: the Brooklyn Bridge at dusk with Manhattan behind it.' },
   },
@@ -338,79 +227,21 @@ export const quests: Quest[] = [
     role: 'Senior Associate',
     status: 'active',
     emblems: ['msci'],
-    summary: 'Building pre-investment diligence and evaluation tools for private-asset investors, now at the scale of a global index and analytics company.',
-    objectives: ['Arrive through the Vantager acquisition', 'Make private-markets diligence take hours, not weeks'],
+    summary: 'Same work as at Vantager, now inside MSCI: software that helps investors evaluate private funds before they put money in.',
+    objectives: ['Joined through the Vantager acquisition', 'Make fund diligence faster'],
     reward: 'In progress',
-    unlocked: 'Scale',
+    unlocked: 'MSCI',
     levels: { finance: 9, code: 6, ai: 8, lead: 8 },
     levelUps: [
-      { skill: 'Private assets at index scale', track: 'finance', up: 1 },
-      { skill: 'Enterprise AI', track: 'ai', up: 1 },
+      { skill: 'Private-markets data', track: 'finance', up: 1 },
+      { skill: 'AI inside a large company', track: 'ai', up: 1 },
     ],
     scene: { src: '/art/msci.png', place: 'Lower Manhattan', alt: 'Pixel art: an office desk at night with a chart on the monitor and towers through the window.' },
   },
 ];
 
-// AI agents Charlie actually runs, cast as a party.
-export const party = [
-  {
-    name: 'The Scout',
-    cls: 'Ranger',
-    job: 'Obituary monitor',
-    cadence: 'Weekly',
-    does: 'Checks 10 funeral-home sites every week, cross-checks the names and drafts a summary email.',
-    human: 'I review it before anything goes out.',
-  },
-  {
-    name: 'The Warden',
-    cls: 'Paladin',
-    job: 'Portfolio surveillance',
-    cadence: 'Monthly',
-    does: 'Grades every portfolio in a book A to F against a target model and runs 27 issue rules.',
-    human: 'It flags; I decide.',
-  },
-  {
-    name: 'The Herald',
-    cls: 'Bard',
-    job: 'Morning brief',
-    cadence: 'Weekdays',
-    does: 'Pulls the day together into a one-page brief before I wake up.',
-    human: 'Read-only.',
-  },
-  {
-    name: 'The Smith',
-    cls: 'Artificer',
-    job: 'Coding agent',
-    cadence: 'Daily',
-    does: 'Builds alongside me, including this site.',
-    human: 'I review every change.',
-  },
-];
 
-export type Tier = 'legendary' | 'epic' | 'rare' | 'common';
 
-export const inventory: { equipped: Item[]; bag: Item[] } = {
-  equipped: [
-    { code: 'FIN', name: 'Finance', tier: 'legendary', note: 'Valuation, accounting, diligence. The core.' },
-    { code: 'PY', name: 'Python', tier: 'legendary', note: 'First language. Still the main weapon.' },
-    { code: 'AI', name: 'LLMs and agents', tier: 'legendary', note: 'Daily driver, and the brains of my party.' },
-    { code: 'TS', name: 'TypeScript', tier: 'epic', note: 'Next.js, Astro and Supabase. Locus and this site.' },
-    { code: 'SQL', name: 'SQL', tier: 'epic', note: 'Where the answers actually live.' },
-    { code: 'XL', name: 'Excel + VBA', tier: 'epic', note: "Every finance kid's first spellbook." },
-  ],
-  bag: [
-    { code: 'R', name: 'R', tier: 'rare', note: 'Stats class survivor.' },
-    { code: 'JV', name: 'Java', tier: 'rare', note: 'Shipped to production at Buckle.' },
-    { code: 'C#', name: 'C#', tier: 'rare', note: 'Raikes School staple, with Blazor.' },
-    { code: 'JS', name: 'JavaScript', tier: 'rare', note: 'The e-commerce favorites page.' },
-    { code: 'RE', name: 'React', tier: 'rare', note: 'Front ends for most of my builds.' },
-    { code: 'SB', name: 'Supabase', tier: 'rare', note: 'Auth and row-level security for Locus.' },
-    { code: 'GD', name: 'Godot', tier: 'common', note: 'For the game. Still learning.' },
-    { code: 'GA', name: 'GitHub Actions', tier: 'common', note: 'Runs the obituary monitor every week.' },
-  ],
-};
-
-export type Item = { code: string; name: string; tier: Tier; note: string };
 
 // Crafted items. `id` picks the illustrated screen (BuildScreen.astro) and the page at
 // /projects/<id>; the long-form copy for that page lives in src/data/projects.ts.
@@ -435,7 +266,7 @@ export const builds: Build[] = [
     status: 'Live, every Monday',
     repo: { name: 'FuneralChecker', visibility: 'private' },
     stack: ['Python', 'GitHub Actions', 'one adapter per site platform'],
-    line: 'Reads 10 funeral-home sites every week and flags names on a watchlist in days, not months.',
+    line: 'Checks 10 local funeral-home sites every week against a list of names, so nothing important gets missed.',
     detail:
       'Instead of one scraper per site, there is one adapter per website platform: a JSON API for one, a sitemap crawl for another, a headless browser for a third. Adding a site usually means zero new code. It runs itself every week, builds a workbook and drafts the digest email. If a site changes its layout, sanity checks stop the run instead of sending a wrong answer.',
     stats: [
@@ -517,67 +348,48 @@ export const builds: Build[] = [
 export type Achievement = { icon: IconName; color: string; name: string; note: string; locked?: boolean; id?: string };
 
 export const achievements: Achievement[] = [
-  { icon: 'trophy', color: 'gold', name: 'Acquired', note: 'Vantager, bought by MSCI, a Fortune 1000 company. I was on the team.' },
-  { icon: 'chip', color: 'teal', name: 'Early adopter', note: 'First LLM product in 2023, on 250,000 support tickets.' },
-  { icon: 'golf', color: 'green', name: 'Double digits, barely', note: 'Peak handicap: 10. Chasing single digits.' },
+  { icon: 'trophy', color: 'gold', name: 'Acquired', note: 'Vantager was bought by MSCI in 2026. I was on the team.' },
+  { icon: 'chip', color: 'teal', name: 'Early adopter', note: 'First LLM product in 2023, trained on 250,000 support tickets.' },
+  { icon: 'cap', color: 'blue', name: 'High Distinction', note: 'University of Nebraska–Lincoln, 2025.' },
+  { icon: 'coins', color: 'violet', name: 'Treasurer', note: 'Ran an $850K annual budget for 110 members.' },
+  { icon: 'fire', color: 'coral', name: 'Unbroken', note: '567 days of chess in a row, and counting.' },
+  { icon: 'chart', color: 'teal', name: 'Top 7%', note: 'Rapid 1209 on chess.com.' },
   { icon: 'medal', color: 'gold', name: 'State medalist', note: 'Nebraska state tennis.' },
-  { icon: 'crown', color: 'gray', name: 'Silver crown', note: 'UNL Homecoming Royalty, 2024. Finished 2nd. Probably.' },
-  { icon: 'coins', color: 'violet', name: 'Treasurer', note: '$850K annual budget, 110 members.' },
-  { icon: 'cap', color: 'blue', name: 'High Distinction', note: 'UNL, 2025. Finance and accounting, minors in CS and math.' },
-  { icon: 'bolt', color: 'teal', name: 'West coast arc', note: 'A summer in San Francisco: diligence by day, hikes and Pebble Beach on weekends.' },
-  { icon: 'fire', color: 'coral', name: 'Unbroken', note: '567 days of chess in a row. And counting.' },
-  { icon: 'knight', color: 'blue', name: 'Grinder', note: '4,603 games on chess.com. 275 in September alone.' },
-  { icon: 'chart', color: 'teal', name: 'Top 7%', note: 'Rapid 1209: better than 93% of rapid players on chess.com.' },
-  { icon: 'husker', color: 'red', name: 'Road warrior', note: 'Followed the Huskers to Columbus and Los Angeles.' },
-  { icon: 'book', color: 'red', name: 'Teaching assistant', note: 'Honors Computer Science I and II.' },
-  { icon: 'fleur', color: 'gold', name: 'Eagle Scout', note: '2019.' },
+  { icon: 'fleur', color: 'gold', name: 'Eagle Scout', note: 'Earned in 2019.' },
+  { icon: 'husker', color: 'red', name: 'Road trip', note: 'Followed the Huskers to Ohio State and USC.' },
+  { icon: 'crown', color: 'gray', name: 'Silver crown', note: 'UNL Homecoming Royalty nominee, 2024. Call it second place.' },
   { icon: 'lock', color: 'gray', name: '???', note: "Beat Charlie's chess bot.", locked: true, id: 'beat-chess-bot' },
-  { icon: 'lock', color: 'gray', name: '???', note: 'Ship the Godot game.', locked: true },
   { icon: 'lock', color: 'gray', name: '???', note: 'Huskers win the Big Ten.', locked: true },
 ];
 
-export const codex = [
-  {
-    title: 'Scale delays disruption. It never cancels it.',
-    where: 'Essay on Apple, Google and who owns the AI layer',
-    when: 'Drafting',
-    status: 'Drafting',
-  },
-  {
-    title: 'The Illiquidity Premium',
-    where: 'Paper on private-markets returns',
-    when: 'May 2025',
-    status: 'Archive',
-  },
-];
 
 // The dialogue tree for "Talk to Charlie". Answers only use facts from this file.
 export const dialogue = {
-  greeting: "Hey, I'm Charlie. Finance at the core, building with AI. What do you want to know?",
+  greeting: "Hey, I'm Charlie. What do you want to know?",
   options: [
     {
       q: 'What do you do at MSCI?',
-      a: "I'm a Senior Associate at MSCI Private Assets, at 7 World Trade. I work on pre-investment diligence and evaluation tools, the software investors use to size up a private fund before they commit capital. I got here when MSCI acquired Vantager in 2026.",
+      a: "I'm a Senior Associate in MSCI Private Assets, at 7 World Trade. I work on software that helps investors evaluate private funds before they invest. I joined when MSCI acquired Vantager in 2026.",
     },
     {
-      q: 'How did you end up here?',
-      a: 'One step at a time, each closer to finance plus AI. Finance and accounting at the University of Nebraska–Lincoln, with code internships every summer and the Raikes School on the side. My first LLM product in 2023, private-investment diligence by hand at a multi-family office, then an AI diligence startup that MSCI bought.',
+      q: 'How did you get here?',
+      a: 'Finance and accounting at the University of Nebraska–Lincoln, with code internships in the summers. Then fund diligence by hand at a multi-family office in San Francisco, and an AI startup, Vantager, that MSCI bought.',
     },
     {
-      q: 'What AI have you actually built?',
-      a: 'A GPT-3.5 support assistant on 250,000 tickets in 2023. Since then, personal projects: an obituary monitor that has read 450+ obituaries, a portfolio engine that grades A to F, Locus, Phyt, an engine that turns public data into narrated videos, and a few agents that run on schedules.',
+      q: 'What have you built?',
+      a: 'My first LLM product in 2023, a support assistant trained on 250,000 tickets. Since then, personal projects: Locus, an app that runs my own finances; a short-video engine built on public data; an obituary monitor; and an iPhone app called Phyt.',
     },
     {
       q: 'What do you do for fun?',
-      a: 'Golf on weekends (peak handicap: 10). Chess every single day: 567 days and counting, rapid 1209, Caro-Kann always. Huskers football wherever they play, piano for ten-plus years, guitar, poker and a game in Godot. You can play my chess bot above.',
+      a: 'Golf, chess every day (you can play my bot above), piano, and Husker football.',
     },
     {
       q: 'Where are you from?',
-      a: 'Kearney, Nebraska. Kearney High class of 2021, then four years at the University of Nebraska–Lincoln, a summer working in San Francisco, and New York.',
+      a: 'Kearney, Nebraska. Then Lincoln for college, a summer in San Francisco, and now New York.',
     },
     {
       q: 'How do I reach you?',
-      a: `LinkedIn is fastest, or email ${email}. In a hurry? Press R for the one-page resume, or grab the PDF.`,
+      a: `LinkedIn or email, ${email}. Press R for the resume.`,
     },
   ],
 };
@@ -595,7 +407,6 @@ export const resume = {
       points: [
         'Work on MSCI’s AI-powered pre-investment diligence for private markets: tools that help pensions, endowments, foundations, family offices and wealth managers size up private funds before they commit capital.',
         'Joined through MSCI’s March 2026 acquisition of Vantager, an AI-native pre-investment diligence platform.',
-        'Industry conferences for the business in 2026, including Future Proof and a CFA Institute conference.',
       ],
     },
     {
@@ -639,7 +450,7 @@ export const resume = {
     },
     {
       name: 'Obituary monitor',
-      line: 'Weekly agent that reads 10 funeral-home sites and flags watchlist names, with one adapter per site platform.',
+      line: 'Weekly agent that checks 10 funeral-home sites against a list of names, with one adapter per site platform.',
     },
     {
       name: 'Phyt',
