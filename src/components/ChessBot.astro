@@ -1,0 +1,455 @@
+---
+// A pixel chess board that plays Charlie's favorite opening, the Caro-Kann, on a
+// loop, and lets visitors play his bot. The demo needs no chess library; the rules
+// (chess.js) and the engine (js-chess-engine, in a worker) load only on "Play".
+import Icon from './Icon.astro';
+import { pieceSvg, type PieceType, type Side } from '../data/chess-pieces';
+import { caroKann, positionAfter, coords, FILES } from '../scripts/chess/line';
+import { strengthFor, DEFAULT_RATING } from '../scripts/chess/strength';
+
+// Charlie's rating comes from the build-time chess.com fetch, when it ran.
+const liveFiles = import.meta.glob<{ default: any }>('../data/live.json', { eager: true });
+const live = Object.values(liveFiles)[0]?.default ?? {};
+const ratings = live?.chess?.ratings ?? {};
+const rated = ratings.blitz?.current ? ['blitz', ratings.blitz.current] : ratings.rapid?.current ? ['rapid', ratings.rapid.current] : null;
+const strength = strengthFor(rated ? Number(rated[1]) : DEFAULT_RATING);
+const caption = rated
+  ? `Plays like Charlie: about ${strength.rating} in ${rated[0]}. Always the Caro-Kann.`
+  : `Plays like a ~${strength.rating} player. Always the Caro-Kann.`;
+
+// One CSS class per piece, with its pixel sprite as an inline SVG background.
+const pieceCss = (['w', 'b'] as Side[])
+  .flatMap((side) =>
+    (['p', 'n', 'b', 'r', 'q', 'k'] as PieceType[]).map(
+      (t) => `.chessbot .${side}${t.toUpperCase()}{background-image:url("data:image/svg+xml,${encodeURIComponent(pieceSvg(t, side))}")}`,
+    ),
+  )
+  .join('');
+
+// Without JS (or with reduced motion), the board shows where the demo line ends.
+const finalPosition = positionAfter(caroKann.length);
+const last = caroKann.at(-1)!;
+const squares = Array.from({ length: 64 }, (_, i) => {
+  const sq = `${FILES[i % 8]}${8 - Math.floor(i / 8)}`;
+  return { sq, dark: (i % 8) % 2 !== Math.floor(i / 8) % 2 };
+});
+const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [caroKann[2 * i], caroKann[2 * i + 1]]);
+---
+
+<style is:inline set:html={pieceCss}></style>
+
+<article class="chessbot panel" data-chessbot data-strength={JSON.stringify(strength)} aria-labelledby="chessbot-title">
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="board" data-board role="group" aria-label="Chess board">
+        {
+          squares.map(({ sq, dark }) => (
+            <button
+              type="button"
+              class:list={['sq', { dark, last: sq === last.from || sq === last.to }]}
+              data-sq={sq}
+              aria-label={sq}
+              disabled
+            >
+              {sq[1] === '1' && <span class="coord file">{sq[0]}</span>}
+              {sq[0] === 'a' && <span class="coord rank">{sq[1]}</span>}
+            </button>
+          ))
+        }
+        <div class="pieces" data-pieces aria-hidden="true">
+          {
+            Object.entries(finalPosition).map(([sq, code]) => {
+              const [x, y] = coords(sq);
+              return <i class={`pc ${code}`} data-at={sq} data-code={code} style={`--x:${x};--y:${y}`} />;
+            })
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <header class="head">
+        <Icon name="knight" color="gold" scale={2.5} />
+        <div>
+          <h3 id="chessbot-title" class="pixel">Charlie’s Caro-Kann</h3>
+          <p class="sub">1.e4 c6, every single time.</p>
+        </div>
+      </header>
+
+      <p class="status" data-status aria-live="polite">The Classical Caro-Kann, played on a loop.</p>
+
+      <ol class="moves" data-moves aria-label="Moves">
+        {
+          pairs.map(([w, b], i) => (
+            <li>
+              <span class="n">{i + 1}.</span>
+              <span data-ply={2 * i} class:list={{ now: 2 * i === caroKann.length - 1 }}>
+                {w.san}
+              </span>
+              {b && (
+                <span data-ply={2 * i + 1} class:list={{ now: 2 * i + 1 === caroKann.length - 1 }}>
+                  {b.san}
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+
+      <div class="actions">
+        <button type="button" class="btn" data-play>▶ Play Charlie’s bot</button>
+        <button type="button" class="btn ghost" data-new>New game</button>
+        <button type="button" class="btn ghost" data-resign>Resign</button>
+        <button type="button" class="btn ghost" data-demo>Back to demo</button>
+      </div>
+      <p class="caption">{caption} You have White.</p>
+    </div>
+  </div>
+</article>
+
+<script>
+  import { BoardView } from '../scripts/chess/board-view';
+  import { caroKann, startPosition } from '../scripts/chess/line';
+  import type { Strength } from '../scripts/chess/strength';
+
+  type Game = { reset(): void; resign(): void; stop(): void };
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-chessbot]')) setup(root);
+
+  function setup(root: HTMLElement) {
+    const board = root.querySelector<HTMLElement>('[data-board]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const list = root.querySelector<HTMLElement>('[data-moves]')!;
+    const strength = JSON.parse(root.dataset.strength!) as Strength;
+    const demoList = list.innerHTML;
+    const demoStatus = status.textContent;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const view = new BoardView(board);
+
+    let game: Game | null = null;
+    let timer = 0;
+    let ply = 0;
+    let visible = false;
+
+    // Demo: one ply every 1.1s, a pause at the end, then from the top.
+    const mark = (i: number) =>
+      list.querySelectorAll<HTMLElement>('[data-ply]').forEach((el) => {
+        const on = Number(el.dataset.ply) === i;
+        el.classList.toggle('now', on);
+        if (on) el.setAttribute('aria-current', 'step');
+        else el.removeAttribute('aria-current');
+      });
+
+    function step() {
+      if (game) return;
+      if (!visible) {
+        timer = window.setTimeout(step, 400);
+        return;
+      }
+      if (ply === 0) {
+        view.set(startPosition());
+        view.mark();
+        mark(-1);
+      }
+      const p = caroKann[ply];
+      view.move(p.from, p.to);
+      if (p.rook) view.move(p.rook[0], p.rook[1]);
+      view.mark({ last: [p.from, p.to] });
+      mark(ply);
+      ply = (ply + 1) % caroKann.length;
+      timer = window.setTimeout(step, ply === 0 ? 3600 : 1100);
+    }
+
+    function startDemo() {
+      ply = 0;
+      list.innerHTML = demoList;
+      status.textContent = demoStatus;
+      if (reduced) return;
+      view.set(startPosition());
+      view.mark();
+      mark(-1);
+      timer = window.setTimeout(step, 900);
+    }
+
+    new IntersectionObserver(([entry]) => (visible = entry.isIntersecting)).observe(board);
+
+    // Play: load the rules and the engine on first click.
+    root.querySelector('[data-play]')!.addEventListener('click', async () => {
+      clearTimeout(timer);
+      root.classList.add('playing');
+      status.textContent = 'Loading Charlie’s bot…';
+      const { startGame } = await import('../scripts/chess/play');
+      game = startGame(board, strength, {
+        status: (text) => (status.textContent = text),
+        moves: (sans) => {
+          list.replaceChildren(
+            ...Array.from({ length: Math.ceil(sans.length / 2) }, (_, i) => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span class="n">${i + 1}.</span><span>${sans[2 * i]}</span>${sans[2 * i + 1] ? `<span>${sans[2 * i + 1]}</span>` : ''}`;
+              return li;
+            }),
+          );
+          list.scrollTop = list.scrollHeight;
+        },
+        over: (over) => root.classList.toggle('over', over),
+      });
+      root.querySelector<HTMLElement>('[data-sq="e2"]')?.focus({ preventScroll: true });
+    });
+    root.querySelector('[data-new]')!.addEventListener('click', () => game?.reset());
+    root.querySelector('[data-resign]')!.addEventListener('click', () => game?.resign());
+    root.querySelector('[data-demo]')!.addEventListener('click', () => {
+      game?.stop();
+      game = null;
+      root.classList.remove('playing', 'over');
+      startDemo();
+    });
+
+    startDemo();
+  }
+</script>
+
+<style>
+  .chessbot {
+    --light: #ead7ae;
+    --dark: #8a6fb8;
+    padding: clamp(1rem, 2.5vw, 1.6rem);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .board-wrap {
+    padding: 6px;
+    background: var(--shadow);
+    box-shadow: 0 0 0 2px var(--line);
+  }
+
+  .board {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    aspect-ratio: 1;
+  }
+
+  .sq {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--light);
+    font: inherit;
+    cursor: default;
+  }
+
+  .sq.dark {
+    background: var(--dark);
+  }
+
+  .sq:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .sq:focus-visible {
+    z-index: 2;
+    outline: 3px solid var(--teal);
+    outline-offset: -3px;
+  }
+
+  .sq.last::after,
+  .sq.selected::after,
+  .sq.check::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .sq.last::after {
+    background: rgb(255 205 117 / 0.5);
+  }
+
+  .sq.dark.last::after {
+    background: rgb(255 205 117 / 0.72);
+  }
+
+  .sq.selected::after {
+    background: rgb(115 239 247 / 0.35);
+    box-shadow: inset 0 0 0 3px var(--teal);
+  }
+
+  .sq.check::after {
+    background: radial-gradient(circle, rgb(255 59 79 / 0.85), rgb(255 59 79 / 0) 70%);
+  }
+
+  /* Legal moves: a square dot, or corner brackets when it's a capture. */
+  .sq.target::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 38%;
+    background: rgb(12 10 24 / 0.45);
+  }
+
+  .sq.capture::before {
+    inset: 0;
+    background:
+      linear-gradient(rgb(12 10 24 / 0.5), rgb(12 10 24 / 0.5)) top left / 22% 8% no-repeat,
+      linear-gradient(rgb(12 10 24 / 0.5), rgb(12 10 24 / 0.5)) top left / 8% 22% no-repeat,
+      linear-gradient(rgb(12 10 24 / 0.5), rgb(12 10 24 / 0.5)) bottom right / 22% 8% no-repeat,
+      linear-gradient(rgb(12 10 24 / 0.5), rgb(12 10 24 / 0.5)) bottom right / 8% 22% no-repeat;
+  }
+
+  .coord {
+    position: absolute;
+    z-index: 1;
+    font-family: var(--font-pixel);
+    font-size: clamp(0.5rem, 0.4rem + 0.4vw, 0.6875rem);
+    line-height: 1;
+    color: var(--dark);
+    pointer-events: none;
+  }
+
+  .sq.dark .coord {
+    color: var(--light);
+  }
+
+  .file {
+    right: 3px;
+    bottom: 2px;
+  }
+
+  .rank {
+    top: 3px;
+    left: 3px;
+  }
+
+  .pieces {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Pieces are created by script, so their rules can't be scoped. */
+  .pieces :global(.pc) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 12.5%;
+    height: 12.5%;
+    background-position: center;
+    background-size: 84%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    transform: translate(calc(var(--x) * 100%), calc(var(--y) * 100%));
+    transition: transform 360ms steps(6);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pieces :global(.pc) {
+      transition: none;
+    }
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .head h3 {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .status {
+    min-height: 1.6em;
+    margin-top: var(--space-s);
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .moves {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 2px 0.75rem;
+    max-height: 11.5rem;
+    margin-top: var(--space-xs);
+    padding: 0.6rem 0.75rem;
+    overflow-y: auto;
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .moves :global(li) {
+    display: grid;
+    grid-template-columns: 1.75rem 1fr 1fr;
+    gap: 0.25rem;
+  }
+
+  .moves :global(span) {
+    white-space: nowrap;
+  }
+
+  .moves :global(.n) {
+    color: var(--ink-soft);
+  }
+
+  .moves :global(.now) {
+    background: var(--gold);
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-s);
+  }
+
+  .actions .btn {
+    padding: 0.55rem 0.8rem;
+    font-size: var(--step-0);
+  }
+
+  .actions [data-new],
+  .actions [data-resign],
+  .actions [data-demo],
+  .playing .actions [data-play] {
+    display: none;
+  }
+
+  .playing .actions [data-new],
+  .playing .actions [data-demo],
+  .playing:not(.over) .actions [data-resign] {
+    display: inline-flex;
+  }
+
+  .caption {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  @media (max-width: 759px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .board-wrap {
+      max-width: 420px;
+    }
+  }
+</style>
