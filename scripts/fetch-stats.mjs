@@ -6,7 +6,7 @@
 //   npm run build          runs this first, then astro build
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const CHESS_USER = 'daddyrock1';
+const CHESS_USER = 'charliecaro';
 const GITHUB_USER = 'charliebrockmeier';
 const TZ = 'America/New_York';
 const UA = 'charliebrockmeier.com build (charliebrockmeier@gmail.com)';
@@ -83,6 +83,9 @@ async function chess() {
   const stats = await get(`https://api.chess.com/pub/player/${CHESS_USER}/stats`);
 
   const played = new Map(); // day -> games, across both years
+  // Rapid over the last 90 days: record, rating change and opponent strength.
+  const cutoff = Date.now() / 1000 - 90 * 86400;
+  const r90 = { games: 0, wins: 0, draws: 0, losses: 0, first: null, last: null, opp: 0 };
   const y = {
     games: 0,
     wins: 0,
@@ -106,12 +109,19 @@ async function chess() {
     if (g.rules !== 'chess') continue;
     const day = dayOf(g.end_time);
     played.set(day, (played.get(day) ?? 0) + 1);
-    if (Number(day.slice(0, 4)) !== year) continue;
 
     const side = g.white.username.toLowerCase() === CHESS_USER ? 'white' : 'black';
     const me = g[side];
     const opp = g[side === 'white' ? 'black' : 'white'];
     const result = me.result === 'win' ? 'win' : DRAWS.has(me.result) ? 'draw' : 'loss';
+    if (g.time_class === 'rapid' && g.rated && g.end_time >= cutoff) {
+      r90.games++;
+      r90[result === 'win' ? 'wins' : result === 'draw' ? 'draws' : 'losses']++;
+      r90.first ??= me.rating;
+      r90.last = me.rating;
+      r90.opp += opp.rating;
+    }
+    if (Number(day.slice(0, 4)) !== year) continue;
     const month = Number(day.slice(5, 7)) - 1;
 
     y.games++;
@@ -148,16 +158,22 @@ async function chess() {
   }
 
   const busiest = Object.entries(y.days).sort((a, b) => b[1] - a[1])[0];
+  // Percentiles aren't in the public API; keep the last known ones.
   const rating = (k) =>
     stats[k] && {
       current: stats[k].last?.rating,
       best: stats[k].best?.rating,
       record: stats[k].record,
+      percentile: previous.chess?.ratings?.[k.replace('chess_', '')]?.percentile,
     };
-  const allTime = ['chess_bullet', 'chess_blitz', 'chess_rapid', 'chess_daily'].reduce((n, k) => {
-    const r = stats[k]?.record;
-    return n + (r ? r.win + r.loss + r.draw : 0);
-  }, 0);
+  const record = ['chess_bullet', 'chess_blitz', 'chess_rapid', 'chess_daily'].reduce(
+    (t, k) => {
+      const r = stats[k]?.record;
+      return r ? { wins: t.wins + r.win, draws: t.draws + r.draw, losses: t.losses + r.loss } : t;
+    },
+    { wins: 0, draws: 0, losses: 0 },
+  );
+  const allTime = record.wins + record.draws + record.losses;
 
   return {
     asOf: today,
@@ -191,6 +207,17 @@ async function chess() {
       puzzles: stats.tactics?.highest?.rating ?? null,
     },
     allTimeGames: allTime,
+    allTime: { ...previous.chess?.allTime, ...record },
+    rapid90: r90.games
+      ? {
+          games: r90.games,
+          wins: r90.wins,
+          draws: r90.draws,
+          losses: r90.losses,
+          change: r90.last - r90.first,
+          avgOpponent: Math.round(r90.opp / r90.games),
+        }
+      : previous.chess?.rapid90,
   };
 }
 

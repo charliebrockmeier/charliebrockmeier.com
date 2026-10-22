@@ -1,79 +1,187 @@
 ---
-// The career as a progression, oldest chapter first. Each card shows where the three
-// skill tracks stand afterwards, with that chapter's gains lit up.
+// The career as a progression, oldest chapter first. A skill tree up top shows four
+// tracks leveling up chapter by chapter (finance and AI meet at Vantager); each card
+// lists what leveled up there and where it paid off later.
 import PixelArt from './PixelArt.astro';
 import { logos } from '../data/logos';
-import { quests } from '../data/profile';
+import { quests, type Track } from '../data/profile';
 
-const TRACKS = [
+const TRACKS: { key: Track; label: string; color: string }[] = [
   { key: 'finance', label: 'Finance', color: 'var(--gold)' },
   { key: 'code', label: 'Code', color: 'var(--blue)' },
   { key: 'ai', label: 'AI', color: 'var(--teal)' },
-] as const;
-const MAX = 5;
+  { key: 'lead', label: 'Leadership', color: 'var(--coral)' },
+];
+const MAX = 10;
+const trackColor = Object.fromEntries(TRACKS.map((t) => [t.key, t.color]));
+
+// Chart geometry: one column per chapter, levels 0–10 bottom to top.
+const W = 640;
+const H = 196;
+const x = (i: number) => 60 + i * ((W - 104) / (quests.length - 1));
+const y = (level: number) => 160 - level * 13;
+// Each track runs a few pixels off the others, like lines on a transit map, so two
+// tracks at the same level sit side by side instead of hiding one another.
+const off = (k: number) => (k - 1.5) * 5;
+// Stepped lines read as pixel art: across to the midpoint, up, across.
+const path = (key: Track, k: number) =>
+  quests
+    .map((q, i) => {
+      const lv = y(q.levels[key]) + off(k);
+      if (i === 0) return `M ${x(0)} ${lv}`;
+      const mid = (x(i - 1) + x(i)) / 2 + off(k);
+      return `H ${mid} V ${lv} H ${x(i)}`;
+    })
+    .join(' ');
+const meet = quests.findIndex((q) => q.title === 'Vantager');
+const short = (chapter: string) => (chapter === 'Prologue' ? 'Start' : chapter.replace('Chapter ', 'Ch '));
+const final = quests.at(-1)!.levels;
 ---
 
 <section id="quests" class="section wrap" aria-labelledby="quests-title">
   <header class="section-head">
     <span class="num">03</span>
     <h2 id="quests-title">Quest log</h2>
-    <p>Finance at the core, then code, then AI. Every chapter moved me closer to where they meet.</p>
+    <p>Finance at the core, then code, then AI. Every chapter leveled something up, and it all came together at Vantager.</p>
   </header>
+
+  <figure class="tree panel" data-reveal>
+    <figcaption>
+      <span class="pixel">Skill tree</span>
+      <span class="hint">Levels after each chapter, out of 10</span>
+    </figcaption>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      role="img"
+      aria-label={TRACKS.map((t) => `${t.label}: ${quests.map((q) => q.levels[t.key]).join(', ')}`).join('; ')}
+    >
+      {[0, 2, 4, 6, 8, 10].map((lv) => <line x1="44" x2={W - 28} y1={y(lv)} y2={y(lv)} class="grid" />)}
+      {quests.map((_, i) => <line x1={x(i)} x2={x(i)} y1={y(0)} y2={y(MAX)} class="grid col" />)}
+      {meet > -1 && (
+        <g class="meet">
+          <rect x={x(meet) - 24} y={y(9.7)} width="48" height={y(5.6) - y(9.7)} />
+          <text x={x(meet)} y={y(10.2)} text-anchor="middle">Finance × AI</text>
+        </g>
+      )}
+      {TRACKS.map((t, k) => <path d={path(t.key, k)} class="line" style={`--c: ${t.color}; --d: ${k * 0.25}s`} pathLength="1" />)}
+      {TRACKS.map((t, k) =>
+        quests.map((q, i) => (
+          <rect
+            class="pt"
+            x={x(i) - 4}
+            y={y(q.levels[t.key]) + off(k) - 4}
+            width="8"
+            height="8"
+            style={`--c: ${t.color}; --d: ${0.5 + k * 0.25 + i * 0.12}s`}
+          />
+        )),
+      )}
+      {quests.map((q, i) => (
+        <text class="tick" x={x(i)} y={H - 8} text-anchor="middle">
+          {short(q.chapter)}
+        </text>
+      ))}
+      {[0, 5, 10].map((lv) => (
+        <text class="tick lv" x="34" y={y(lv) + 4} text-anchor="end">
+          {lv}
+        </text>
+      ))}
+    </svg>
+    <ul class="legend" role="list">
+      {TRACKS.map((t) => (
+        <li style={`--c: ${t.color}`}>
+          <i />
+          {t.label} <b class="pixel">Lv {final[t.key]}</b>
+        </li>
+      ))}
+    </ul>
+  </figure>
 
   <ol class="path" role="list">
     {
       quests.map((q, i) => {
-        const prev = quests[i - 1]?.level ?? { finance: 0, code: 0, ai: 0 };
+        const prev = quests[i - 1]?.levels ?? { finance: 0, code: 0, ai: 0, lead: 0 };
         return (
-          <li class:list={['stop', q.status]}>
+          <li class:list={['stop', q.status]} data-reveal>
             <span class="node" aria-hidden="true" />
             <article class="quest panel">
-            <figure class="scene">
-              <img src={q.scene.src} width="192" height="64" alt={q.scene.alt} loading="lazy" decoding="async" />
-              <figcaption class="pixel">{q.scene.place}</figcaption>
-            </figure>
-            <div class="body">
-              <p class="meta pixel">
-                <span>{q.chapter}</span>
-                <span class="chip">{q.status === 'active' ? 'Active' : 'Complete'}</span>
-                <span class="when">{q.when}</span>
-              </p>
-              <div class="title">
-                <h3>{q.title}</h3>
-                <span class="emblems">
-                  {q.emblems.map((name) => (
-                    <PixelArt art={logos[name]} scale={2} label={logos[name].label} class="emblem" />
-                  ))}
-                </span>
-              </div>
-              <p class="sub">
-                {q.role} · {q.where}
-              </p>
-              <p class="summary">{q.summary}</p>
-              <ul class="objectives" role="list">
-                {q.objectives.map((o, j) => (
-                  <li class:list={{ open: q.status === 'active' && j === q.objectives.length - 1 }}>{o}</li>
-                ))}
-              </ul>
-              <div class="progress">
-                <dl class="levels">
-                  {TRACKS.map((t) => (
-                    <div style={`--c: ${t.color}`}>
-                      <dt class="pixel">{t.label}</dt>
-                      <dd aria-label={`${t.label} level ${q.level[t.key]} of ${MAX}`}>
-                        {Array.from({ length: MAX }, (_, k) => (
-                          <i class:list={{ on: k < q.level[t.key], new: k >= prev[t.key] && k < q.level[t.key] }} />
-                        ))}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <p class="loot pixel">
-                  <span>Unlocked: {q.unlocked}</span>
-                  <span>Reward: {q.reward}</span>
+              <figure class="scene">
+                <img src={q.scene.src} width="192" height="64" alt={q.scene.alt} loading="lazy" decoding="async" />
+                <figcaption class="pixel">{q.scene.place}</figcaption>
+              </figure>
+              <div class="body">
+                <p class="meta pixel">
+                  <span>{q.chapter}</span>
+                  <span class="chip">{q.status === 'active' ? 'Active' : 'Complete'}</span>
+                  <span class="when">{q.when}</span>
                 </p>
+                <div class="title">
+                  <h3>{q.title}</h3>
+                  <span class="emblems">
+                    {q.emblems.map((name) => (
+                      <PixelArt art={logos[name]} scale={2} label={logos[name].label} class="emblem" />
+                    ))}
+                  </span>
+                </div>
+                <p class="sub">
+                  {q.role} · {q.where}
+                </p>
+                <p class="summary">{q.summary}</p>
+                <ul class="objectives" role="list">
+                  {q.objectives.map((o, j) => (
+                    <li class:list={{ open: q.status === 'active' && j === q.objectives.length - 1 }}>{o}</li>
+                  ))}
+                </ul>
+
+                <div class="ups">
+                  <p class="label pixel">Level ups</p>
+                  <ul role="list">
+                    {q.levelUps.map((u, j) => (
+                      <li style={`--c: ${trackColor[u.track]}; --d: ${j * 0.12}s`}>
+                        <span class="delta pixel">{u.up === 'new' ? 'NEW' : `+${u.up}`}</span>
+                        <span class="skill">{u.skill}</span>
+                        {u.carries && <span class="carries">→ {u.carries}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {q.extras && (
+                  <details class="extras" open>
+                    <summary class="label pixel">Also in college · {q.extras.length} side quests</summary>
+                    <ul role="list">
+                      {q.extras.map((e, j) => (
+                        <li style={`--d: ${j * 0.05}s`}>
+                          <strong>{e.name}</strong>
+                          <span>{e.note}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                <div class="progress">
+                  <dl class="levels">
+                    {TRACKS.map((t) => (
+                      <div style={`--c: ${t.color}`}>
+                        <dt class="pixel">{t.label}</dt>
+                        <dd aria-label={`${t.label} level ${q.levels[t.key]} of ${MAX}`}>
+                          {Array.from({ length: MAX }, (_, k) => (
+                            <i
+                              class:list={{ on: k < q.levels[t.key], new: k >= prev[t.key] && k < q.levels[t.key] }}
+                              style={`--d: ${k * 0.05}s`}
+                            />
+                          ))}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p class="loot pixel">
+                    <span>Unlocked: {q.unlocked}</span>
+                    <span>Reward: {q.reward}</span>
+                  </p>
+                </div>
               </div>
-            </div>
             </article>
           </li>
         );
@@ -82,7 +190,124 @@ const MAX = 5;
   </ol>
 </section>
 
+<script>
+  // Reveal the chart and each card as they scroll into view. Without JS, or with
+  // reduced motion, everything is simply shown.
+  const section = document.getElementById('quests');
+  if (section && 'IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    section.classList.add('animate');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.classList.add('seen');
+          io.unobserve(e.target);
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    section.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+  }
+</script>
+
 <style>
+  /* Skill tree */
+  .tree {
+    margin-bottom: var(--space-s);
+    padding: var(--space-s) clamp(0.75rem, 2vw, 1.4rem) var(--space-xs);
+  }
+
+  .tree figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem var(--space-xs);
+  }
+
+  .tree figcaption .pixel {
+    color: var(--gold);
+    font-size: var(--step-1);
+  }
+
+  .hint {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .tree svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .grid {
+    stroke: var(--line);
+    stroke-width: 1;
+    stroke-dasharray: 2 4;
+  }
+
+  .grid.col {
+    stroke-dasharray: 1 5;
+  }
+
+  .line {
+    fill: none;
+    stroke: var(--c);
+    stroke-width: 3.5;
+    shape-rendering: crispEdges;
+  }
+
+  .pt {
+    fill: var(--c);
+    stroke: var(--panel, var(--bg));
+    stroke-width: 2;
+  }
+
+  .meet rect {
+    fill: color-mix(in srgb, var(--teal) 10%, transparent);
+    stroke: var(--teal);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+  }
+
+  .meet text,
+  .tick {
+    fill: var(--ink-soft);
+    font-family: var(--font-pixel);
+    font-size: 13px;
+  }
+
+  .meet text {
+    fill: var(--teal);
+  }
+
+  .tick.lv {
+    font-size: 11px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem var(--space-m);
+    margin-top: 0.25rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 0.35rem;
+    background: var(--c);
+  }
+
+  .legend b {
+    color: var(--c);
+    font-weight: 400;
+  }
+
+  /* Timeline of chapters */
   .path {
     position: relative;
     display: grid;
@@ -90,7 +315,6 @@ const MAX = 5;
     padding-left: 28px;
   }
 
-  /* The trail between chapters. */
   .path::before {
     content: '';
     position: absolute;
@@ -101,18 +325,10 @@ const MAX = 5;
     background: repeating-linear-gradient(var(--line) 0 8px, transparent 8px 14px);
   }
 
-  .quest {
-    display: grid;
-    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
-    gap: var(--space-m);
-    padding: var(--space-s);
-  }
-
   .stop {
     position: relative;
   }
 
-  /* A node on the trail for each chapter. */
   .node {
     position: absolute;
     top: 22px;
@@ -127,22 +343,25 @@ const MAX = 5;
     background: var(--gold);
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .active .node {
-      animation: quest-blink 1s steps(2) infinite;
-    }
+  .quest {
+    display: grid;
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    gap: var(--space-m);
+    padding: var(--space-s);
   }
 
   .scene {
     position: relative;
     align-self: start;
+    overflow: hidden;
   }
 
   .scene img {
+    display: block;
     width: 100%;
     height: auto;
     image-rendering: pixelated;
-    box-shadow: 0 0 0 2px var(--line);
+    box-shadow: inset 0 0 0 2px var(--line);
   }
 
   .scene figcaption {
@@ -243,6 +462,76 @@ const MAX = 5;
     box-shadow: inset 0 0 0 2px var(--gold);
   }
 
+  .label {
+    color: var(--gold);
+    font-size: var(--label);
+  }
+
+  /* Level ups: each chip says what grew and where it paid off later */
+  .ups {
+    margin-top: var(--space-s);
+  }
+
+  .ups ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .ups li {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.4rem;
+    max-width: 100%;
+    padding: 0.2rem 0.55rem 0.25rem;
+    background: color-mix(in srgb, var(--c) 9%, var(--bg));
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent);
+    font-size: 0.8125rem;
+  }
+
+  .delta {
+    color: var(--c);
+    font-size: var(--label);
+  }
+
+  .carries {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  /* College side quests */
+  .extras {
+    margin-top: var(--space-s);
+  }
+
+  .extras summary {
+    cursor: pointer;
+  }
+
+  .extras ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .extras li {
+    display: grid;
+    align-content: start;
+    padding: 0.4rem 0.6rem;
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+    font-size: 0.8125rem;
+  }
+
+  .extras span {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  /* Level pips */
   .progress {
     display: flex;
     flex-wrap: wrap;
@@ -255,9 +544,9 @@ const MAX = 5;
   }
 
   .levels {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem var(--space-m);
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 0.35rem var(--space-m);
   }
 
   .levels div {
@@ -267,6 +556,7 @@ const MAX = 5;
   }
 
   .levels dt {
+    min-width: 5.4rem;
     color: var(--ink-soft);
     font-size: var(--label);
   }
@@ -277,7 +567,7 @@ const MAX = 5;
   }
 
   .levels i {
-    width: 10px;
+    width: 8px;
     height: 10px;
     background: var(--bg);
     box-shadow: inset 0 0 0 2px var(--line);
@@ -288,15 +578,8 @@ const MAX = 5;
     box-shadow: none;
   }
 
-  /* This chapter's gains glow. */
   .levels i.new {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .levels i.new {
-      animation: quest-blink 1.4s steps(2) infinite;
-    }
+    outline: 2px solid color-mix(in srgb, var(--c) 45%, transparent);
   }
 
   .loot {
@@ -307,7 +590,127 @@ const MAX = 5;
     font-size: var(--label);
   }
 
-  @keyframes quest-blink {
+  /* Motion: only once the script opted in (.animate), which it skips for reduced motion. */
+  .animate .tree .line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .animate .tree .pt,
+  .animate .tree .meet {
+    opacity: 0;
+  }
+
+  .animate .tree.seen .line {
+    animation: quest-draw 1.8s steps(28) var(--d) forwards;
+  }
+
+  .animate .tree.seen .pt {
+    animation: quest-fade 0.3s steps(2) var(--d) forwards;
+  }
+
+  .animate .tree.seen .meet {
+    animation:
+      quest-fade 0.4s steps(2) 1.6s forwards,
+      quest-glow 1.6s steps(2) 2.2s infinite;
+  }
+
+  .animate .stop:not(.seen) .quest,
+  .animate .stop:not(.seen) .node {
+    opacity: 0;
+  }
+
+  .animate .stop.seen .quest {
+    animation: quest-rise 0.5s steps(5) both;
+  }
+
+  .animate .stop.seen .node {
+    animation: quest-fade 0.3s steps(2) both;
+  }
+
+  .animate .stop.seen .scene img {
+    animation: quest-pan 0.9s steps(6) both;
+  }
+
+  .animate .stop.seen .ups li {
+    animation: quest-pop 0.3s steps(3) calc(0.4s + var(--d)) both;
+  }
+
+  .animate .stop.seen .extras li {
+    animation: quest-fade 0.3s steps(2) calc(0.5s + var(--d)) both;
+  }
+
+  .animate .stop.seen .levels i.on {
+    animation: quest-fade 0.2s steps(2) calc(0.5s + var(--d)) both;
+  }
+
+  .animate .stop.seen .levels i.new {
+    animation:
+      quest-fade 0.2s steps(2) calc(0.5s + var(--d)) both,
+      quest-glow 1.4s steps(2) 1.4s infinite;
+  }
+
+  .animate .stop.seen .emblems :global(.emblem) {
+    animation: quest-hop 0.6s steps(3) 0.35s both;
+  }
+
+  .animate .stop.seen.active .node {
+    animation: quest-glow 1s steps(2) infinite;
+  }
+
+  @keyframes quest-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes quest-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes quest-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes quest-rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes quest-pan {
+    from {
+      transform: scale(1.12);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes quest-hop {
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes quest-glow {
     50% {
       opacity: 0.45;
     }
@@ -330,6 +733,10 @@ const MAX = 5;
       left: -22px;
       width: 12px;
       height: 12px;
+    }
+
+    .levels {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

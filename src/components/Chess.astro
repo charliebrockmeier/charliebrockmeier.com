@@ -29,6 +29,8 @@ type Live = {
   days?: Record<string, number>;
   ratings?: Record<string, { current?: number; best?: number } | number | null>;
   allTimeGames?: number;
+  allTime?: { wins: number; draws: number; losses: number; bestWin?: number; bestStreak?: number };
+  rapid90?: { games: number; wins: number; draws: number; losses: number; change: number; avgOpponent: number };
 };
 
 const data = live.chess as Live;
@@ -75,26 +77,33 @@ const busiest = { name: fullMonths[busiestIndex], games: monthBars[busiestIndex]
 const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(1)}%` : '–');
 const n = (v: number) => v.toLocaleString('en-US');
 
-// Headline tiles.
-const tiles: [string, string][] = isLive
-  ? [
-      [`Games in ${data.year}`, n(data.games!)],
-      ['Win rate', pct(data.wins!, data.games!)],
-      ['Hours at the board', data.hoursPlayed ? n(data.hoursPlayed) : '–'],
-      ['Days played', `${data.daysPlayed} / ${total}`],
-      ['Longest win streak', `${data.longestWinStreak ?? '–'}`],
-      ['Most games in a day', data.busiestDay ? `${data.busiestDay.games}` : '–'],
-      ['Best win', data.bestWin ? `${data.bestWin.rating} ${data.bestWin.timeClass}` : '–'],
-      ['All-time games', data.allTimeGames ? n(data.allTimeGames) : '–'],
-    ]
-  : block.rows;
+// Headline tiles, in priority order; whatever data exists fills the first eight.
+type Rating = { current?: number; best?: number; percentile?: number };
+const r = (k: string) => data.ratings?.[k] as Rating | undefined;
+const rapid = r('rapid');
+const bullet = r('bullet');
+const puzzles = data.ratings?.puzzles as number | undefined;
+const r90 = data.rapid90;
+const all = data.allTime;
+const top = rapid?.percentile ? `Top ${Math.max(1, Math.round(100 - rapid.percentile))}%` : null;
+const signed = (v: number) => `${v >= 0 ? '+' : ''}${v}`;
+const candidates: ([string, string] | false | undefined | null)[] = [
+  rapid?.current && ['Rapid rating', `${rapid.current}`],
+  top && ['Rapid percentile', top],
+  r90 && ['Rapid, last 90 days', signed(r90.change)],
+  r90 && ['Rapid win rate, 90 days', pct(r90.wins, r90.games)],
+  data.allTimeGames && ['Games, all time', n(data.allTimeGames)],
+  isLive && [`Games in ${data.year}`, n(data.games!)],
+  isLive && ['Days played', `${data.daysPlayed} / ${total}`],
+  bullet?.best && ['Bullet peak', `${bullet.best}`],
+  puzzles && ['Puzzle rating', `${puzzles}`],
+  all?.bestWin && ['Best win (opponent)', `${all.bestWin}`],
+  all?.bestStreak && ['Best win streak', `${all.bestStreak}`],
+];
+const tiles = (candidates.filter(Boolean) as [string, string][]).slice(0, 8);
+const fallbackTiles = tiles.length < 4 ? block.rows : tiles;
 
-const ratingKeys = ['bullet', 'blitz', 'rapid', 'daily'] as const;
-const ratings = isLive
-  ? ratingKeys
-      .map((k) => ({ k, r: data.ratings?.[k] as { current?: number; best?: number } | null }))
-      .filter((x) => x.r?.current)
-  : [];
+const ratings = (['rapid', 'bullet'] as const).map((k) => ({ k, r: r(k) })).filter((x) => x.r?.current);
 const peakHour = isLive && data.hours ? data.hours.indexOf(Math.max(...data.hours)) : -1;
 const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`;
 const maxHour = isLive && data.hours ? Math.max(1, ...data.hours) : 1;
@@ -109,13 +118,26 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
   </header>
 
   <div class="top">
-    <div class="streak">
-      <p class="big pixel"><Icon name="fire" color="coral" scale={4} class="flame" />{n(streak)}</p>
-      <p class="label">day streak. Every single day since {fmt(streakStart)}.</p>
+    <div class="leads">
+      <div>
+        <p class="big pixel"><Icon name="fire" color="coral" scale={4} class="flame" />{n(streak)}</p>
+        <p class="label">day streak. Every day since {fmt(streakStart)}.</p>
+      </div>
+      {
+        rapid?.current && (
+          <div>
+            <p class="big pixel rapid">{rapid.current}</p>
+            <p class="label">
+              rapid rating{top && <> · {top.toLowerCase()}</>}
+              {r90 && <> · {signed(r90.change)} in 90 days</>}
+            </p>
+          </div>
+        )
+      }
     </div>
     <dl class="tiles">
       {
-        tiles.map(([k, v]) => (
+        fallbackTiles.map(([k, v]) => (
           <div>
             <dd class="pixel">{v}</dd>
             <dt>{k}</dt>
@@ -168,17 +190,24 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
     }
 
     {
-      isLive && ratings.length > 0 && (
+      ratings.length > 0 && (
         <figure class="ratings">
           <figcaption class="pixel">Ratings</figcaption>
           <dl>
-            {ratings.map(({ k, r }) => (
+            {ratings.map(({ k, r: rt }) => (
               <div>
                 <dt>{k}</dt>
-                <dd class="pixel">{r!.current}</dd>
-                <dd class="best">best {r!.best}</dd>
+                <dd class="pixel">{rt!.current}</dd>
+                <dd class="best">peak {rt!.best}</dd>
               </div>
             ))}
+            {puzzles && (
+              <div>
+                <dt>puzzles</dt>
+                <dd class="pixel">{puzzles}</dd>
+                <dd class="best">{all?.bestStreak ? `best win streak ${all.bestStreak}` : 'rated'}</dd>
+              </div>
+            )}
           </dl>
         </figure>
       )
@@ -290,6 +319,16 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
   .big :global(.flame) {
     width: 0.6em;
     height: auto;
+  }
+
+  .leads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s) var(--space-l);
+  }
+
+  .big.rapid {
+    color: var(--teal);
   }
 
   .label {

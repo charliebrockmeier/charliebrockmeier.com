@@ -20,7 +20,43 @@
       null,
       null,
       null
-    ]
+    ],
+    "username": "CharlieCaro",
+    "ratings": {
+      "rapid": {
+        "current": 1209,
+        "best": 1348,
+        "percentile": 92.9
+      },
+      "bullet": {
+        "current": 1005,
+        "best": 1159,
+        "percentile": 86.8
+      },
+      "blitz": {
+        "current": 913,
+        "best": 914,
+        "percentile": 81.1
+      },
+      "daily": null,
+      "puzzles": 1475
+    },
+    "allTimeGames": 4603,
+    "allTime": {
+      "wins": 2303,
+      "draws": 161,
+      "losses": 2139,
+      "bestWin": 1254,
+      "bestStreak": 9
+    },
+    "rapid90": {
+      "games": 38,
+      "wins": 23,
+      "draws": 4,
+      "losses": 11,
+      "change": 205,
+      "avgOpponent": 1121
+    }
   },
   "github": {
     "source": "snapshot",
