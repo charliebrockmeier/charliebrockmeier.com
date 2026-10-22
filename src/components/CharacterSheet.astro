@@ -146,11 +146,11 @@ const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', viole
   @media (prefers-reduced-motion: no-preference) {
     .radar .shape {
       transform-origin: 50px 50px;
-      animation: grow 1.2s steps(8) both;
+      animation: char-grow 1.2s steps(8) both;
     }
   }
 
-  @keyframes grow {
+  @keyframes char-grow {
     from {
       transform: scale(0.1);
     }
@@ -199,14 +199,14 @@ const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', viole
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .bar span.on {
-        animation: fill linear both;
+        animation: char-fill linear both;
         animation-timeline: view();
         animation-range: entry calc(var(--i) * 2%) entry calc(30% + var(--i) * 2%);
       }
     }
   }
 
-  @keyframes fill {
+  @keyframes char-fill {
     from {
       background: var(--line);
     }

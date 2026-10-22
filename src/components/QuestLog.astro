@@ -129,7 +129,7 @@ const MAX = 5;
 
   @media (prefers-reduced-motion: no-preference) {
     .active .node {
-      animation: blink 1s steps(2) infinite;
+      animation: quest-blink 1s steps(2) infinite;
     }
   }
 
@@ -295,7 +295,7 @@ const MAX = 5;
 
   @media (prefers-reduced-motion: no-preference) {
     .levels i.new {
-      animation: blink 1.4s steps(2) infinite;
+      animation: quest-blink 1.4s steps(2) infinite;
     }
   }
 
@@ -307,7 +307,7 @@ const MAX = 5;
     font-size: var(--label);
   }
 
-  @keyframes blink {
+  @keyframes quest-blink {
     50% {
       opacity: 0.45;
     }

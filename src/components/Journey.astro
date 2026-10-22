@@ -709,26 +709,26 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
 
   @media (prefers-reduced-motion: no-preference) {
     .cloud {
-      animation: cloud linear infinite;
+      animation: road-cloud linear infinite;
     }
 
     .stars i.tw {
-      animation: twinkle 2.6s steps(2) infinite;
+      animation: road-twinkle 2.6s steps(2) infinite;
     }
 
     .blades {
-      animation: spin 3s steps(12) infinite;
+      animation: road-spin 3s steps(12) infinite;
     }
 
     .birds {
-      animation: fly 26s linear infinite;
+      animation: road-fly 26s linear infinite;
     }
 
     .wing-up,
     .wing-down,
     .flag-a,
     .flag-b {
-      animation: frame 0.6s steps(1) infinite;
+      animation: road-frame 0.6s steps(1) infinite;
     }
 
     .wing-down,
@@ -737,25 +737,25 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
 
     .truck {
-      animation: drive 13s linear infinite;
+      animation: road-drive 13s linear infinite;
     }
 
     .taxi {
-      animation: cab 10s linear infinite;
+      animation: road-cab 10s linear infinite;
     }
 
     .journey:global(.game-on) .lamp {
-      animation: flicker 1.2s steps(1) 1;
+      animation: road-flicker 1.2s steps(1) 1;
     }
 
     .journey:global(.game-on) .flash {
-      animation: pop 2.2s steps(1) infinite;
+      animation: road-pop 2.2s steps(1) infinite;
     }
 
     .w1,
     .w2,
     .w3 {
-      animation: wifi 1.8s steps(1) infinite;
+      animation: road-wifi 1.8s steps(1) infinite;
     }
 
     .w2 {
@@ -767,15 +767,15 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
 
     .signal {
-      animation: dash 1.2s linear infinite;
+      animation: road-dash 1.2s linear infinite;
     }
 
     .screen {
-      animation: screen 3s steps(3) infinite;
+      animation: road-screen 3s steps(3) infinite;
     }
 
     .puff {
-      animation: fog 12s ease-in-out infinite alternate;
+      animation: road-fog 12s ease-in-out infinite alternate;
     }
 
     .puff.f2 {
@@ -788,27 +788,27 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
 
     .shimmer {
-      animation: twinkle 1.8s steps(2) infinite;
+      animation: road-twinkle 1.8s steps(2) infinite;
     }
 
     .glass {
-      animation: pop 2.4s steps(1) infinite;
+      animation: road-pop 2.4s steps(1) infinite;
     }
 
     .beacon {
-      animation: twinkle 1.4s steps(2) infinite;
+      animation: road-twinkle 1.4s steps(2) infinite;
     }
 
     .win {
-      animation: lights 9s steps(1) infinite;
+      animation: road-lights 9s steps(1) infinite;
     }
 
     .lobby {
-      animation: lobby 4s ease-in-out infinite alternate;
+      animation: road-lobby 4s ease-in-out infinite alternate;
     }
 
     .neon {
-      animation: neon 3.2s steps(1) infinite;
+      animation: road-neon 3.2s steps(1) infinite;
     }
   }
 
@@ -828,7 +828,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     opacity: 0.15;
   }
 
-  @keyframes cloud {
+  @keyframes road-cloud {
     from {
       transform: translateX(-30vw);
     }
@@ -837,13 +837,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes twinkle {
+  @keyframes road-twinkle {
     50% {
       opacity: 0.15;
     }
   }
 
-  @keyframes pop {
+  @keyframes road-pop {
     0%,
     49% {
       opacity: 0;
@@ -854,13 +854,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes spin {
+  @keyframes road-spin {
     to {
       transform: rotate(360deg);
     }
   }
 
-  @keyframes fly {
+  @keyframes road-fly {
     from {
       transform: translate(-40px, 70px);
     }
@@ -872,7 +872,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes frame {
+  @keyframes road-frame {
     0% {
       opacity: 1;
     }
@@ -881,7 +881,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes drive {
+  @keyframes road-drive {
     from {
       transform: translateX(-20px);
     }
@@ -890,7 +890,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes cab {
+  @keyframes road-cab {
     from {
       transform: translateX(2240px);
     }
@@ -899,7 +899,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes flicker {
+  @keyframes road-flicker {
     0%,
     20%,
     40% {
@@ -912,7 +912,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes wifi {
+  @keyframes road-wifi {
     0%,
     60% {
       opacity: 1;
@@ -923,19 +923,19 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes dash {
+  @keyframes road-dash {
     to {
       stroke-dashoffset: -10;
     }
   }
 
-  @keyframes screen {
+  @keyframes road-screen {
     50% {
       opacity: 0.3;
     }
   }
 
-  @keyframes fog {
+  @keyframes road-fog {
     from {
       translate: -12px 0;
     }
@@ -944,7 +944,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes lights {
+  @keyframes road-lights {
     0%,
     55% {
       opacity: 0;
@@ -955,13 +955,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes lobby {
+  @keyframes road-lobby {
     to {
       opacity: 0.35;
     }
   }
 
-  @keyframes neon {
+  @keyframes road-neon {
     0%,
     70%,
     80% {

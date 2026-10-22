@@ -378,11 +378,11 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
 
   @media (prefers-reduced-motion: no-preference) {
     .today {
-      animation: pulse 1.2s steps(2) infinite;
+      animation: chess-pulse 1.2s steps(2) infinite;
     }
 
     .big :global(.flame) {
-      animation: flicker 0.9s steps(2) infinite;
+      animation: chess-flicker 0.9s steps(2) infinite;
     }
   }
 
@@ -588,13 +588,13 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
     font-style: italic;
   }
 
-  @keyframes pulse {
+  @keyframes chess-pulse {
     50% {
       opacity: 0;
     }
   }
 
-  @keyframes flicker {
+  @keyframes chess-flicker {
     50% {
       transform: translateY(-2px) scaleX(-1);
     }

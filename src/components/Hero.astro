@@ -85,11 +85,11 @@ const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleStrin
 
   @media (prefers-reduced-motion: no-preference) {
     .portrait :global(.sprite) {
-      animation: bob 1.6s steps(2) infinite;
+      animation: hero-bob 1.6s steps(2) infinite;
     }
 
     .blink {
-      animation: blink 1s steps(2) infinite;
+      animation: hero-blink 1s steps(2) infinite;
     }
   }
 
@@ -197,13 +197,13 @@ const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleStrin
     width: var(--sw);
   }
 
-  @keyframes bob {
+  @keyframes hero-bob {
     50% {
       transform: translateY(-4px);
     }
   }
 
-  @keyframes blink {
+  @keyframes hero-blink {
     50% {
       opacity: 0;
     }

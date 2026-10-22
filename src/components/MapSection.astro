@@ -359,7 +359,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
   }
 
   .play .reveal {
-    animation: draw var(--dur) steps(36) var(--delay) forwards;
+    animation: map-draw var(--dur) steps(36) var(--delay) forwards;
   }
 
   .lbl {
@@ -382,7 +382,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
   }
 
   .play .pin {
-    animation: pop 0.3s steps(3) var(--d) forwards;
+    animation: map-pop 0.3s steps(3) var(--d) forwards;
   }
 
   .movers {
@@ -403,12 +403,12 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
   }
 
   .play .pulse {
-    animation: pulse 1.6s steps(4) 2s infinite;
+    animation: map-pulse 1.6s steps(4) 2s infinite;
   }
 
   .play .wf-0,
   .play .wf-1 {
-    animation: walk 0.5s linear infinite;
+    animation: map-walk 0.5s linear infinite;
   }
 
   .play .wf-1 {
@@ -421,7 +421,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
 
   @media (prefers-reduced-motion: no-preference) {
     .cloud {
-      animation: drift var(--dur) linear var(--delay) infinite;
+      animation: map-drift var(--dur) linear var(--delay) infinite;
     }
   }
 
@@ -432,13 +432,13 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     animation-play-state: paused;
   }
 
-  @keyframes draw {
+  @keyframes map-draw {
     to {
       stroke-dashoffset: 0;
     }
   }
 
-  @keyframes pop {
+  @keyframes map-pop {
     0% {
       opacity: 1;
       transform: scale(0);
@@ -453,7 +453,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     }
   }
 
-  @keyframes pulse {
+  @keyframes map-pulse {
     0% {
       opacity: 1;
       transform: scale(1);
@@ -464,7 +464,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     }
   }
 
-  @keyframes walk {
+  @keyframes map-walk {
     0%,
     49.9% {
       opacity: 1;
@@ -475,7 +475,7 @@ const shield = rects(['.BBBBB.', 'BRRRRRB', 'BBBBBBB', 'BWBWBWB', 'BBBBBBB', '.B
     }
   }
 
-  @keyframes drift {
+  @keyframes map-drift {
     from {
       transform: translateX(0);
     }

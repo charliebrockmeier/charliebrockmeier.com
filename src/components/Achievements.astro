@@ -69,11 +69,11 @@ const unlocked = achievements.filter((a) => !a.locked).length;
 
   @media (prefers-reduced-motion: no-preference) {
     .badge:not(.locked):hover :global(.icon) {
-      animation: hop 0.4s steps(2);
+      animation: achievements-hop 0.4s steps(2);
     }
   }
 
-  @keyframes hop {
+  @keyframes achievements-hop {
     50% {
       transform: translateY(-4px);
     }

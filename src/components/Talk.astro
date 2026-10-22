@@ -152,11 +152,11 @@ const face = { rows: sprite.rows.slice(0, 22).map((r) => r.slice(7, 26)), palett
 
   @media (prefers-reduced-motion: no-preference) {
     .line::after {
-      animation: nudge 0.8s steps(2) infinite;
+      animation: talk-nudge 0.8s steps(2) infinite;
     }
   }
 
-  @keyframes nudge {
+  @keyframes talk-nudge {
     50% {
       transform: translateY(3px);
     }
