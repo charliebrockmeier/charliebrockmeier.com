@@ -16,16 +16,16 @@ The game frame carries the serious content (MSCI, Vantager, AI work) without fee
 
 | Section | What it shows |
 |---|---|
-| Title screen | Hand-drawn 32×32 pixel sprite of Charlie; big pixel name; current quest (MSCI), last boss (Vantager, acquired), location; a pixel panorama from Kearney (grain elevator, windmill, sandhill cranes) to Manhattan, with a tiny Charlie walking across |
-| 01 Character | Bio in his voice (MacGyver, orange-peel eggs, Raikes, Vantager, MSCI), real photo, attribute bars with true notes |
-| 02 Stats | "Stats nobody asked for": the chess streak as a 500-day calendar, September as a waffle of all 275 games, then cards for music, training, gaming, builder, learning and life. Every number comes from an app's recap email or from Charlie |
-| 03 Quest log | Career as chapters (Prologue → MSCI), each with its own pixel location scene, plus a dot-matrix US map of Kearney → Lincoln → Omaha → San Francisco (remote) → New York |
-| 04 Party | His AI agents as companions (Scout, Warden, Herald, Smith), each with cadence and a human-in-the-loop line |
-| 05 Inventory | Equipped and bag skills by rarity; crafted items (obituary monitor, portfolio surveillance, Locus, Phyt, this site), all personal projects |
-| 06 Achievements | Pixel badges: Acquired, Early adopter, Eagle Scout, Wilderness Survival, Homecoming Royalty, Treasurer, Scholar, TA, Grinder, and one locked (ship the Godot game) |
-| 07 Side quests | Game dev, chess, poker, guitar, training, writing; a codex of his writing (no links to the pen name) |
-| 08 Talk to Charlie | An RPG dialogue box with six scripted questions (keys 1–6), typewriter text and a full transcript that works without JS. Free-form questions answered by Claude arrive in milestone 4 |
-| Save point | Pixel-icon links: LinkedIn, Instagram (@charliebrockmeier), X (@Rockmeier1), GitHub, email; resume PDF download |
+| Title screen | 32×32 sprite, Class: Finance / Subclass: AI builder, live chess streak. Animated pixel panorama from a Kearney sunset to Manhattan at night: walker, clouds, windows, glints, plane, traffic |
+| 01 Character | Bio (finance at the core, building with AI), photo, attributes with radar chart |
+| 02 The road so far | Scroll-driven side-scroller: Kearney home and Kearney High → Lincoln (Capitol, Memorial Stadium) → SF remote → NYC walk-up → 7 World Trade (`Journey.astro`, `scripts/art/journey.mjs`) |
+| 03 Quest log | Career oldest-first with pixel emblems (`src/data/logos.ts`) and Finance/Code/AI levels per chapter |
+| 04 World map | Pixel terrain US map, career route on I-80, road trips and Husker away games, animated (`MapSection.astro`, `scripts/art/usmap.mjs`) |
+| 05 Stats | Chess panel (full year from chess.com at build, fallback snapshot), Charlie's Caro-Kann bot, cards for Huskers, music, builder, learning, gaming, life |
+| 06 Crafted items | Each project with an illustrated screen; GitHub summary |
+| 07–11 | Party (agents), Inventory, Achievements, Side quests, Talk to Charlie |
+
+**Live data:** `npm run build` runs `scripts/fetch-stats.mjs` first. That pulls chess.com and public GitHub repos into `src/data/live.json`; if the fetch fails, the committed numbers stay.
 
 ## 3. Visual system
 
@@ -67,9 +67,11 @@ Settled:
 - Contact email is his Gmail.
 
 Still open:
-1. **Phyt:** one line on what it does.
-2. **Other accounts:** link the other Instagram accounts or the chess.com profile?
-3. **Godot game:** a name or a screenshot?
+1. **Locus logo:** couldn't be found; Charlie to send it.
+2. **Childhood home:** drawn as a generic early-2000s ranch; a photo would make it exact.
+3. **Spotify Wrapped:** screenshots of recent years would refresh the music card.
+4. **Phyt:** confirm the one-liner ("a fitness app for iPhone").
+5. **Montana trip:** where exactly?
 
 ## 6. AI layer (milestone 4)
 

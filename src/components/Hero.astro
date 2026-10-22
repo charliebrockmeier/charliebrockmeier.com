@@ -3,7 +3,11 @@ import Icon from './Icon.astro';
 import Panorama from './Panorama.astro';
 import PixelArt from './PixelArt.astro';
 import { sprite } from '../data/pixels';
+import live from '../data/live.json';
 import { character, chess, resumePdf, site } from '../data/profile';
+
+// The live count from the build-time fetch, or the number Charlie gave us.
+const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleString('en-US');
 ---
 
 <section class="hero" id="top">
@@ -33,7 +37,7 @@ import { character, chess, resumePdf, site } from '../data/profile';
         </div>
         <div>
           <dt class="pixel">Streak</dt>
-          <dd class="streak"><Icon name="fire" color="coral" scale={2} /> {chess.streak} days of chess</dd>
+          <dd class="streak"><Icon name="fire" color="coral" scale={2} /> {streak} days of chess</dd>
         </div>
       </dl>
       <div class="cta">

@@ -7,7 +7,7 @@ export const site = {
   url: 'https://charliebrockmeier.com',
   name: 'Charlie Brockmeier',
   title: 'Charlie Brockmeier | AI products for private markets',
-  tagline: 'I build AI products for private markets and wealth management.',
+  tagline: 'Finance at the core. I build AI products for private markets.',
   positioning:
     'I build AI products for private markets and wealth management. Currently at MSCI Private Assets; previously Vantager, acquired by MSCI.',
 };
@@ -595,7 +595,7 @@ export const resume = {
     },
     {
       name: 'Phyt',
-      line: 'An app designed and built end to end.', // TODO one line from Charlie
+      line: 'A fitness app for iPhone, designed and built end to end, logo included.',
     },
   ],
   education: {

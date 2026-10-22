@@ -42,12 +42,10 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
         resume.experience.map((job) => (
           <article class="item">
             <div class="item-head">
-              <h3>
-                {job.org} <span class="sub">{job.role}</span>
-              </h3>
-              <p class="when">
-                {job.where} · {job.when}
-              </p>
+              <h3>{job.org}</h3>
+              <p class="where">{job.where}</p>
+              <p class="title">{job.role}</p>
+              <p class="when">{job.when}</p>
             </div>
             <ul>
               {job.points.map((pt) => (
@@ -77,11 +75,11 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
       <article class="item">
         <div class="item-head">
           <h3>{resume.education.school}</h3>
+          <p class="where">Lincoln, NE</p>
+          <p class="title">{resume.education.program}</p>
           <p class="when">{resume.education.when}</p>
         </div>
         <p class="degree">
-          {resume.education.program}
-          <br />
           {resume.education.degree}
           <br />
           <strong>{resume.education.honors}</strong>
@@ -232,22 +230,33 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     margin-top: var(--space-m);
   }
 
+  /* Every entry: organization and location, then title and dates. */
   .item-head {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: baseline;
-    gap: 0 var(--space-s);
+    column-gap: var(--space-s);
+  }
+
+  .where,
+  .when {
+    text-align: right;
+  }
+
+  .where {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .title {
+    color: var(--ink-soft);
+    font-size: var(--label);
+    font-style: italic;
   }
 
   h3 {
     font-size: var(--step-0);
     font-weight: 700;
-  }
-
-  .sub {
-    color: var(--ink-soft);
-    font-weight: 500;
   }
 
   .when {
@@ -292,6 +301,11 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
   }
 
   @media print {
+    @page {
+      size: Letter;
+      margin: 0.45in 0.55in;
+    }
+
     .toolbar {
       display: none;
     }
@@ -300,8 +314,8 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
       margin: 0;
       padding: 0;
       border: 0;
-      font-size: 9pt;
-      line-height: 1.35;
+      font-size: 8.6pt;
+      line-height: 1.28;
     }
 
     h1 {
@@ -313,6 +327,8 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     }
 
     .contact,
+    .where,
+    .title,
     .when,
     .degree {
       font-size: 8.5pt;
@@ -324,7 +340,7 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     }
 
     section {
-      margin-top: 11pt;
+      margin-top: 8pt;
       break-inside: avoid;
     }
 
@@ -338,7 +354,7 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     }
 
     .item + .item {
-      margin-top: 6pt;
+      margin-top: 4pt;
     }
 
     ul {
