@@ -1,16 +1,17 @@
 ---
 // "The road so far": scroll to walk from a Kearney front yard to 7 World Trade.
-// The scene is three PNG layers drawn in code (scripts/art/journey.mjs) plus an
-// SVG overlay for everything that moves. Scrolling pans the layers at different
-// speeds, walks the walker and moves the time of day from morning to night.
-// Without JS, or with reduced motion, it's a static strip you can swipe, with
-// the captions listed underneath.
-import { camera, journeyArt, stops, timeKeys } from '../data/journey';
+// The scene is PNG layers drawn in code (scripts/art/journey*.mjs): a near layer,
+// a far layer at half speed, three cloud bands, a walker and a vehicle sheet. An
+// SVG overlay carries everything that moves in place. Vehicles are placed by the
+// script in world space and only ever appear or vanish off-screen. Arriving at
+// 7 WTC plays a finale. Without JS, or with reduced motion, it's a static strip.
+import Icon from './Icon.astro';
+import { camera, journeyArt, regions, stops, timeKeys, vehicles } from '../data/journey';
 
-const { nearWidth: NW, farWidth: FW, height: H, feet, farSpeed, farAlignView, walker } = journeyArt;
-const config = { start: camera.start, end: camera.end, h: H, farSpeed, farOffset: (farAlignView / 2) * (1 - farSpeed), keys: timeKeys };
+const { nearWidth: NW, farWidth: FW, height: H, feet, farSpeed, farAlignView } = journeyArt;
+const config = { ...camera, h: H, farSpeed, farOffset: (farAlignView / 2) * (1 - farSpeed), keys: timeKeys, regions, vehicles };
 
-// Sun and moon as little pixel discs, one rect per horizontal run.
+// Pixel discs for the sun and moon, one rect per run.
 const disc = (r: number, bite = false) =>
   Array.from({ length: 2 * r }, (_, y) => {
     const on = Array.from({ length: 2 * r }, (_, x) => {
@@ -21,62 +22,83 @@ const disc = (r: number, bite = false) =>
     on.forEach((v, x) => v && (on[x - 1] ? runs[runs.length - 1].w++ : runs.push({ x, y, w: 1 })));
     return runs;
   }).flat();
-const sun = disc(8);
+const sun = disc(9);
 const moon = disc(7, true);
 
-// Stars: fixed spots in the upper sky, some of which twinkle.
 let seed = 41;
 const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-const stars = Array.from({ length: 70 }, () => ({ x: rand() * 100, y: rand() * 55, big: rand() > 0.9, tw: rand() > 0.6, d: rand() * 3 }));
+const stars = Array.from({ length: 80 }, () => ({ x: rand() * 100, y: rand() * 55, big: rand() > 0.9, tw: rand() > 0.6, d: rand() * 3 }));
 
-// Clouds: chunky pixel shapes that drift across the sky.
-const cloudShape = ['....XXXX........', '..XXXXXXXX.XXX..', '.XXXXXXXXXXXXXX.', 'XXXXXXXXXXXXXXXX', '.SSSSSSSSSSSSSS.'];
-const clouds = [
-  { top: 10, dur: 95, delay: -10, size: 1 },
-  { top: 22, dur: 130, delay: -70, size: 1.5 },
-  { top: 6, dur: 160, delay: -120, size: 0.8 },
-  { top: 30, dur: 110, delay: -40, size: 1.2 },
+// Cloud layers: band in the sheet, height in the sky, parallax and wind.
+const cloudLayers = [
+  { band: 0, top: 4, speed: 0.06, wind: 2 },
+  { band: 1, top: 13, speed: 0.12, wind: 4 },
+  { band: 2, top: 24, speed: 0.22, wind: 7 },
 ];
 
-// Overlay details, all in near-layer art pixels.
-const tug = ['....YYYYY.....', '...YccYccY....', '.YYYYYYYYYYYY.', 'YYKYYYYYYYYKYY', '.KKK......KKK.'];
-const truck = ['....RRRR......', '...RccRR......', 'RRRRRRRRRRRRRR', 'RRKKRRRRRRKKRR', '..KK......KK..'];
-const sprite = (rows: string[], palette: Record<string, string>) =>
-  rows.flatMap((row, y) => [...row].flatMap((k, x) => (palette[k] ? [{ x, y, fill: palette[k] }] : [])));
-const taxi = sprite(tug, { Y: '#ffcd75', c: '#73eff7', K: '#0c0a18' });
-const pickup = sprite(truck, { R: '#e43b44', c: '#c6e6f2', K: '#0c0a18' });
-
-const birds = [0, 9, 17, 6, 25].map((dx, i) => ({ x: dx, y: [0, 4, 1, 8, 5][i] }));
-const walkupWindows = [
-  [1606, 104, 'off'],
-  [1648, 104, 'on'],
-  [1620, 116, 'off'],
-  [1662, 116, 'on'],
-  [1634, 128, 'off'],
-  [1606, 140, 'on'],
-  [1662, 140, 'off'],
-] as const;
-const glassLights = Array.from({ length: 14 }, (_, i) => ({ x: 1832 + ((i * 37) % 70), y: 46 + ((i * 53) % 86), d: (i * 0.73) % 4 }));
-const flashes = Array.from({ length: 14 }, (_, i) => ({ x: 960 + ((i * 47) % 110), y: 89 + ((i * 7) % 13), d: (i * 0.61) % 3 }));
-// Fog banks around the Golden Gate: puffs above the deck and over the water.
-const fog = [
-  { x: 1192, y: 136, w: 40, k: 1, fill: '#efe4f4' },
-  { x: 1236, y: 141, w: 54, k: 2, fill: '#e2d4ec' },
-  { x: 1296, y: 134, w: 46, k: 1, fill: '#efe4f4' },
-  { x: 1346, y: 140, w: 60, k: 3, fill: '#e2d4ec' },
-  { x: 1404, y: 135, w: 44, k: 2, fill: '#efe4f4' },
-  { x: 1210, y: 167, w: 70, k: 3, fill: '#e2d4ec' },
-  { x: 1300, y: 169, w: 64, k: 1, fill: '#efe4f4' },
-  { x: 1370, y: 166, w: 72, k: 2, fill: '#e2d4ec' },
-  { x: 1250, y: 112, w: 34, k: 3, fill: '#efe4f4' },
+// Fireworks for the finale: bursts placed around the sky.
+const bursts = [
+  { x: 18, y: 16, c: '#ffcd75', d: 0 },
+  { x: 80, y: 12, c: '#73eff7', d: 0.5 },
+  { x: 62, y: 30, c: '#ff6b7f', d: 1.1 },
+  { x: 34, y: 28, c: '#a7f070', d: 1.6 },
+  { x: 90, y: 34, c: '#b99cff', d: 2.1 },
 ];
-const shimmer = Array.from({ length: 10 }, (_, i) => ({ x: 1210 + ((i * 71) % 230), y: 168 + ((i * 5) % 11), d: (i * 0.45) % 2 }));
 
-const O = { O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['101', '111', '111', '111', '101'] };
-const neon = [...'OPEN'].flatMap((ch, i) =>
-  O[ch as keyof typeof O].flatMap((row, y) => [...row].flatMap((b, x) => (b === '1' ? [{ x: 1741 + i * 4 + x, y: 141 + y }] : []))),
+// Overlay sprites, in near-layer art pixels.
+const px = (rows: string[], pal: Record<string, string>) =>
+  rows.flatMap((row, y) => [...row].flatMap((k, x) => (pal[k] ? [{ x, y, fill: pal[k] }] : [])));
+const cableCar = px(['..RRRRRRRRRR..', '.RCCCCCCCCCCR.', 'RRWWBWWBWWBWRR', 'RRWWBWWBWWBWRR', 'RRRRRRRRRRRRRR', 'CCCCCCCCCCCCCC', '.KK........KK.'], {
+  R: '#9a2f2a',
+  C: '#f4ecdc',
+  W: '#ffe9a8',
+  B: '#29366f',
+  K: '#141026',
+});
+const balloon = px(
+  ['...RRYRR...', '..RRYYYRR..', '.RRYYYYYRR.', '.RRYYYYYRR.', '.RRYYYYYRR.', '..RRYYYRR..', '...RRYRR...', '....R.R....', '....KKK....', '....KKK....'],
+  { R: '#e43b44', Y: '#ffcd75', K: '#8a5a3c' },
 );
-
+const hiker = px(['.H.', 'SSS', 'BBB', 'BBB', 'L.L', 'L.L'], { H: '#5c3a2e', S: '#f2c4a2', B: '#e43b44', L: '#24305a' });
+const train = [0, 1, 2].flatMap((car) =>
+  px(['SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.', 'SWWWSWWWSWWWDSWWWSWWWSWWWSDWWWSWWWSWWS.', 'SWWWSWWWSWWWDSWWWSWWWSWWWSDWWWSWWWSWWS.', 'SSSSSSSSSSSSDSSSSSSSSSSSSSDSSSSSSSSSSS.', 'SPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPS.', '.KK..............................KK...'], {
+    S: '#c9cfe0',
+    W: '#ffe9a8',
+    D: '#94a0c2',
+    P: '#7a2a3a',
+    K: '#141026',
+  }).map((p) => ({ ...p, x: p.x + car * 38 })),
+);
+const craneFlock = [0, 9, 18, 5, 14, 24].map((dx, i) => ({ x: 120 + dx * 3, y: 56 + [0, 4, 1, 9, 6, 3][i] }));
+const balloons = Array.from({ length: 18 }, (_, i) => ({ x: 1304 + ((i * 37) % 136), d: (i * 0.53) % 6, c: i % 4 ? '#e43b44' : '#fdf6e3' }));
+const fog = [
+  { x: 2254, y: 136, w: 40 },
+  { x: 2298, y: 141, w: 54 },
+  { x: 2358, y: 134, w: 46 },
+  { x: 2408, y: 140, w: 60 },
+  { x: 2466, y: 135, w: 44 },
+  { x: 2312, y: 112, w: 34 },
+];
+const twinkle = (n: number, x0: number, x1: number, y0: number, y1: number, k: number) =>
+  Array.from({ length: n }, (_, i) => ({ x: x0 + ((i * 53 + k) % (x1 - x0)), y: y0 + ((i * 29 + k) % (y1 - y0)), d: ((i * 0.37 + k) % 3).toFixed(2) }));
+const shimmer = [...twinkle(10, 1510, 1760, 126, 150, 3), ...twinkle(10, 2270, 2508, 186, 194, 7)];
+const officeLights = Array.from({ length: 12 }, (_, i) => ({ x: 3281 + ((i * 4) % 10) * 9, y: 66 + ((i * 3) % 5) * 10, d: (i * 0.7) % 5 }));
+const walkupWindows = [
+  [3658, 102],
+  [3700, 102],
+  [3672, 114],
+  [3714, 114],
+  [3686, 126],
+  [3658, 138],
+  [3714, 138],
+];
+const floors = Array.from({ length: 26 }, (_, i) => ({ y: 130 - i * 4, i }));
+const steam = [0, 1, 2, 3];
+const neon = [...'OPEN'].flatMap((ch, i) =>
+  ({ O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['101', '111', '111', '111', '101'] })[ch]!.flatMap((row, y) =>
+    [...row].flatMap((b, x) => (b === '1' ? [{ x: 3789 + i * 4 + x, y: 141 + y }] : [])),
+  ),
+);
 const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 100;
 ---
 
@@ -92,108 +114,113 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       <div class="sky" aria-hidden="true">
         <div class="sky-layer morning"></div>
         <div class="sky-layer day" data-sky></div>
-        <div class="sky-layer sunset" data-sky></div>
+        <div class="sky-layer golden" data-sky></div>
         <div class="sky-layer night" data-sky></div>
         <div class="stars">
           {stars.map((s) => <i class:list={{ big: s.big, tw: s.tw }} style={`left:${s.x.toFixed(1)}%;top:${s.y.toFixed(1)}%;animation-delay:${-s.d.toFixed(2)}s`} />)}
         </div>
-        <svg class="sun" data-sun viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <div class="rays" data-rays></div>
+        <svg class="sun" data-sun viewBox="0 0 18 18" shape-rendering="crispEdges">
           {sun.map((p) => <rect x={p.x} y={p.y} width={p.w} height="1" />)}
         </svg>
         <svg class="moon" data-moon viewBox="0 0 14 14" shape-rendering="crispEdges">
           {moon.map((p) => <rect x={p.x} y={p.y} width={p.w} height="1" />)}
         </svg>
         {
-          clouds.map((c) => (
-            <svg
-              class="cloud"
-              viewBox="0 0 16 5"
-              shape-rendering="crispEdges"
-              style={`top:${c.top}%;--size:${c.size};animation-duration:${c.dur}s;animation-delay:${c.delay}s`}
-            >
-              {cloudShape.flatMap((row, y) => [...row].flatMap((k, x) => (k === '.' ? [] : [<rect x={x} y={y} width="1" height="1" class={k === 'S' ? 'shade' : ''} />])))}
-            </svg>
+          cloudLayers.map((c) => (
+            <>
+              <div class="clouds" data-cloud data-speed={c.speed} data-wind={c.wind} style={`top:${c.top}%;--band:${c.band}`} />
+              <div class="clouds dusk" data-cloud data-speed={c.speed} data-wind={c.wind} style={`top:${c.top}%;--band:${c.band + 3}`} />
+            </>
           ))
         }
+        <div class="flock f1">{[0, 1, 2, 3, 4].map((i) => <i style={`--i:${i}`} />)}</div>
+        <div class="flock f2">{[0, 1, 2].map((i) => <i style={`--i:${i}`} />)}</div>
+        <div class="plane"><i class="trail"></i><i class="jet"></i></div>
+        <div class="fireworks">
+          {
+            bursts.map((b) => (
+              <div class="burst" style={`left:${b.x}%;top:${b.y}%;--c:${b.c}`}>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <i style={`--a:${i * 30}deg;animation-delay:${b.d}s`} />
+                ))}
+              </div>
+            ))
+          }
+        </div>
       </div>
 
-      <div class="viewport" role="img" aria-label="A pixel-art street that runs from a house in Kearney, Nebraska, past Kearney High, the Archway, the Nebraska Capitol and Memorial Stadium, across the Golden Gate Bridge, to a New York walk-up and 7 World Trade Center.">
+      <div
+        class="viewport"
+        role="img"
+        aria-label="A pixel-art street from Kearney, Nebraska, under the Archway, through Lincoln and Omaha, across San Francisco and the Golden Gate to Pebble Beach, then New York: Union Square, the Flatiron, a walk-up, and 7 World Trade Center."
+      >
         <div class="layer far" data-far>
           <img src="/art/journey-far.png" width={FW} height={H} alt="" loading="lazy" decoding="async" />
         </div>
         <div class="layer near" data-near>
           <img src="/art/journey-near.png" width={NW} height={H} alt="" loading="lazy" decoding="async" />
           <svg class="fx" viewBox={`0 0 ${NW} ${H}`} shape-rendering="crispEdges" aria-hidden="true">
-            <!-- Kearney: windmill, birds, the flag at KHS, a pickup on the street. -->
-            <g class="blades">
-              {[0, 45, 90, 135].map((deg) => <rect x="190" y="91.4" width="20" height="1.2" fill="#3d4a62" transform={`rotate(${deg} 200 92)`} />)}
-              <rect x="199" y="91" width="2" height="2" fill="#94a0c2" />
-            </g>
-            <g class="birds">
+            <defs>
+              <clipPath id="road-stands"><rect x="1284" y="0" width="176" height="100" /></clipPath>
+              <clipPath id="road-tunnel"><rect x="3060" y="182" width="1320" height="14" /></clipPath>
+            </defs>
+            <!-- Kearney: a balloon, cranes over the Platte, the windmill, the KHS flag. -->
+            <g class="balloon">{balloon.map((p) => <rect x={p.x + 470} y={p.y + 30} width="1" height="1" fill={p.fill} />)}</g>
+            <g class="cranes">
               {
-                birds.map((b) => (
-                  <g transform={`translate(${b.x} ${b.y})`} fill="#2b2150">
+                craneFlock.map((b) => (
+                  <g transform={`translate(${b.x} ${b.y})`} fill="#4a5a72">
                     <g class="wing-up">
-                      <rect x="0" y="0" width="1" height="1" />
-                      <rect x="1" y="1" width="1" height="1" />
-                      <rect x="2" y="0" width="1" height="1" />
+                      <rect x="0" y="0" width="2" height="1" />
+                      <rect x="2" y="1" width="2" height="1" />
+                      <rect x="4" y="0" width="2" height="1" />
                     </g>
                     <g class="wing-down">
-                      <rect x="0" y="1" width="1" height="1" />
-                      <rect x="1" y="0" width="1" height="1" />
-                      <rect x="2" y="1" width="1" height="1" />
+                      <rect x="0" y="2" width="2" height="1" />
+                      <rect x="2" y="1" width="2" height="1" />
+                      <rect x="4" y="2" width="2" height="1" />
                     </g>
                   </g>
                 ))
               }
             </g>
-            <g class="flag">
-              <g class="flag-a">
-                <rect x="613" y="72" width="12" height="8" fill="#e43b44" />
-                {[73, 75, 77, 79].map((y) => <rect x="613" y={y} width="12" height="1" fill="#fdf6e3" />)}
-                <rect x="613" y="72" width="5" height="4" fill="#29366f" />
-              </g>
-              <g class="flag-b">
-                <rect x="613" y="72" width="11" height="8" fill="#e43b44" />
-                {[73, 75, 77, 79].map((y) => <rect x="613" y={y} width="11" height="1" fill="#fdf6e3" />)}
-                <rect x="613" y="72" width="5" height="4" fill="#29366f" />
-                <rect x="618" y="80" width="6" height="1" fill="#e43b44" />
-                <rect x="620" y="71" width="4" height="1" fill="#e43b44" />
-              </g>
+            <g class="blades">
+              {[0, 45, 90, 135].map((deg) => <rect x="245" y="85.4" width="22" height="1.2" fill="#3d4a62" transform={`rotate(${deg} 256 86)`} />)}
+              <rect x="255" y="85" width="2" height="2" fill="#94a0c2" />
             </g>
-            <g class="truck">{pickup.map((p) => <rect x={p.x} y={p.y + 167} width="1" height="1" fill={p.fill} />)}</g>
-
-            <!-- Lincoln: stadium lights come on, camera flashes in the stands. -->
-            <g class="lights">
-              <rect class="lamp" x="931" y="53" width="10" height="5" fill="#fff3c4" />
-              <rect class="lamp" x="1087" y="53" width="10" height="5" fill="#fff3c4" />
-              {flashes.map((f) => <rect class="flash" x={f.x} y={f.y} width="1" height="1" fill="#ffffff" style={`animation-delay:${-f.d}s`} />)}
+            <g class="flag-a">
+              <rect x="623" y="70" width="12" height="8" fill="#e43b44" />
+              {[71, 73, 75, 77].map((y) => <rect x="623" y={y} width="12" height="1" fill="#fdf6e3" />)}
+              <rect x="623" y="70" width="5" height="4" fill="#29366f" />
+            </g>
+            <g class="flag-b">
+              <rect x="623" y="71" width="11" height="8" fill="#e43b44" />
+              {[72, 74, 76, 78].map((y) => <rect x="623" y={y} width="11" height="1" fill="#fdf6e3" />)}
+              <rect x="623" y="71" width="5" height="4" fill="#29366f" />
             </g>
 
-            <!-- Remote: the laptop talks to San Francisco over Wi-Fi. -->
-            <g class="wifi">
-              <rect class="w1" x="1159" y="90" width="2" height="2" fill="#73eff7" />
-              <g class="w2" fill="#73eff7">
-                <rect x="1156" y="87" width="2" height="1" />
-                <rect x="1158" y="86" width="4" height="1" />
-                <rect x="1162" y="87" width="2" height="1" />
-              </g>
-              <g class="w3" fill="#73eff7">
-                <rect x="1153" y="84" width="2" height="1" />
-                <rect x="1155" y="83" width="2" height="1" />
-                <rect x="1157" y="82" width="6" height="1" />
-                <rect x="1163" y="83" width="2" height="1" />
-                <rect x="1165" y="84" width="2" height="1" />
-              </g>
+            <!-- Lincoln on game day: lights, and red balloons after the first score. -->
+            <rect class="lamp" x="1282" y="51" width="10" height="5" fill="#fff3c4" />
+            <rect class="lamp" x="1452" y="51" width="10" height="5" fill="#fff3c4" />
+            <g clip-path="url(#road-stands)">
+              {balloons.map((b) => <rect class="red-balloon" x={b.x} y="100" width="2" height="3" fill={b.c} style={`animation-delay:${-b.d}s`} />)}
             </g>
-            <path class="signal" d="M1160 80 Q1214 4 1262 28" fill="none" stroke="#73eff7" stroke-width="1" stroke-dasharray="2 3" shape-rendering="auto" />
-            <rect class="screen" x="1149" y="117" width="22" height="15" fill="#c6fff5" />
+            {Array.from({ length: 18 }, (_, i) => <rect class="bulb" x={1194 + i * 4} y="100" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
 
-            <!-- San Francisco: fog rolling under the deck, warning lights on the towers. -->
+            <!-- Omaha and the Golden Gate: water catching the light. -->
+            {shimmer.map((s) => <rect class="shimmer" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:-${s.d}s`} />)}
+            {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={1752 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+            {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={2910 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+
+            <!-- San Francisco: the cable car, pickleball, a hiker, fog, the flag on the green. -->
+            <g class="cable-car">{cableCar.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill={p.fill} />)}</g>
+            <rect class="ball" x="0" y="0" width="1" height="1" fill="#e9ff70" />
+            <g class="hiker">{hiker.map((p) => <rect x={p.x - 1} y={p.y - 6} width="1" height="1" fill={p.fill} />)}</g>
             <g class="fog">
               {
-                fog.map((f) => (
-                  <g class={`puff f${f.k}`} transform={`translate(${f.x} ${f.y})`} fill={f.fill}>
+                fog.map((f, i) => (
+                  <g class={`puff p${i % 3}`} transform={`translate(${f.x} ${f.y})`} fill={i % 2 ? '#e2d4ec' : '#efe4f4'}>
                     <rect x="5" y="0" width={f.w - 12} height="1" />
                     <rect x="2" y="1" width={f.w - 5} height="1" />
                     <rect x="0" y="2" width={f.w} height="2" />
@@ -202,33 +229,52 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
                 ))
               }
             </g>
-            {shimmer.map((s) => <rect class="shimmer" x={s.x} y={s.y} width="2" height="1" fill="#ffe9a8" style={`animation-delay:${-s.d}s`} />)}
-            <rect class="beacon" x="1259" y="29" width="1" height="1" fill="#ff3b4f" />
-            <rect class="beacon" x="1385" y="29" width="1" height="1" fill="#ff3b4f" />
+            <rect class="beacon" x="2323" y="29" width="1" height="1" fill="#ff3b4f" />
+            <rect class="beacon" x="2449" y="29" width="1" height="1" fill="#ff3b4f" />
+            <g class="surf">
+              {[2736, 2748, 2762, 2776].map((x, i) => <rect x={x} y="147" width="8" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.4}s`} />)}
+              {Array.from({ length: 12 }, (_, i) => <rect x={2676 + i * 20} y={189 + (i % 3) * 2} width="10" height="1" fill="#ffffff" style={`animation-delay:${-i * 0.3}s`} />)}
+            </g>
+            <g class="pin-a"><polygon points="2863,120 2872,123 2863,126" fill="#ffcd75" /></g>
+            <g class="pin-b"><polygon points="2863,121 2871,122 2863,126" fill="#ffcd75" /></g>
 
-            <!-- New York: windows going on and off, the bodega's neon, a cab, the beacons. -->
+            <!-- New York: market lights, office windows, the subway, steam, neon, windows. -->
+            {Array.from({ length: 22 }, (_, i) => <rect class="bulb" x={3186 + i * 4} y="127" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
+            {officeLights.map((o) => <rect class="glass" x={o.x} y={o.y} width="7" height="7" fill="#1b1a33" style={`animation-delay:-${o.d}s`} />)}
+            <g clip-path="url(#road-tunnel)">
+              <g class="train">{train.map((p) => <rect x={p.x} y={p.y + 184} width="1" height="1" fill={p.fill} />)}</g>
+            </g>
+            <rect x="3060" y="182" width="16" height="14" fill="#0c0a18" />
+            <rect x="4364" y="182" width="16" height="14" fill="#0c0a18" />
             {
-              walkupWindows.map(([x, y, kind], i) => (
-                <rect class={`win ${kind}`} x={x} y={y} width="7" height="8" style={`animation-delay:${-i * 1.3}s`} />
+              steam.map((i) => (
+                <>
+                  <rect class="steam" x="3604" y="150" width="5" height="3" fill="#e9edf7" style={`animation-delay:${-i * 0.9}s`} />
+                  <rect class="steam small" x="3574" y="136" width="3" height="2" fill="#e9edf7" style={`animation-delay:${-i * 0.9 - 0.4}s`} />
+                </>
               ))
             }
-            {glassLights.map((g) => <rect class="glass" x={g.x} y={g.y} width="3" height="1" fill="#c6fff5" style={`animation-delay:${-g.d}s`} />)}
-            <rect class="lobby" x="1828" y="138" width="80" height="14" fill="#ffffff" />
             <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
-            <g class="taxi">{taxi.map((p) => <rect x={p.x} y={p.y + 168} width="1" height="1" fill={p.fill} />)}</g>
-            <rect class="beacon" x="1950" y="0" width="1" height="1" fill="#ff3b4f" />
+            {walkupWindows.map(([x, y], i) => <rect class="win" x={x} y={y} width="7" height="8" fill="#1b1533" style={`animation-delay:${-i * 1.3}s`} />)}
+            <g class="floors">{floors.map((f) => <rect x="3990" y={f.y} width="100" height="2" fill="#c6fff5" style={`transition-delay:${f.i * 45}ms`} />)}</g>
+            <rect class="lobby" x="3990" y="136" width="100" height="16" fill="#ffffff" />
+            <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
+            <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
           </svg>
+          <div class="cars" data-cars></div>
         </div>
       </div>
 
-      <p class="hint" aria-hidden="true">Swipe along the street →</p>
-
-      <div class="walker" data-walker aria-hidden="true"></div>
+      <div class="walker-box" data-walker aria-hidden="true">
+        <i class="shadow"></i>
+        <div class="walker" data-body></div>
+      </div>
 
       <div class="progress" aria-hidden="true">
         <div class="bar"><span class="fill" data-fill></span></div>
         {stops.map((s, i) => <button type="button" class="mark" tabindex="-1" style={`left:${pct(s.x)}%`} data-goto={i} title={s.place} />)}
       </div>
+      <button type="button" class="skip" data-skip>Skip the walk ↓</button>
 
       <ol class="stops" role="list">
         {
@@ -244,113 +290,198 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
           ))
         }
       </ol>
+
+      <div class="banner" aria-hidden="true">
+        <p class="save pixel">Current save</p>
+        <p class="where pixel">7 World Trade Center</p>
+        <p class="who">MSCI Private Assets · New York</p>
+        <p class="next">Keep scrolling ↓</p>
+      </div>
+      <div class="toast" aria-hidden="true">
+        <Icon name="trophy" color="gold" scale={2.5} />
+        <div>
+          <p class="pixel">Achievement unlocked</p>
+          <p>Arrived: Kearney to 7 World Trade</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <script>
-  // Scroll drives the camera: the layers pan (the far one at half speed), the
-  // walker steps, the sky moves through the day and the nearest stop's caption shows.
+  // One loop drives everything while the section is on screen: the camera follows
+  // the scroll with a little easing, the layers pan, the walker steps, the sky moves
+  // through the day, clouds drift, and vehicles drive in world space, entering and
+  // leaving only off-screen. Reaching the end plays the finale.
   const root = document.querySelector<HTMLElement>('[data-journey]');
   if (root && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
     const cfg = JSON.parse(root.dataset.config!);
-    const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
-    const track = q<HTMLElement>('[data-track]');
-    const stage = q<HTMLElement>('[data-stage]');
-    const near = q<HTMLElement>('[data-near]');
-    const far = q<HTMLElement>('[data-far]');
-    const walker = q<HTMLElement>('[data-walker]');
-    const fill = q<HTMLElement>('[data-fill]');
-    const sun = q<SVGElement>('[data-sun]');
-    const moon = q<SVGElement>('[data-moon]');
-    const skies = [...root.querySelectorAll<HTMLElement>('[data-sky]')];
-    const cards = [...root.querySelectorAll<HTMLElement>('[data-stop]')];
+    const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const all = (s: string) => [...root.querySelectorAll<HTMLElement>(s)];
+    const [track, stage, near, far, walker, body, fill, sun, rays, moon, cars] = ['track', 'stage', 'near', 'far', 'walker', 'body', 'fill', 'sun', 'rays', 'moon', 'cars'].map((n) => q(`[data-${n}]`));
+    const skies = all('[data-sky]');
+    const clouds = all('[data-cloud]');
+    const cards = all('[data-stop]');
+    const span = cfg.end - cfg.start;
     const clamp = (v: number) => Math.min(1, Math.max(0, v));
     const timeAt = (x: number) => {
       const k = cfg.keys as [number, number][];
-      for (let i = 1; i < k.length; i++) if (x <= k[i][0]) return k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * Math.max(0, x - k[i - 1][0])) / (k[i][0] - k[i - 1][0]);
-      return k[k.length - 1][1];
+      let i = 1;
+      while (i < k.length - 1 && x > k[i][0]) i++;
+      return k[i - 1][1] + (k[i][1] - k[i - 1][1]) * clamp((x - k[i - 1][0]) / (k[i][0] - k[i - 1][0]));
     };
+    // Scroll progress (before the dwell) to camera: linear, then easing to a stop.
+    const ease = (u: number) => (u < 0.84 ? (u / 0.84) * 0.92 : 0.92 + 0.08 * ((u - 0.84) / 0.16) * (2 - (u - 0.84) / 0.16));
+    const unease = (f: number) => (f <= 0.92 ? (f / 0.92) * 0.84 : 0.84 + 0.16 * (1 - Math.sqrt(1 - (f - 0.92) / 0.08)));
+
     let s = 2;
     let vw = 0;
-    let travel = 1;
-    let last: number | null = null;
+    let W = 0;
+    let Hs = 0;
+    let top = 0;
+    let total = 1;
+    let cam = cfg.start;
+    let vel = 0;
     let dist = 0;
-    let frame = 4;
-    let idle = 0;
-    let queued = false;
+    let still = 0;
+    let then = 0;
     let active = -1;
+    let running = false;
+    let snap = true;
 
-    root.classList.add('live');
-
-    const setFrame = (f: number) => {
-      frame = f;
-      walker.style.backgroundPosition = `${-f * 16 * s}px 0`;
+    type Car = { el: HTMLElement; x: number; dir: number; w: number; v: number; type: string; wait: number };
+    const fleet: Car[] = Array.from({ length: 8 }, (_, i) => {
+      const el = document.createElement('i');
+      el.className = 'car';
+      cars.append(el);
+      return { el, x: 0, dir: i % 2 ? -1 : 1, w: 0, v: 0, type: '', wait: 0 };
+    });
+    const style = (c: Car) => {
+      const v = cfg.vehicles[c.type];
+      Object.assign(c.el.style, { width: `${v.w * s}px`, height: `${v.h * s}px`, backgroundPosition: `${-v.x * s}px ${-(16 - v.h) * s}px` });
+      c.el.dataset.lane = c.dir > 0 ? 'far' : 'near';
+    };
+    // Place a car at x (or just off the edge it will drive in from) with a type for that region.
+    const spawn = (c: Car, L: number, x?: number) => {
+      const list: string[] = cfg.regions.findLast((r: { from: number }) => r.from <= Math.max(0, x ?? L)).vehicles;
+      let type = list[Math.floor(Math.random() * list.length)];
+      if (c.dir > 0 && cfg.vehicles[type].h > 12) type = 'sedan';
+      const v = cfg.vehicles[type];
+      Object.assign(c, { type, w: v.w, v: v.speed * (0.85 + Math.random() * 0.3), wait: Math.random() * 3 });
+      const fromLeft = x === undefined && c.dir * c.v > vel;
+      c.x = x ?? (fromLeft ? L - c.w - 8 : L + vw + 8);
+      // Never on top of another car in the lane: step past it, away from the screen.
+      const clash = () => fleet.find((o) => o !== c && o.dir === c.dir && o.type && c.x < o.x + o.w + 12 && o.x < c.x + c.w + 12);
+      for (let o; (o = clash()); ) c.x = fromLeft ? o.x - c.w - 14 : o.x + o.w + 14;
+      style(c);
     };
 
-    const update = () => {
-      queued = false;
-      const top = parseFloat(getComputedStyle(stage).top) || 0;
-      const p = clamp((top - track.getBoundingClientRect().top) / travel);
-      const c = cfg.start + (cfg.end - cfg.start) * p;
-      near.style.transform = `translate3d(${-Math.round((c - vw / 2) * s)}px,0,0)`;
-      far.style.transform = `translate3d(${-Math.round((c * cfg.farSpeed + cfg.farOffset - vw / 2) * s)}px,0,0)`;
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - (then || now)) / 1000);
+      then = now;
+      const p = clamp((top - track.getBoundingClientRect().top) / total);
+      const target = cfg.start + span * ease(clamp(p / (1 - cfg.dwell)));
+      const prev = cam;
+      cam = snap ? target : cam + (target - cam) * Math.min(1, dt * 8);
+      if (Math.abs(target - cam) < 0.05) cam = target;
+      const d = cam - prev;
+      if (dt) vel += (d / dt - vel) * Math.min(1, dt * 4);
+      // The view stops at the left edge of the art; the walker steps off center there.
+      const L = Math.max(0, cam - vw / 2);
+      near.style.transform = `translate3d(${-Math.round(L * s)}px,0,0)`;
+      far.style.transform = `translate3d(${-Math.round(((L + vw / 2) * cfg.farSpeed + cfg.farOffset - vw / 2) * s)}px,0,0)`;
+      walker.style.transform = `translate3d(${Math.round((cam - L - vw / 2) * s)}px,0,0)`;
 
-      if (last !== null && Math.abs(c - last) > 0.01) {
-        walker.classList.toggle('back', c < last);
-        dist += Math.abs(c - last);
-        setFrame(Math.floor(dist / 6) % 4);
-        clearTimeout(idle);
-        idle = window.setTimeout(() => setFrame(4), 160);
+      // A step per 3 art px walked; breathing when still; facing the way it walks.
+      if (Math.abs(d) > 0.02) {
+        dist += Math.abs(d);
+        still = now;
+        body.classList.toggle('back', d < 0);
+        body.style.backgroundPosition = `${-(Math.floor(dist / 3) % 8) * 16 * s}px 0`;
       }
-      last = c;
+      body.classList.toggle('idle', now - still > 220);
 
-      const t = timeAt(c);
+      // Sky: layered crossfades, the sun's arc and rays, moon, stars, clouds.
+      const t = timeAt(cam);
       skies.forEach((el, i) => (el.style.opacity = String(clamp(t - i))));
       root.style.setProperty('--night', clamp(t - 2).toFixed(3));
+      root.style.setProperty('--dusk', clamp(1 - Math.abs(t - 2.05) / 0.7).toFixed(3));
       const arc = clamp(t / 2.6);
-      sun.style.transform = `translate(${(0.12 + arc * 0.7) * stage.clientWidth}px, ${(0.62 - Math.sin(arc * Math.PI) * 0.5) * stage.clientHeight}px)`;
-      sun.style.opacity = String(clamp((2.7 - t) * 3));
-      sun.classList.toggle('low', t > 1.5 || t < 0.4);
+      sun.style.transform = rays.style.transform = `translate(${(0.1 + arc * 0.75) * W}px,${(0.62 - Math.sin(arc * Math.PI) * 0.5) * Hs}px)`;
+      sun.style.opacity = String(clamp((2.8 - t) * 3));
+      rays.style.opacity = String(clamp(1 - Math.abs(t - 2.05) / 0.45) * 0.5);
       moon.style.opacity = String(clamp((t - 2.5) * 2));
-      root.classList.toggle('game-on', c > 900);
+      clouds.forEach((el) => (el.style.backgroundPositionX = `${-((cam * +el.dataset.speed! + (now / 1000) * +el.dataset.wind!) * s) % (480 * s)}px`));
 
+      // Vehicles drive in world space, follow the car ahead, and wait off-screen to re-enter.
+      for (const c of fleet) {
+        if (snap) spawn(c, L, L - 120 + Math.random() * (vw + 240));
+        for (const o of fleet) {
+          const gap = (o.x - c.x) * c.dir;
+          if (o !== c && o.dir === c.dir && gap > 0 && gap < (c.dir > 0 ? c.w : o.w) + 10) c.v = Math.min(c.v, o.v);
+        }
+        c.x += c.dir * c.v * dt;
+        if ((c.x > L + vw + 40 || c.x + c.w < L - 40) && (c.wait -= dt) < 0) spawn(c, L);
+        c.el.style.transform = `translate3d(${Math.round(c.x * s)}px,0,0)${c.dir < 0 ? ' scaleX(-1)' : ''}`;
+      }
+      snap = false;
+
+      // Zones, captions, progress, and the finale.
+      root.classList.toggle('game-on', cam > 1180 && cam < 1560);
+      root.classList.toggle('fly', Math.abs(cam - 1812) < 170 || Math.abs(cam - 2960) < 170);
+      root.classList.toggle('arrived', p > 1 - cfg.dwell * 0.9 && cfg.end - cam < 3);
       let best = Infinity;
       let next = 0;
       cards.forEach((el, i) => {
-        const d = Math.abs(c - Number(el.dataset.x));
-        if (d < best) [best, next] = [d, i];
+        const dd = Math.abs(cam - +el.dataset.x!);
+        if (dd < best) [best, next] = [dd, i];
       });
       if (next !== active) {
         cards[active]?.classList.remove('on');
         cards[next].classList.add('on');
         active = next;
       }
-      fill.style.transform = `scaleX(${p.toFixed(4)})`;
+      fill.style.transform = `scaleX(${((cam - cfg.start) / span).toFixed(4)})`;
+      if (running) requestAnimationFrame(tick);
     };
 
     const layout = () => {
-      const w = stage.clientWidth;
-      s = Math.max(2, Math.floor(Math.min((stage.clientHeight * 0.8) / cfg.h, w / 120)));
-      vw = w / s;
+      W = stage.clientWidth;
+      Hs = stage.clientHeight;
+      top = parseFloat(getComputedStyle(stage).top) || 0;
+      s = Math.max(2, Math.floor(Math.min((Hs * 0.82) / cfg.h, W / 150)));
+      vw = W / s;
       root.style.setProperty('--s', String(s));
-      travel = (cfg.end - cfg.start) * s;
-      track.style.height = `${stage.clientHeight + travel}px`;
-      setFrame(frame);
-      update();
+      total = (span * s * cfg.pace) / (1 - cfg.dwell);
+      track.style.height = `${Hs + total}px`;
+      fleet.forEach((c) => c.type && style(c));
     };
 
-    // The stop markers on the progress bar jump to that stop.
-    root.querySelector('.progress')!.addEventListener('click', (e) => {
+    const scrollToX = (x: number, end = false) => {
+      const base = track.getBoundingClientRect().top + scrollY - top;
+      scrollTo({ top: base + (end ? total + 2 : unease(clamp((x - cfg.start) / span)) * (1 - cfg.dwell) * total), behavior: 'smooth' });
+    };
+    q('.progress').addEventListener('click', (e) => {
       const i = (e.target as HTMLElement).dataset.goto;
-      if (i === undefined) return;
-      const x = Number(cards[Number(i)].dataset.x);
-      const top = parseFloat(getComputedStyle(stage).top) || 0;
-      scrollTo({ top: track.getBoundingClientRect().top + scrollY - top + ((x - cfg.start) / (cfg.end - cfg.start)) * travel, behavior: 'smooth' });
+      if (i) scrollToX(+cards[+i].dataset.x!);
     });
-    addEventListener('scroll', () => queued || ((queued = true), requestAnimationFrame(update)), { passive: true });
+    q('[data-skip]').addEventListener('click', () => scrollToX(0, true));
+
+    root.classList.add('live');
     addEventListener('resize', layout);
     layout();
+    new IntersectionObserver(
+      ([e]) => {
+        const was = running;
+        running = e.isIntersecting;
+        if (running && !was) {
+          then = 0;
+          snap = true;
+          requestAnimationFrame(tick);
+        }
+      },
+      { rootMargin: '200px 0px' },
+    ).observe(track);
   }
 </script>
 
@@ -358,18 +489,31 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   .journey {
     --s: 2;
     --night: 0;
+    --dusk: 0;
   }
 
-  /* Static strip (no JS or reduced motion): swipe sideways, captions below. */
+  /* Static strip (no JS or reduced motion): swipe along, captions below. */
   .stage {
     position: relative;
   }
 
   .sky,
   .far,
-  .walker,
-  .progress {
+  .walker-box,
+  .progress,
+  .skip,
+  .banner,
+  .toast,
+  .cars {
     display: none;
+  }
+
+  .journey:global(.live) :is(.sky, .far, .walker-box, .progress, .skip, .banner, .cars) {
+    display: block;
+  }
+
+  .journey:global(.live) .toast {
+    display: flex;
   }
 
   .viewport {
@@ -381,27 +525,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     scrollbar-width: thin;
   }
 
-  /* The static strip carries its own sky, morning on the left to night on the right. */
-  .near {
-    background: linear-gradient(90deg, #7a92c8 0 27%, #73c6f7 38% 45%, #ef7d57 55% 63%, #2f2552 70%, #141026);
-  }
-
-  .journey:global(.live) .near {
-    background: none;
-  }
-
-  .hint {
-    max-width: calc(var(--wrap) + 2 * var(--gutter));
-    margin: var(--space-xs) auto 0;
-    padding-inline: var(--gutter);
-    color: var(--ink-soft);
-    font-size: var(--step--1);
-  }
-
-  .journey:global(.live) .hint {
-    display: none;
-  }
-
   .layer {
     position: absolute;
     bottom: 0;
@@ -411,6 +534,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
 
   .near {
     width: calc(var(--nw) * var(--s) * 1px);
+    background: linear-gradient(90deg, #7a92c8 0 17%, #73c6f7 25% 36%, #ef9a6a 44% 64%, #2f2552 70%, #141026);
   }
 
   .far {
@@ -469,10 +593,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   }
 
   /* Live: a sticky stage the page scrolls through. */
-  .journey:global(.live) .track {
-    position: relative;
-  }
-
   .journey:global(.live) .stage {
     position: sticky;
     top: var(--journey-top, 62px);
@@ -481,19 +601,15 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     border-block: 2px solid var(--line);
   }
 
-  .journey:global(.live) .sky,
-  .journey:global(.live) .far,
-  .journey:global(.live) .walker,
-  .journey:global(.live) .progress {
-    display: block;
-  }
-
   .journey:global(.live) .viewport {
     position: absolute;
     inset: auto 0 0;
     overflow: hidden;
-    background: none;
     border: 0;
+  }
+
+  .journey:global(.live) .near {
+    background: none;
   }
 
   .journey:global(.live) .layer {
@@ -519,7 +635,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     background: linear-gradient(#3b5dc9 0 25%, #418ae6 25% 45%, #41a6f6 45% 62%, #73c6f7 62% 76%, #a8e4f7 76%);
   }
 
-  .sky-layer.sunset {
+  .sky-layer.golden {
     background: linear-gradient(#29366f 0 18%, #4a2a63 18% 34%, #85336b 34% 50%, #b13e53 50% 62%, #ef7d57 62% 74%, #ffcd75 74%);
   }
 
@@ -547,21 +663,27 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   }
 
   .sun,
-  .moon {
+  .moon,
+  .rays {
     position: absolute;
     top: 0;
     left: 0;
-    width: calc(var(--s) * 16px);
-    height: calc(var(--s) * 16px);
   }
 
   .sun {
+    width: calc(var(--s) * 18px);
+    height: calc(var(--s) * 18px);
+    margin: calc(var(--s) * -9px) 0 0 calc(var(--s) * -9px);
     fill: #fff3c4;
-    transition: fill 0.6s;
   }
 
-  .sun:global(.low) {
-    fill: #ffb070;
+  .rays {
+    width: calc(var(--s) * 220px);
+    height: calc(var(--s) * 220px);
+    margin: calc(var(--s) * -110px) 0 0 calc(var(--s) * -110px);
+    background: repeating-conic-gradient(from 0deg, #ffd8a0 0 6deg, transparent 6deg 22deg);
+    mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+    opacity: 0;
   }
 
   .moon {
@@ -573,28 +695,121 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     opacity: 0;
   }
 
-  .cloud {
+  .clouds {
     position: absolute;
     left: 0;
-    width: calc(var(--s) * 16px * var(--size) * 2);
-    height: calc(var(--s) * 5px * var(--size) * 2);
-    fill: #fdf6e3;
-    opacity: calc(0.9 - var(--night) * 0.7);
-    transform: translateX(-30vw);
+    right: 0;
+    height: calc(var(--s) * 40px);
+    background: url('/art/journey-clouds.png') 0 calc(var(--band) * var(--s) * -40px) / calc(var(--s) * 480px) calc(var(--s) * 240px) repeat-x;
+    image-rendering: pixelated;
+    opacity: calc((1 - var(--dusk)) * (1 - var(--night) * 0.84));
   }
 
-  .cloud .shade {
-    fill: #c9bfd9;
+  .clouds.dusk {
+    opacity: calc(var(--dusk) * (1 - var(--night) * 0.8));
   }
 
-  .walker {
+  .flock,
+  .plane {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateX(-20vw);
+  }
+
+  .flock {
+    top: 20%;
+    opacity: calc(1 - var(--night));
+  }
+
+  .flock.f2 {
+    top: 32%;
+  }
+
+  .flock i {
+    position: absolute;
+    left: calc(var(--i) * var(--s) * 7px);
+    top: calc(mod(var(--i), 2) * var(--s) * 4px);
+    width: calc(var(--s) * 5px);
+    height: calc(var(--s) * 2px);
+    background: linear-gradient(90deg, #2b2150 0 40%, transparent 40% 60%, #2b2150 60%);
+    clip-path: polygon(0 0, 50% 100%, 100% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+
+  .plane {
+    top: 14%;
+    opacity: 0;
+    transition: opacity 0.4s steps(3);
+  }
+
+  .journey:global(.fly) .plane {
+    opacity: 1;
+  }
+
+  .jet {
+    position: absolute;
+    width: calc(var(--s) * 12px);
+    height: calc(var(--s) * 3px);
+    background: #f4ecdc;
+    box-shadow:
+      calc(var(--s) * 3px) calc(var(--s) * -2px) 0 calc(var(--s) * -1px) #c9cfe0,
+      calc(var(--s) * 3px) calc(var(--s) * 2px) 0 calc(var(--s) * -1px) #c9cfe0;
+  }
+
+  .trail {
+    position: absolute;
+    left: calc(var(--s) * 11px);
+    top: calc(var(--s) * 1px);
+    width: 36vw;
+    height: calc(var(--s) * 1px);
+    background: linear-gradient(90deg, #ffffffcc, transparent);
+  }
+
+  .fireworks {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+
+  .journey:global(.arrived) .fireworks {
+    display: block;
+  }
+
+  .burst {
+    position: absolute;
+  }
+
+  .burst i {
+    position: absolute;
+    width: calc(var(--s) * 2px);
+    height: calc(var(--s) * 2px);
+    background: var(--c);
+    transform: rotate(var(--a)) translateX(0);
+    opacity: 0;
+  }
+
+  .walker-box {
     position: absolute;
     left: 50%;
     bottom: calc((var(--h) - var(--feet)) * var(--s) * 1px);
     width: calc(var(--s) * 16px);
     height: calc(var(--s) * 24px);
     margin-left: calc(var(--s) * -8px);
-    background: url('/art/journey-walker.png') 0 0 / calc(var(--s) * 80px) calc(var(--s) * 24px) no-repeat;
+  }
+
+  .shadow {
+    position: absolute;
+    left: calc(var(--s) * 2px);
+    bottom: calc(var(--s) * -1px);
+    width: calc(var(--s) * 12px);
+    height: calc(var(--s) * 2px);
+    background: #0c0a1855;
+  }
+
+  .walker {
+    position: absolute;
+    inset: 0;
+    background: url('/art/journey-walker.png') 0 0 / calc(var(--s) * 208px) calc(var(--s) * 24px) no-repeat;
     image-rendering: pixelated;
   }
 
@@ -602,11 +817,31 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     transform: scaleX(-1);
   }
 
+  .cars {
+    position: absolute;
+    inset: 0;
+  }
+
+  .cars :global(.car) {
+    position: absolute;
+    left: 0;
+    bottom: calc((var(--h) - 176) * var(--s) * 1px);
+    background-image: url('/art/journey-vehicles.png');
+    background-size: calc(var(--s) * 260px) calc(var(--s) * 16px);
+    image-rendering: pixelated;
+    will-change: transform;
+  }
+
+  .cars :global(.car[data-lane='near']) {
+    bottom: calc((var(--h) - 180) * var(--s) * 1px);
+    z-index: 1;
+  }
+
   .progress {
     position: absolute;
     top: var(--space-s);
     left: var(--gutter);
-    right: var(--gutter);
+    right: calc(var(--gutter) + 8.5rem);
     height: 14px;
   }
 
@@ -638,6 +873,20 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     cursor: pointer;
   }
 
+  .skip {
+    position: absolute;
+    top: calc(var(--space-s) - 5px);
+    right: var(--gutter);
+    padding: 0.3rem 0.6rem;
+    border: 0;
+    background: color-mix(in srgb, var(--shadow) 75%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--step--1);
+    cursor: pointer;
+  }
+
   .journey:global(.live) .stops {
     position: absolute;
     top: calc(var(--space-s) + 26px);
@@ -660,7 +909,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       transform 0.12s steps(2);
   }
 
-  /* The old card clears before the new one steps in, so they never overlap. */
   .journey:global(.live) .stop:global(.on) {
     opacity: 1;
     transform: none;
@@ -668,135 +916,258 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     transition-duration: 0.24s;
   }
 
-  /* Things that move on their own. */
+  .journey:global(.arrived) .stop:global(.on) {
+    opacity: 0;
+  }
+
+  /* The finale. */
+  .banner {
+    position: absolute;
+    top: calc(var(--space-s) + 30px);
+    left: 50%;
+    width: min(calc(100% - 2 * var(--gutter)), 420px);
+    padding: 0.9rem 1rem 0.8rem;
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 3px var(--gold),
+      0 0 0 3px var(--shadow),
+      6px 6px 0 3px var(--shadow);
+    text-align: center;
+    transform: translate(-50%, -160%);
+    transition: transform 0.5s steps(5);
+  }
+
+  .journey:global(.arrived) .banner {
+    transform: translate(-50%, 0);
+  }
+
+  .save {
+    color: var(--gold);
+    font-size: var(--step-1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .where {
+    margin-top: 2px;
+    color: var(--ink);
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem);
+    line-height: 1;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .who {
+    margin-top: var(--space-2xs);
+    color: var(--teal);
+    font-size: var(--step--1);
+  }
+
+  .next {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .toast {
+    position: absolute;
+    right: var(--gutter);
+    top: calc(var(--space-s) + 26px);
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--panel-2);
+    box-shadow:
+      inset 0 0 0 2px var(--gold),
+      4px 4px 0 0 var(--shadow);
+    font-size: var(--step--1);
+    transform: translateX(calc(100% + var(--gutter) + 12px));
+    transition: transform 0.4s steps(4) 0s;
+  }
+
+  .toast .pixel {
+    color: var(--gold);
+    font-size: var(--label);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .journey:global(.arrived) .toast {
+    transform: none;
+    transition-delay: 1.2s;
+  }
+
+  /* World-space details. */
   .blades {
-    transform-origin: 200px 92px;
+    transform-origin: 256px 86px;
   }
 
   .wing-down,
   .flag-b,
+  .pin-b,
   .lamp,
-  .flash,
-  .win.on,
-  .glass {
+  .win,
+  .glass,
+  .red-balloon {
     opacity: 0;
   }
 
-  .win.off {
-    fill: #1b1533;
+  .floors rect {
     opacity: 0;
+    transition: opacity 0.2s steps(1);
   }
 
-  .win.on {
-    fill: #ffcd75;
-  }
-
-  .birds {
-    transform: translate(60px, 64px);
-  }
-
-  .truck {
-    transform: translateX(40px);
-  }
-
-  .taxi {
-    transform: translateX(2000px);
+  .journey:global(.arrived) .floors rect {
+    opacity: 0.55;
   }
 
   .journey:global(.game-on) .lamp {
     opacity: 1;
   }
 
+  .cable-car {
+    transform: translate(2002px, 140px);
+  }
+
+  .ball {
+    transform: translate(2524px, 134px);
+  }
+
+  .hiker {
+    transform: translate(2562px, 150px);
+  }
+
+  .train {
+    transform: translateX(2940px);
+  }
+
+  .lobby {
+    opacity: 0.15;
+  }
+
+  .fog {
+    opacity: 0.62;
+  }
+
+  .steam {
+    opacity: 0;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
-    .cloud {
-      animation: road-cloud linear infinite;
+    .stars i.tw,
+    .beacon,
+    .shimmer,
+    .bulb {
+      animation: road-twinkle 2.4s steps(2) infinite;
     }
 
-    .stars i.tw {
-      animation: road-twinkle 2.6s steps(2) infinite;
+    .flock {
+      animation: road-flock 34s linear infinite;
+    }
+
+    .flock.f2 {
+      animation-duration: 47s;
+      animation-delay: -20s;
+    }
+
+    .plane {
+      animation: road-plane 9s linear infinite;
+    }
+
+    .burst i {
+      animation: road-burst 1.6s steps(8) infinite;
+    }
+
+    .walker:global(.idle) {
+      animation: road-breathe 1.4s steps(1) infinite;
+    }
+
+    .journey:global(.arrived) .walker {
+      transform: none;
+      animation: road-wave 0.9s steps(1) infinite;
     }
 
     .blades {
       animation: road-spin 3s steps(12) infinite;
     }
 
-    .birds {
-      animation: road-fly 26s linear infinite;
+    .balloon {
+      animation: road-balloon 16s ease-in-out infinite alternate;
+    }
+
+    .cranes {
+      animation: road-cranes 18s ease-in-out infinite alternate;
     }
 
     .wing-up,
     .wing-down,
     .flag-a,
-    .flag-b {
+    .flag-b,
+    .pin-a,
+    .pin-b {
       animation: road-frame 0.6s steps(1) infinite;
     }
 
     .wing-down,
-    .flag-b {
+    .flag-b,
+    .pin-b {
       animation-delay: -0.3s;
-    }
-
-    .truck {
-      animation: road-drive 13s linear infinite;
-    }
-
-    .taxi {
-      animation: road-cab 10s linear infinite;
     }
 
     .journey:global(.game-on) .lamp {
       animation: road-flicker 1.2s steps(1) 1;
     }
 
-    .journey:global(.game-on) .flash {
-      animation: road-pop 2.2s steps(1) infinite;
+    .journey:global(.game-on) .red-balloon {
+      animation: road-rise 6s linear infinite;
     }
 
-    .w1,
-    .w2,
-    .w3 {
-      animation: road-wifi 1.8s steps(1) infinite;
+    .runway {
+      animation: road-chase 1s steps(1) infinite;
     }
 
-    .w2 {
-      animation-delay: 0.3s;
+    .cable-car {
+      animation: road-cable 10s ease-in-out infinite alternate;
     }
 
-    .w3 {
-      animation-delay: 0.6s;
+    .ball {
+      animation: road-ball 1.3s linear infinite alternate;
     }
 
-    .signal {
-      animation: road-dash 1.2s linear infinite;
-    }
-
-    .screen {
-      animation: road-screen 3s steps(3) infinite;
+    .hiker {
+      animation: road-hike 18s linear infinite alternate;
     }
 
     .puff {
       animation: road-fog 12s ease-in-out infinite alternate;
     }
 
-    .puff.f2 {
+    .puff.p1 {
       animation-duration: 15s;
       animation-direction: alternate-reverse;
     }
 
-    .puff.f3 {
+    .puff.p2 {
       animation-duration: 9s;
     }
 
-    .shimmer {
-      animation: road-twinkle 1.8s steps(2) infinite;
+    .surf rect {
+      animation: road-surf 2.4s steps(3) infinite;
     }
 
     .glass {
-      animation: road-pop 2.4s steps(1) infinite;
+      animation: road-pop 5s steps(1) infinite;
     }
 
-    .beacon {
-      animation: road-twinkle 1.4s steps(2) infinite;
+    .train {
+      animation: road-train 14s ease-in-out infinite;
+    }
+
+    .steam {
+      animation: road-steam 3.6s linear infinite;
+    }
+
+    .neon {
+      animation: road-neon 3.2s steps(1) infinite;
     }
 
     .win {
@@ -805,35 +1176,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
 
     .lobby {
       animation: road-lobby 4s ease-in-out infinite alternate;
-    }
-
-    .neon {
-      animation: road-neon 3.2s steps(1) infinite;
-    }
-  }
-
-  .signal {
-    opacity: 0.8;
-  }
-
-  .screen {
-    opacity: 0.12;
-  }
-
-  .fog {
-    opacity: 0.62;
-  }
-
-  .lobby {
-    opacity: 0.15;
-  }
-
-  @keyframes road-cloud {
-    from {
-      transform: translateX(-30vw);
-    }
-    to {
-      transform: translateX(110vw);
     }
   }
 
@@ -854,21 +1196,79 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
+  @keyframes road-flock {
+    from {
+      transform: translateX(-20vw);
+    }
+    to {
+      transform: translateX(120vw);
+    }
+  }
+
+  @keyframes road-plane {
+    from {
+      transform: translateX(110vw);
+    }
+    to {
+      transform: translateX(-30vw);
+    }
+  }
+
+  @keyframes road-burst {
+    0% {
+      opacity: 1;
+      transform: rotate(var(--a)) translateX(0);
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: rotate(var(--a)) translateX(calc(var(--s) * 26px));
+    }
+  }
+
+  @keyframes road-breathe {
+    0%,
+    100% {
+      background-position: calc(var(--s) * -128px) 0;
+    }
+    50% {
+      background-position: calc(var(--s) * -144px) 0;
+    }
+  }
+
+  @keyframes road-wave {
+    0%,
+    100% {
+      background-position: calc(var(--s) * -176px) 0;
+    }
+    50% {
+      background-position: calc(var(--s) * -192px) 0;
+    }
+  }
+
   @keyframes road-spin {
     to {
       transform: rotate(360deg);
     }
   }
 
-  @keyframes road-fly {
+  @keyframes road-balloon {
     from {
-      transform: translate(-40px, 70px);
-    }
-    50% {
-      transform: translate(380px, 58px);
+      transform: translate(-30px, 4px);
     }
     to {
-      transform: translate(820px, 66px);
+      transform: translate(40px, -6px);
+    }
+  }
+
+  @keyframes road-cranes {
+    from {
+      transform: translate(-20px, 4px);
+    }
+    to {
+      transform: translate(60px, -6px);
     }
   }
 
@@ -878,24 +1278,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
     50% {
       opacity: 0;
-    }
-  }
-
-  @keyframes road-drive {
-    from {
-      transform: translateX(-20px);
-    }
-    to {
-      transform: translateX(780px);
-    }
-  }
-
-  @keyframes road-cab {
-    from {
-      transform: translateX(2240px);
-    }
-    to {
-      transform: translateX(1520px);
     }
   }
 
@@ -912,26 +1294,67 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes road-wifi {
-    0%,
-    60% {
+  @keyframes road-rise {
+    from {
+      transform: translateY(0);
       opacity: 1;
     }
-    61%,
-    100% {
-      opacity: 0.25;
+    70% {
+      opacity: 1;
     }
-  }
-
-  @keyframes road-dash {
     to {
-      stroke-dashoffset: -10;
+      transform: translateY(-96px);
+      opacity: 0;
     }
   }
 
-  @keyframes road-screen {
+  @keyframes road-chase {
+    0%,
+    20% {
+      opacity: 1;
+    }
+    21%,
+    100% {
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes road-cable {
+    from {
+      transform: translate(2002px, 140px);
+    }
+    to {
+      transform: translate(2100px, 99px);
+    }
+  }
+
+  @keyframes road-ball {
+    0% {
+      transform: translate(2524px, 134px);
+    }
     50% {
-      opacity: 0.3;
+      transform: translate(2536px, 124px);
+    }
+    100% {
+      transform: translate(2548px, 134px);
+    }
+  }
+
+  @keyframes road-hike {
+    0% {
+      transform: translate(2562px, 150px);
+    }
+    35% {
+      transform: translate(2590px, 134px);
+    }
+    52% {
+      transform: translate(2578px, 124px);
+    }
+    80% {
+      transform: translate(2600px, 110px);
+    }
+    100% {
+      transform: translate(2612px, 96px);
     }
   }
 
@@ -941,6 +1364,55 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
     to {
       translate: 14px 0;
+    }
+  }
+
+  @keyframes road-surf {
+    0% {
+      opacity: 1;
+    }
+    33% {
+      opacity: 0.5;
+    }
+    66% {
+      opacity: 0;
+    }
+  }
+
+  /* Into Union Square station, a stop, and out. */
+  @keyframes road-train {
+    0% {
+      transform: translateX(2940px);
+    }
+    38%,
+    58% {
+      transform: translateX(3346px);
+    }
+    100% {
+      transform: translateX(4400px);
+    }
+  }
+
+  @keyframes road-steam {
+    from {
+      opacity: 0.8;
+      transform: translate(0, 0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate(2px, -26px) scale(2.2);
+    }
+  }
+
+  @keyframes road-neon {
+    0%,
+    70%,
+    80% {
+      opacity: 1;
+    }
+    75%,
+    90% {
+      opacity: 0.2;
     }
   }
 
@@ -961,18 +1433,6 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     }
   }
 
-  @keyframes road-neon {
-    0%,
-    70%,
-    80% {
-      opacity: 1;
-    }
-    75%,
-    90% {
-      opacity: 0.2;
-    }
-  }
-
   @media (max-width: 639px) {
     .journey:global(.live) .stop {
       width: 100%;
@@ -983,6 +1443,21 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+
+    /* Arrived on a phone: the toast takes the progress bar's place, the banner below it. */
+    .toast {
+      top: calc(var(--space-s) - 8px);
+      left: var(--gutter);
+      transform: translateX(calc(100% + 2 * var(--gutter) + 12px));
+    }
+
+    .banner {
+      top: calc(var(--space-s) + 64px);
+    }
+
+    .journey:global(.arrived) :is(.progress, .skip) {
+      visibility: hidden;
     }
   }
 </style>
