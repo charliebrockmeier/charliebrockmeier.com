@@ -16,7 +16,6 @@
     "@fontsource/jersey-10": "^5.3.0",
     "@fontsource/newsreader": "^5.3.0",
     "astro": "^7.4.1",
-    "chess.js": "^1.4.0",
-    "js-chess-engine": "^2.4.6"
+    "chess.js": "^1.4.0"
   }
 }

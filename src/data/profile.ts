@@ -501,7 +501,7 @@ export const builds: Build[] = [
   },
 ];
 
-export type Achievement = { icon: IconName; color: string; name: string; note: string; locked?: boolean };
+export type Achievement = { icon: IconName; color: string; name: string; note: string; locked?: boolean; id?: string };
 
 export const achievements: Achievement[] = [
   { icon: 'trophy', color: 'gold', name: 'Acquired', note: 'Vantager, bought by MSCI, a Fortune 1000 company. I was on the team.' },
@@ -518,7 +518,7 @@ export const achievements: Achievement[] = [
   { icon: 'husker', color: 'red', name: 'Road warrior', note: 'Followed the Huskers to Columbus and Los Angeles.' },
   { icon: 'book', color: 'red', name: 'Teaching assistant', note: 'Honors Computer Science I and II.' },
   { icon: 'fleur', color: 'gold', name: 'Eagle Scout', note: '2019.' },
-  { icon: 'lock', color: 'gray', name: '???', note: "Beat Charlie's chess bot.", locked: true },
+  { icon: 'lock', color: 'gray', name: '???', note: "Beat Charlie's chess bot.", locked: true, id: 'beat-chess-bot' },
   { icon: 'lock', color: 'gray', name: '???', note: 'Ship the Godot game.', locked: true },
   { icon: 'lock', color: 'gray', name: '???', note: 'Huskers win the Big Ten.', locked: true },
 ];
