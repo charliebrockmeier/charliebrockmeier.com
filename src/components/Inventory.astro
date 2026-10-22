@@ -22,7 +22,7 @@ const tierColor: Record<Tier, string> = {
       <ul class="equipped" role="list">
         {
           inventory.equipped.map((it) => (
-            <li class="slot big" style={`--tier: ${tierColor[it.tier]}`}>
+            <li class:list={['slot big', it.tier]} style={`--tier: ${tierColor[it.tier]}`} data-rise>
               <span class="code pixel" aria-hidden="true">
                 {it.code}
               </span>
@@ -39,7 +39,7 @@ const tierColor: Record<Tier, string> = {
       <ul class="bag" role="list">
         {
           inventory.bag.map((it) => (
-            <li class="slot" style={`--tier: ${tierColor[it.tier]}`} tabindex="0" aria-label={`${it.name}: ${it.note}`}>
+            <li class:list={['slot', it.tier]} style={`--tier: ${tierColor[it.tier]}`} tabindex="0" aria-label={`${it.name}: ${it.note}`} data-rise>
               <span class="code pixel" aria-hidden="true">
                 {it.code}
               </span>
@@ -84,6 +84,39 @@ const tierColor: Record<Tier, string> = {
     box-shadow:
       inset 0 0 0 3px var(--tier),
       var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .slot.big.legendary::after,
+  .slot.big.epic::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 40%, color-mix(in srgb, var(--tier) 35%, transparent) 50%, transparent 60%) no-repeat;
+    background-size: 250% 100%;
+    background-position: 150% 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slot.big.legendary::after,
+    .slot.big.epic::after {
+      animation: inventory-glint 5s steps(10) infinite;
+    }
+
+    .slot.big.epic::after {
+      animation-delay: -2.5s;
+      animation-duration: 7s;
+    }
+  }
+
+  @keyframes inventory-glint {
+    0%,
+    70% {
+      background-position: 150% 0;
+    }
+    100% {
+      background-position: -50% 0;
+    }
   }
 
   .slot.big {

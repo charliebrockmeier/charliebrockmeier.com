@@ -14,7 +14,7 @@ const unlocked = achievements.filter((a) => !a.locked).length;
   <ul class="grid" role="list">
     {
       achievements.map((a) => (
-        <li class:list={['badge panel', { locked: a.locked }]} data-achievement={a.id}>
+        <li class:list={['badge panel', { locked: a.locked }]} data-achievement={a.id} data-rise>
           <Icon name={a.icon} color={a.color} scale={5} class="icon" />
           <div>
             <h3 class="pixel">{a.name}</h3>
@@ -70,6 +70,34 @@ const unlocked = achievements.filter((a) => !a.locked).length;
   @media (prefers-reduced-motion: no-preference) {
     .badge:not(.locked):hover :global(.icon) {
       animation: achievements-hop 0.4s steps(2);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .badge:not(.locked) :global(.icon) {
+      animation: achievements-idle 6s steps(2) infinite;
+      animation-delay: calc(var(--rise-i, 0) * -0.7s);
+    }
+
+    .locked :global(.icon) {
+      animation: achievements-locked 2.4s steps(2) infinite;
+    }
+  }
+
+  @keyframes achievements-idle {
+    0%,
+    92%,
+    100% {
+      transform: none;
+    }
+    96% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes achievements-locked {
+    50% {
+      opacity: 0.55;
     }
   }
 

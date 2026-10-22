@@ -1,0 +1,51 @@
+---
+// Scroll-in motion for cards across the page. Anything marked data-rise slides up
+// as it enters the viewport, staggered by its place among its siblings. Without
+// JS, or with reduced motion, nothing is hidden and nothing moves.
+---
+
+<script>
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const items = [...document.querySelectorAll<HTMLElement>('[data-rise]')];
+    for (const el of items) {
+      const siblings = el.parentElement ? [...el.parentElement.children].filter((c) => c.hasAttribute('data-rise')) : [el];
+      el.style.setProperty('--rise-i', String(Math.min(siblings.indexOf(el), 8)));
+    }
+    document.documentElement.classList.add('motion');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          // Reveal what's on screen, and anything already scrolled past (e.g. after a jump link).
+          if (e.isIntersecting || e.boundingClientRect.bottom < 0) {
+            e.target.classList.add('risen');
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px' },
+    );
+    items.forEach((el) => io.observe(el));
+  }
+</script>
+
+<style is:global>
+  .motion [data-rise]:not(.risen) {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  .motion [data-rise].risen {
+    animation: reveal-rise 0.45s steps(5) calc(var(--rise-i, 0) * 70ms) both;
+  }
+
+  @keyframes reveal-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

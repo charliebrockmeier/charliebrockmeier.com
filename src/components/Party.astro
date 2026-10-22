@@ -12,7 +12,7 @@ import { party } from '../data/profile';
     <ul class="party" role="list">
       {
         party.map((m) => (
-          <li class="member panel">
+          <li class="member panel" data-rise>
             <p class="cls pixel">
               {m.cls} · {m.cadence}
             </p>
@@ -30,6 +30,32 @@ import { party } from '../data/profile';
 </section>
 
 <style>
+  .cls::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    vertical-align: 1px;
+    background: var(--green);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cls::before {
+      animation: party-online 1.6s steps(2) infinite;
+    }
+
+    .member:nth-child(2n) .cls::before {
+      animation-delay: -0.8s;
+    }
+  }
+
+  @keyframes party-online {
+    50% {
+      opacity: 0.25;
+    }
+  }
+
   .band {
     margin-top: clamp(3rem, 6vw, 4.75rem);
     padding-bottom: clamp(3rem, 6vw, 4.75rem);
