@@ -1,0 +1,308 @@
+---
+// Charlie's paper on the illiquidity premium, set for reading on the web, with a
+// summary and the headline numbers up top. The PDF is printed from this page.
+import Base from '../../layouts/Base.astro';
+import { paper } from '../../data/paper';
+import { site } from '../../data/profile';
+
+const pdf = `/writing/${paper.slug}.pdf`;
+const words = paper.sections.reduce((n, s) => n + s.paragraphs.join(' ').split(/\s+/).length, 0);
+const minutes = Math.round(words / 230);
+const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+---
+
+<Base title={`${paper.title} | ${site.name}`} description={paper.summary} theme="paper" serif>
+  <div class="toolbar">
+    <a href="/" class="back">Back to the game</a>
+    <span class="actions">
+      <a class="btn" href={pdf}>PDF</a>
+      <a class="btn ghost" href="/resume">Resume</a>
+    </span>
+  </div>
+
+  <main class="paper">
+    <header>
+      <p class="kicker">Paper · {paper.date}</p>
+      <h1>{paper.title}</h1>
+      <p class="byline">
+        {site.name} · {paper.course} · {minutes} min read
+      </p>
+    </header>
+
+    <section class="abstract" aria-labelledby="summary">
+      <h2 id="summary">In short</h2>
+      <p>{paper.summary}</p>
+      <dl class="numbers">
+        {
+          paper.keyNumbers.map(([n, label]) => (
+            <div>
+              <dt>{n}</dt>
+              <dd>{label}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <p class="note">Numbers are from the studies the paper cites, listed at the end.</p>
+    </section>
+
+    <nav class="toc" aria-label="Sections">
+      <ol>
+        {paper.sections.map((s) => (
+          <li>
+            <a href={`#${slug(s.heading)}`}>{s.heading}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
+    <article class="body">
+      {
+        paper.sections.map((s) => (
+          <section>
+            <h2 id={slug(s.heading)}>{s.heading}</h2>
+            {s.paragraphs.map((p) => (
+              <p>{p}</p>
+            ))}
+          </section>
+        ))
+      }
+      <section class="cites">
+        <h2 id="works-cited">Works cited</h2>
+        <ul>
+          {paper.cites.map((c) => (
+            <li>{c}</li>
+          ))}
+        </ul>
+      </section>
+    </article>
+  </main>
+</Base>
+
+<style is:global>
+  body.paper {
+    --bg: #fbf7ee;
+    --ink: #1b1533;
+    --ink-soft: #4f4868;
+    --rule: #e2dccd;
+    --accent: #7a3460;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.paper a {
+    color: var(--accent);
+  }
+</style>
+
+<style>
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: var(--space-m) var(--gutter) 0;
+  }
+
+  .back {
+    font-family: var(--font-pixel);
+    font-size: var(--step-1);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-xs);
+  }
+
+  .btn {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff !important;
+    font-size: var(--label);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .btn.ghost {
+    border-color: var(--rule);
+    background: #fff;
+    color: var(--ink) !important;
+  }
+
+  .paper {
+    max-width: 760px;
+    margin: var(--space-m) auto var(--space-2xl);
+    padding: clamp(1.5rem, 5vw, 3.5rem) var(--gutter);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+  }
+
+  .kicker {
+    color: var(--accent);
+    font-size: var(--label);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-top: 6px;
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .byline {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .abstract {
+    margin-top: var(--space-m);
+    padding: var(--space-s) var(--space-m) var(--space-m);
+    background: #f6f1e4;
+    border-left: 4px solid var(--accent);
+  }
+
+  .abstract h2,
+  .toc::before {
+    color: var(--accent);
+    font-size: var(--label);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .abstract > p {
+    margin-top: 6px;
+    font-size: var(--step-0);
+    line-height: 1.55;
+  }
+
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    gap: var(--space-s);
+    margin-top: var(--space-s);
+  }
+
+  .numbers dt {
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: var(--step-2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .numbers dd {
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .note {
+    margin-top: var(--space-s);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .toc {
+    margin-top: var(--space-m);
+  }
+
+  .toc::before {
+    content: 'Contents';
+    display: block;
+  }
+
+  .toc ol {
+    columns: 2 16rem;
+    margin-top: 6px;
+    padding-left: 1.2em;
+    font-size: var(--label);
+  }
+
+  .body {
+    margin-top: var(--space-m);
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  .body section + section {
+    margin-top: var(--space-m);
+  }
+
+  .body h2 {
+    font-family: var(--font-sans);
+    font-size: var(--step-1);
+    font-weight: 700;
+    scroll-margin-top: var(--space-m);
+  }
+
+  .body p {
+    margin-top: 0.7em;
+    text-wrap: pretty;
+  }
+
+  .cites ul {
+    margin-top: 0.5em;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .cites li {
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+    overflow-wrap: anywhere;
+  }
+
+  .cites li + li {
+    margin-top: 0.4em;
+  }
+
+  @media print {
+    @page {
+      size: Letter;
+      margin: 0.7in 0.8in;
+    }
+
+    .toolbar,
+    .toc {
+      display: none;
+    }
+
+    .paper {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .abstract {
+      break-inside: avoid;
+    }
+
+    .body {
+      font-size: 10.5pt;
+      line-height: 1.5;
+    }
+
+    .body h2 {
+      break-after: avoid;
+    }
+
+    a {
+      color: inherit;
+    }
+  }
+</style>

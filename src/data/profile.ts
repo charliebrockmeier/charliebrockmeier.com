@@ -146,10 +146,11 @@ export const statBlocks: StatBlock[] = [
     source: 'My handicap card',
     big: { value: '10', label: 'peak handicap' },
     rows: [
+      ['Home course', 'Meadowlark Hills, Kearney'],
+      ['Charity scrambles', 'FarmHouse alumni, 2022 and 2023'],
       ['Best club', 'Driver, most days'],
       ['Worst club', 'Driver, other days'],
       ['Pebble Beach', 'Drove 17-Mile Drive, 2024'],
-      ['Rounds that started with a range bucket', 'All of them'],
     ],
     quip: 'Chess at night, golf on weekends. Both punish the same mistake: rushing.',
   },
@@ -205,6 +206,8 @@ export type Quest = {
   unlocked: string;
   levels: Record<Track, number>;
   levelUps: { skill: string; track: Track; up: number | 'new'; carries?: string }[];
+  /** A page worth opening from this chapter, e.g. a paper. */
+  link?: { label: string; url: string };
   /** College gets a longer list of everything else that happened. */
   extras?: { name: string; note: string }[];
   scene: { src: string; place: string; alt: string };
@@ -249,6 +252,7 @@ export const quests: Quest[] = [
       'Wrote The Illiquidity Premium, a paper on private-markets returns',
     ],
     reward: 'Graduated with High Distinction',
+    link: { label: 'Read The Illiquidity Premium', url: '/writing/illiquidity-premium' },
     unlocked: 'AI',
     levels: { finance: 5, code: 5, ai: 2, lead: 7 },
     levelUps: [
@@ -575,7 +579,7 @@ export const dialogue = {
 // The resume page (/resume): the same facts on one printable page.
 export const resume = {
   summary:
-    'Senior Associate at MSCI Private Assets, building pre-investment diligence and evaluation tools. Previously on the early team at Vantager, an AI-native diligence platform acquired by MSCI in 2026. Engineer-trained finance analyst from the Raikes School who has shipped LLM products since 2023.',
+    'Finance-first builder in private markets. Senior Associate at MSCI Private Assets, working on AI-powered pre-investment diligence for private-fund investors, after joining through MSCI’s acquisition of Vantager, where I was on the early team. Finance and accounting at the University of Nebraska–Lincoln, with minors in computer science and math; shipping LLM products since 2023.',
   experience: [
     {
       org: 'MSCI',
@@ -583,18 +587,22 @@ export const resume = {
       where: 'New York, NY',
       when: 'Mar 2026 – present',
       points: [
-        'Pre-investment diligence and evaluation tools for private-asset investors.',
-        "Joined through MSCI's acquisition of Vantager in March 2026.",
+        'Work on MSCI’s AI-powered pre-investment diligence for private markets: tools that help pensions, endowments, foundations, family offices and wealth managers size up private funds before they commit capital.',
+        'Joined through MSCI’s March 2026 acquisition of Vantager, whose platform now anchors MSCI’s pre-investment diligence offering.',
+        'Industry conferences for the business in 2026, including Future Proof and a CFA Institute conference.',
       ],
     },
     {
       org: 'Vantager (acquired by MSCI)',
-      role: 'Product & Growth Analyst',
+      role: 'Growth & Product Analyst',
       where: 'New York, NY',
       when: 'Mar 2025 – Mar 2026',
       points: [
-        'Shaped product and growth strategy for an AI-native platform that turns GP data-room documents into investment, operational and legal diligence reports.',
-        'Early team member: part-time from March 2025, full-time from June 2025, through the acquisition.',
+        'Early team member at an AI-native pre-investment diligence platform that turns GP data-room documents into diligence reports; part-time from March 2025, full-time in New York from June 2025, through the acquisition.',
+        'Built out the Template Marketplace: new diligence templates and easier access to them for customers.',
+        'Ran data-quality checks and platform QA on AI-generated diligence reports, focused on accuracy and user experience.',
+        'Built golden datasets to evaluate and improve the AI system, and financial models for the business.',
+        'Turned customer feedback into product work: built the CEO’s meeting-note and customer-feedback system, ran product demos, and worked with the CEO on go-to-market and sales strategy.',
       ],
     },
     {
@@ -603,57 +611,46 @@ export const resume = {
       where: 'San Francisco, CA',
       when: 'Jan 2024 – Feb 2025',
       points: [
-        'Ran investment due diligence for a multi-family office: intro calls, investment memos and committee overviews.',
+        'Ran private-investment due diligence for a multi-family office: intro calls, investment memos and committee overviews; in person in San Francisco for summer 2024.',
         "Maintained the firm's investment database, with a focus on private investments.",
         'Automated research and reporting work with Python scripts and AI.',
       ],
     },
-    {
-      org: 'Covisum',
-      role: 'Agile Developer Intern',
-      where: 'Omaha, NE',
-      when: 'May – Aug 2023',
-      points: ['Built financial-advisory tools end to end, including a client intake form, with requirements from the CEO.'],
-    },
-    {
-      org: 'Buckle',
-      role: 'Software Developer Intern, E-Commerce',
-      where: 'Kearney, NE',
-      when: 'May – Aug 2022',
-      points: ['Shipped production features, including the favorites page, on a ten-person team (JavaScript, HTML, Java).'],
-    },
-    {
-      org: 'Cash-Wa Distributing',
-      role: 'IT Intern',
-      where: 'Kearney, NE',
-      when: 'May – Aug 2021',
-      points: ['Automated processes with Python macros; built and audited hardware for the IT department.'],
-    },
+  ],
+  internships: [
+    { org: 'Covisum', role: 'Agile Developer Intern', where: 'Omaha, NE', when: 'Summer 2023', line: 'Built financial-advisory tools and a client intake form with the CEO.' },
+    { org: 'Buckle', role: 'Software Developer Intern, E-Commerce', where: 'Kearney, NE', when: 'Summer 2022', line: 'Shipped production features, including the favorites page.' },
+    { org: 'Cash-Wa Distributing', role: 'IT Intern', where: 'Kearney, NE', when: 'Summer 2021', line: 'Python macros; built and audited the IT department’s hardware.' },
   ],
   projects: [
     {
-      name: 'Obituary monitor',
-      line: 'Watches public obituary sites for names on a watchlist, with one adapter per funeral-home website platform instead of one scraper per site.',
-    },
-    {
-      name: 'Portfolio surveillance engine',
-      line: 'Portfolio drift against a target model, A–F grades and a 27-rule issue library that turns a monthly review into a ranked to-do list.',
-    },
-    {
       name: 'Locus',
-      line: 'Personal OS for money, calendar and documents with an AI assistant (Next.js, Supabase, Plaid); read-only by design, row-level security throughout.',
+      line: 'Personal OS for money, calendar and documents with an AI assistant (Next.js, Supabase, Plaid); read-only by design, 4,349 tests.',
+    },
+    {
+      name: 'Faceless engine',
+      line: 'Turns 226 official data series into fact-checked, narrated short videos for three pages (TypeScript, Remotion, Claude).',
+    },
+    {
+      name: 'Obituary monitor',
+      line: 'Weekly agent that reads 10 funeral-home sites and flags watchlist names, with one adapter per site platform.',
     },
     {
       name: 'Phyt',
       line: 'A fitness app for iPhone, designed and built end to end, logo included.',
     },
   ],
+  research: {
+    title: 'The Illiquidity Premium and Its Impact on Asset Pricing and Returns',
+    line: 'Paper for Strategic Finance Management (FINA 475H), May 2025: what sets the premium and how it shows up across public markets, PE/VC, real estate and private credit.',
+    url: '/writing/illiquidity-premium',
+  },
   education: {
     school: 'University of Nebraska–Lincoln',
     degree: 'B.S.B.A., Finance and Accounting · Minors in Computer Science and Mathematics',
-    program: 'Jeffrey S. Raikes School of Computer Science and Management',
+    program: 'Raikes School of Computer Science and Management · University Honors Program',
     when: 'May 2025',
-    honors: 'Graduated with High Distinction',
+    honors: 'Graduated with High Distinction · Regents Scholar',
     points: [
       "Senior capstone, product manager: machine learning for Conagra Brands' $500M capital-expenditure decisions.",
       'Junior capstone, developer: GPT-3.5 support assistant for DMSi, trained on 250,000 support tickets.',
@@ -661,23 +658,22 @@ export const resume = {
     ],
   },
   leadership: [
-    'FarmHouse Fraternity, Treasurer: $850K annual budget, 110 members',
+    'FarmHouse Fraternity, Treasurer (two terms): $850K annual budget, 110 members',
     'Mortar Board Honor Society, Social Chair',
-    'NHRI Mentoring: Staff Advisor, Tri-Chair, Researcher',
-    'Dance Marathon: Morale and Corporate Sponsorship',
+    'NHRI Mentoring: Staff Advisor, Tri-Chair, UCARE researcher',
+    'Raikes Student Advisory Board; Dance Marathon',
   ],
   skills: [
+    'Private-markets diligence',
+    'Financial modeling',
+    'Accounting',
     'Python',
     'TypeScript',
     'SQL',
-    'R',
-    'Java',
-    'C#',
-    'React',
     'Next.js',
     'Supabase',
     'Excel and VBA',
-    'LLM apps and agents (Claude)',
+    'LLM apps, agents and evals',
   ],
-  awards: ['Eagle Scout', 'Regents Scholar', '6× College of Business Dean’s Scholar', 'Mortar Board', 'UNL Homecoming Royalty Nominee'],
+  awards: ['Regents Scholar', '6× Dean’s List', 'Mortar Board', 'Eagle Scout', 'UNL Homecoming Royalty finalist'],
 };

@@ -47,6 +47,9 @@ const pinDefs: PinDef[] = [
   { id: 'columbus', name: 'Columbus, OH', lon: -82.99, lat: 39.96, label: 's' },
   { id: 'dallas', name: 'Dallas, TX', lon: -96.8, lat: 32.78, label: 'e' },
   { id: 'boston', name: 'Boston, MA', lon: -71.06, lat: 42.36, label: 'e' },
+  { id: 'vegas', name: 'Las Vegas, NV', short: 'Vegas', lon: -115.14, lat: 36.17, label: 'n' },
+  { id: 'orlando', name: 'Orlando, FL', lon: -81.38, lat: 28.54, label: 'e' },
+  { id: 'rutgers', name: 'New Brunswick, NJ', short: 'Rutgers', lon: -74.45, lat: 40.5, label: 's' },
   { id: 'maui', name: 'Maui, HI', lon: -156.33, lat: 20.8, label: 'n', inset: true },
 ];
 
@@ -111,6 +114,8 @@ const flightDefs: { id: string; cat: Cat | 'main'; from: LonLat; to: LonLat | 'm
   { id: 'denver', cat: 'ski', from: NYC, to: [-104.67, 39.86], bend: -26 },
   { id: 'socal', cat: 'work', from: NYC, to: [-118.0, 33.66], bend: -58 },
   { id: 'dallas', cat: 'work', from: NYC, to: [-96.8, 32.78], bend: 22 },
+  { id: 'vegas', cat: 'vacation', from: [-95.94, 41.26], to: [-115.14, 36.17], bend: -18 },
+  { id: 'orlando', cat: 'vacation', from: [-95.94, 41.26], to: [-81.38, 28.54], bend: 20 },
 ];
 
 export const flights = flightDefs.map(({ id, cat, from, to, bend }) => {

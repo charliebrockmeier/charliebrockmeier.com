@@ -1,5 +1,5 @@
 ---
-// The resume: everything on one clean, printable page. /recruiter redirects here.
+// The resume: everything on one clean, printable page.
 import Base from '../layouts/Base.astro';
 import { character, email, links, resume, resumePdf, site } from '../data/profile';
 
@@ -55,6 +55,18 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
           </article>
         ))
       }
+      <article class="item">
+        <h3 class="sub">Earlier internships</h3>
+        <ul class="interns">
+          {
+            resume.internships.map((i) => (
+              <li>
+                <strong>{i.org}</strong>, {i.role}, {i.where}, {i.when}. {i.line}
+              </li>
+            ))
+          }
+        </ul>
+      </article>
     </section>
 
     <section aria-labelledby="proj">
@@ -67,6 +79,9 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
             </li>
           ))
         }
+        <li>
+          <strong>Research.</strong> <a href={resume.research.url}><cite>{resume.research.title}</cite></a>. {resume.research.line}
+        </li>
       </ul>
     </section>
 
@@ -284,6 +299,25 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     list-style: none;
   }
 
+  .sub {
+    margin-top: 2px;
+  }
+
+  ul.interns {
+    margin-top: 3px;
+    padding-left: 0;
+    list-style: none;
+    color: var(--ink-soft);
+  }
+
+  ul.interns strong {
+    color: var(--ink);
+  }
+
+  cite {
+    font-style: italic;
+  }
+
   ul.plain li + li {
     margin-top: 6px;
   }
@@ -303,7 +337,7 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
   @media print {
     @page {
       size: Letter;
-      margin: 0.45in 0.55in;
+      margin: 0.4in 0.5in;
     }
 
     .toolbar {
@@ -314,16 +348,16 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
       margin: 0;
       padding: 0;
       border: 0;
-      font-size: 8.6pt;
-      line-height: 1.28;
+      font-size: 8.3pt;
+      line-height: 1.22;
     }
 
     h1 {
-      font-size: 20pt;
+      font-size: 18pt;
     }
 
     .role {
-      font-size: 11pt;
+      font-size: 10pt;
     }
 
     .contact,
@@ -331,38 +365,43 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
     .title,
     .when,
     .degree {
-      font-size: 8.5pt;
+      font-size: 8.2pt;
     }
 
     .summary {
-      margin-top: 8pt;
-      padding-top: 8pt;
+      margin-top: 6pt;
+      padding-top: 6pt;
     }
 
     section {
-      margin-top: 8pt;
+      margin-top: 6pt;
       break-inside: avoid;
     }
 
     h2 {
-      margin-bottom: 4pt;
+      margin-bottom: 3pt;
       font-size: 8pt;
     }
 
     h3 {
-      font-size: 9.5pt;
+      font-size: 9pt;
     }
 
     .item + .item {
-      margin-top: 4pt;
+      margin-top: 3pt;
     }
 
     ul {
-      margin-top: 2pt;
+      margin-top: 1pt;
+    }
+
+    li + li,
+    ul.plain li + li {
+      margin-top: 1pt;
     }
 
     .gap {
-      margin-top: 8pt;
+      margin-top: 5pt;
     }
 
     a {

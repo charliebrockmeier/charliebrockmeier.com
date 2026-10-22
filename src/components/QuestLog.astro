@@ -180,6 +180,11 @@ const final = quests.at(-1)!.levels;
                     <span>Unlocked: {q.unlocked}</span>
                     <span>Reward: {q.reward}</span>
                   </p>
+                  {q.link && (
+                    <a class="paper-link pixel" href={q.link.url}>
+                      {q.link.label} →
+                    </a>
+                  )}
                 </div>
               </div>
             </article>
@@ -580,6 +585,12 @@ const final = quests.at(-1)!.levels;
 
   .levels i.new {
     outline: 2px solid color-mix(in srgb, var(--c) 45%, transparent);
+  }
+
+  .paper-link {
+    flex-basis: 100%;
+    color: var(--teal);
+    font-size: var(--label);
   }
 
   .loot {
