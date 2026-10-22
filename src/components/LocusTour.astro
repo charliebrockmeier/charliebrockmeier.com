@@ -1,0 +1,441 @@
+---
+// The extra sections on Locus's project page: safety, modules, the assistant and its
+// approval ledger, and performance. Everything inside the illustrations is made up.
+import PixelArt from './PixelArt.astro';
+import { marks } from '../data/logos';
+import { locusModules, projects } from '../data/projects';
+
+const locus = projects.locus;
+
+const ledger = [
+  { action: 'Create task', what: 'Renew passport', state: 'Approved' },
+  { action: 'Add event', what: 'Dentist, Tue 9:00', state: 'Approved' },
+  { action: 'Tag 12 transactions', what: 'Travel', state: 'Waiting' },
+  { action: 'Draft note', what: 'Packing list', state: 'Declined' },
+];
+---
+
+{
+  locus.principles && (
+    <section class="block" aria-labelledby="safety">
+      <h2 id="safety" class="label pixel">Safe by design</h2>
+      <ul class="principles" role="list">
+        {locus.principles.map((p) => (
+          <li class="principle panel" style={`--c: ${p.color}`}>
+            <h3 class="pixel">{p.title}</h3>
+            <p>{p.text}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<section class="block" aria-labelledby="modules">
+  <h2 id="modules" class="label pixel">Modules</h2>
+  <ul class="modules" role="list">
+    {
+      locusModules.map((m) => (
+        <li class:list={['module', { wide: m.items }]} style={`--c: ${m.color}`}>
+          <span class="code pixel" aria-hidden="true">
+            {m.code}
+          </span>
+          <span class="name pixel">{m.name}</span>
+          {m.items && (
+            <ul class="items" role="list">
+              {m.items.map((it) => (
+                <li>{it}</li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="assistant">
+  <h2 id="assistant" class="label pixel">The assistant</h2>
+  <p class="lede">Press ⌘K anywhere and ask. When the answer means changing something, the change waits in the ledger until it's approved.</p>
+  <figure class="duo">
+    <div class="palette mockup" aria-hidden="true">
+      <p class="query">
+        <PixelArt art={marks.locus} scale={1.25} />
+        <kbd>⌘K</kbd>
+        <span>What's due this week?</span><i class="caret"></i>
+      </p>
+      <ul>
+        <li><span class="src" style="--c: var(--coral)">Tasks</span> 3 due by Friday</li>
+        <li><span class="src" style="--c: var(--blue)">Calendar</span> 2 events tomorrow</li>
+        <li><span class="src" style="--c: var(--violet)">Documents</span> 1 renewal notice</li>
+        <li><span class="src" style="--c: var(--teal)">Finance</span> 2 bills coming up</li>
+      </ul>
+      <p class="foot">Suggested: create a task for the renewal</p>
+    </div>
+    <div class="ledger mockup" aria-hidden="true">
+      <p class="title pixel">Approval ledger</p>
+      <ol>
+        {
+          ledger.map((l) => (
+            <li class={l.state.toLowerCase()}>
+              <span class="act">
+                <strong>{l.action}</strong> {l.what}
+              </span>
+              <span class="state pixel">{l.state}</span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+    <figcaption>Illustration. Every item in it is made up.</figcaption>
+  </figure>
+</section>
+
+{
+  locus.performance && (
+    <section class="block" aria-labelledby="perf">
+      <h2 id="perf" class="label pixel">Performance</h2>
+      <ul class="perf" role="list">
+        {locus.performance.map((p) => (
+          <li class="panel">
+            <p class="big pixel">{p.value}</p>
+            <p class="what">{p.label}</p>
+            <div class="bars" aria-hidden="true">
+              <span class="row">
+                <span class="tag">Before</span>
+                <span class="bar" style="--w: 100%" />
+              </span>
+              <span class="row">
+                <span class="tag">After</span>
+                <span class="bar after" style={`--w: max(4px, ${(p.bar * 100).toFixed(2)}%)`} />
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .block {
+    margin-top: var(--space-xl);
+  }
+
+  .label {
+    margin-bottom: var(--space-s);
+    color: var(--gold);
+    font-size: var(--step-3);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .lede {
+    max-width: 60ch;
+    margin-bottom: var(--space-s);
+    color: var(--ink-soft);
+  }
+
+  /* Safe by design */
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .principle {
+    padding: var(--space-s) var(--space-m) var(--space-m);
+    box-shadow:
+      inset 0 0 0 var(--px) var(--line),
+      inset 0 calc(var(--px) * 2) 0 0 var(--c),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .principle h3 {
+    margin-top: 0.4rem;
+    color: var(--c);
+    font-size: var(--step-2);
+  }
+
+  .principle p {
+    margin-top: 0.3rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  /* Modules */
+  .modules {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    gap: var(--space-xs);
+  }
+
+  .module {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.75rem;
+    padding: 8px 12px 8px 8px;
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, var(--c) 55%, var(--line)),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .module.wide {
+    grid-column: span 2;
+    grid-row: span 2;
+    align-content: start;
+    row-gap: 0.6rem;
+  }
+
+  .code {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    background: color-mix(in srgb, var(--c) 18%, var(--bg));
+    color: var(--c);
+    font-size: var(--step-1);
+  }
+
+  .name {
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .items {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .items li {
+    padding: 2px 8px;
+    background: var(--bg-2);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  /* The assistant */
+  .duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-s);
+  }
+
+  .mockup {
+    padding: var(--space-s);
+    background: #110d22;
+    box-shadow:
+      inset 0 0 0 2px var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+    font-size: var(--step--1);
+  }
+
+  .query {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #17142a;
+    box-shadow: inset 0 0 0 1px var(--line);
+    font-size: var(--step-0);
+  }
+
+  .query kbd {
+    padding: 0 0.4em;
+    background: var(--teal);
+    color: var(--bg);
+  }
+
+  .caret {
+    width: 2px;
+    height: 1.1em;
+    margin-left: -0.35rem;
+    background: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .caret {
+      animation: locustour-caret 1s steps(2) infinite;
+    }
+  }
+
+  @keyframes locustour-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .palette ul {
+    display: grid;
+    gap: 4px;
+    margin-top: 0.6rem;
+  }
+
+  .palette li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.3rem 0.5rem;
+    color: var(--ink-soft);
+  }
+
+  .palette li:first-child {
+    background: color-mix(in srgb, var(--teal) 10%, transparent);
+    color: var(--ink);
+  }
+
+  .src {
+    min-width: 6.5em;
+    color: var(--c);
+    font-weight: 700;
+  }
+
+  .foot {
+    margin-top: 0.6rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--line);
+    color: var(--gold);
+  }
+
+  .ledger .title {
+    color: var(--gold);
+    font-size: var(--step-1);
+  }
+
+  .ledger ol {
+    display: grid;
+    gap: 4px;
+    margin-top: 0.5rem;
+  }
+
+  .ledger li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    background: #17142a;
+  }
+
+  .act {
+    min-width: 0;
+    color: var(--ink-soft);
+  }
+
+  .act strong {
+    color: var(--ink);
+  }
+
+  .state {
+    flex: none;
+    padding: 0 0.45em;
+    font-size: var(--label);
+  }
+
+  .approved .state {
+    background: color-mix(in srgb, var(--green) 18%, transparent);
+    color: var(--green);
+  }
+
+  .waiting {
+    box-shadow: inset 0 0 0 1px var(--gold);
+  }
+
+  .waiting .state {
+    background: var(--gold);
+    color: var(--bg);
+  }
+
+  .declined .state {
+    background: color-mix(in srgb, var(--red) 15%, transparent);
+    color: var(--red);
+  }
+
+  figcaption {
+    grid-column: 1 / -1;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  /* Performance */
+  .perf {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .perf li {
+    padding: var(--space-s) var(--space-m) var(--space-m);
+  }
+
+  .big {
+    color: var(--gold);
+    font-size: clamp(2.5rem, 1.5rem + 3vw, 3.75rem);
+    line-height: 1;
+  }
+
+  .what {
+    color: var(--ink-soft);
+  }
+
+  .bars {
+    display: grid;
+    gap: 6px;
+    margin-top: var(--space-s);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 4.5em minmax(0, 1fr);
+    align-items: center;
+    font-size: 0.75rem;
+  }
+
+  .tag {
+    color: var(--ink-soft);
+  }
+
+  .bar {
+    width: var(--w);
+    height: 12px;
+    background: var(--line);
+  }
+
+  .bar.after {
+    background: var(--teal);
+  }
+
+  @media (max-width: 899px) {
+    .principles,
+    .duo,
+    .perf {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .modules {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 520px) {
+    .module {
+      grid-template-columns: 32px minmax(0, 1fr);
+      column-gap: 0.5rem;
+      padding: 6px 8px 6px 6px;
+    }
+
+    .module.wide {
+      grid-row: auto;
+    }
+
+    .code,
+    .name {
+      font-size: var(--step-0);
+    }
+  }
+</style>

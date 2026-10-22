@@ -4,10 +4,11 @@ import Panorama from './Panorama.astro';
 import PixelArt from './PixelArt.astro';
 import { sprite } from '../data/pixels';
 import live from '../data/live.json';
-import { character, chess, resumePdf, site } from '../data/profile';
+import { character, chess, links, resumePdf, site } from '../data/profile';
 
 // The live count from the build-time fetch, or the number Charlie gave us.
 const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleString('en-US');
+const github = links.find((l) => l.label === 'GitHub');
 ---
 
 <section class="hero" id="top">
@@ -44,6 +45,13 @@ const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleStrin
         <a class="btn" href="#character"><span class="blink" aria-hidden="true">▶</span> Press start</a>
         <a class="btn ghost" href="#talk" data-talk>Talk to Charlie <kbd>E</kbd></a>
         <a class="btn ghost" href={resumePdf} download>Resume <span class="pdf">PDF</span></a>
+        {
+          github && (
+            <a class="btn ghost" href={github.url}>
+              <Icon name="github" color="violet" scale={1.75} /> GitHub
+            </a>
+          )
+        }
       </div>
     </div>
   </div>

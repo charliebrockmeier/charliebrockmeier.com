@@ -1,0 +1,49 @@
+---
+// A project's mark at a given size: its own logo where it has one (Locus's cicada,
+// Phyt's app icon), otherwise a pixel badge.
+import Icon from './Icon.astro';
+import PixelArt from './PixelArt.astro';
+import { marks } from '../data/logos';
+import { sprite, type IconName } from '../data/pixels';
+import type { Build } from '../data/profile';
+
+interface Props {
+  id: Build['id'];
+  /** Rendered size in CSS pixels (square). */
+  size?: number;
+  class?: string;
+}
+
+const { id, size = 96, class: className } = Astro.props;
+
+const badges: Partial<Record<Build['id'], { icon: IconName; color: string }>> = {
+  obituary: { icon: 'mail', color: 'teal' },
+  portfolio: { icon: 'coins', color: 'gold' },
+  faceless: { icon: 'chart', color: 'coral' },
+};
+
+// Charlie's head, cropped from the sprite, for this site.
+const head = { rows: sprite.rows.slice(0, 22).map((r) => r.slice(7, 26)), palette: sprite.palette };
+const badge = badges[id];
+---
+
+<span class:list={['mark', className]} style={`--size: ${size}px`}>
+  {id === 'locus' && <PixelArt art={marks.locus} scale={size / 16} label="Locus logo" />}
+  {id === 'phyt' && <img src="/brand/phyt.png" width={size} height={size} alt="Phyt logo" />}
+  {id === 'site' && <PixelArt art={head} scale={size / 22} label="Charlie in pixel art" />}
+  {badge && <Icon name={badge.icon} color={badge.color} scale={size / 12} />}
+</span>
+
+<style>
+  .mark {
+    display: inline-grid;
+    place-items: center;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+  }
+</style>
