@@ -9,19 +9,24 @@ const head = { rows: sprite.rows.slice(0, 22).map((r) => r.slice(7, 26)), palett
 
 const socials = links.filter((l) => l.label === 'LinkedIn' || l.label === 'Instagram');
 
+// Section links are anchors on the home page; on any other page they lead back to it.
+const home = Astro.url.pathname === '/';
+const at = (hash: string) => (home ? hash : `/${hash}`);
+
 const nav = [
-  { href: '#character', label: 'Character' },
-  { href: '#quests', label: 'Quests' },
-  { href: '#map', label: 'Map' },
-  { href: '#stats', label: 'Stats' },
-  { href: '#builds', label: 'Builds' },
-  { href: '#achievements', label: 'Achievements' },
+  { href: at('#character'), label: 'Character' },
+  { href: at('#quests'), label: 'Quests' },
+  { href: at('#map'), label: 'Map' },
+  { href: at('#stats'), label: 'Stats' },
+  { href: at('#builds'), label: 'Builds' },
+  { href: at('#achievements'), label: 'Achievements' },
+  { href: '/recruiter', label: 'Recruiters' },
 ];
 ---
 
 <header class="hud">
   <div class="wrap bar">
-    <a class="me pixel" href="#top" aria-label="Charlie Brockmeier, back to top">
+    <a class="me pixel" href={home ? '#top' : '/'} aria-label={home ? 'Charlie Brockmeier, back to top' : 'Charlie Brockmeier, home'}>
       <PixelArt art={head} scale={1.6} />
       <span>Charlie</span>
     </a>
@@ -30,7 +35,7 @@ const nav = [
         {
           nav.map((n) => (
             <li>
-              <a class="pixel" href={n.href}>
+              <a class="pixel" href={n.href} aria-current={Astro.url.pathname === n.href ? 'page' : undefined}>
                 {n.label}
               </a>
             </li>
@@ -50,7 +55,7 @@ const nav = [
           ))
         }
       </ul>
-      <a class="btn ghost talk-link" href="#talk" data-talk>Talk <kbd>E</kbd></a>
+      <a class="btn ghost talk-link" href={at('#talk')} data-talk>Talk <kbd>E</kbd></a>
       <a class="btn" href="/resume">Resume <kbd>R</kbd></a>
     </div>
   </div>
@@ -89,7 +94,7 @@ const nav = [
 
   nav ul {
     display: flex;
-    gap: var(--space-m);
+    gap: clamp(0.75rem, 1.6vw, 1.5rem);
   }
 
   nav a {
@@ -98,7 +103,8 @@ const nav = [
     text-decoration: none;
   }
 
-  nav a:hover {
+  nav a:hover,
+  nav a[aria-current='page'] {
     color: var(--gold);
   }
 

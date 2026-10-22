@@ -1,15 +1,15 @@
 ---
-// Crafted items: each personal project with an illustrated screen of what it does.
-// Every number inside a mock is synthetic unless it also appears in the build's stats.
+// Crafted items: each personal project with an illustrated screen of what it does,
+// a link to its own page (/projects/<id>), and the GitHub repo wall underneath.
+import BuildScreen from './BuildScreen.astro';
+import GitHubWall from './GitHubWall.astro';
 import Icon from './Icon.astro';
-import PixelArt from './PixelArt.astro';
-import { marks } from '../data/logos';
-import live from '../data/live.json';
 import { builds } from '../data/profile';
 
-const grades = 'ABBCABDACBFBACBADB'.split('');
-const gradeColor: Record<string, string> = { A: 'var(--green)', B: 'var(--teal)', C: 'var(--gold)', D: 'var(--coral)', F: 'var(--red)' };
-const publicRepos = (live.github?.repos ?? []) as { name: string; description: string | null; language: string | null; url: string; pushed: string }[];
+const host = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+const repoUrl = (b: (typeof builds)[number]) => (b.repo?.visibility === 'public' ? `https://github.com/charliebrockmeier/${b.repo.name}` : null);
+// Live sites only: a public repo is already shown next to them.
+const siteLinks = (b: (typeof builds)[number]) => (b.links ?? []).filter((l) => l.url !== repoUrl(b));
 ---
 
 <section id="builds" class="section wrap" aria-labelledby="builds-title">
@@ -23,139 +23,28 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     {
       builds.map((b) => (
         <li class="build panel">
-          <div class="screen" aria-hidden="true">
-            {b.id === 'obituary' && (
-              <div class="mock mail">
-                <p class="bar">
-                  <i />
-                  <i />
-                  <i /> Weekly digest
-                </p>
-                <p class="subject">Obituaries: week of Oct 19</p>
-                <p class="chips">
-                  <span>10 sites</span>
-                  <span>78 obituaries</span>
-                  <span>1,654 names checked</span>
-                </p>
-                <ul>
-                  {[0.7, 0.5, 0.8, 0.6].map((w, i) => (
-                    <li>
-                      <span class="redact" style={`width:${w * 60}%`} />
-                      <span class:list={['tag', { hit: i === 2 }]}>{i === 2 ? 'match' : 'no match'}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {b.id === 'portfolio' && (
-              <div class="mock book">
-                <div class="tiles">
-                  {grades.map((g, i) => (
-                    <span style={`--g:${gradeColor[g]}`} class:list={{ sel: i === 6 }}>
-                      {g}
-                    </span>
-                  ))}
-                </div>
-                <div class="flags">
-                  <p class="pixel">Portfolio 07 · D</p>
-                  <p>⚑ Duplicate share classes</p>
-                  <p>⚑ Index overlap</p>
-                  <p>⚑ Cash drag</p>
-                  <p class="dim">27 rules checked</p>
-                </div>
-              </div>
-            )}
-            {b.id === 'locus' && (
-              <div class="mock locus">
-                <p class="brand">
-                  <PixelArt art={marks.locus} scale={1.5} />
-                  Locus <span>Personal OS</span>
-                </p>
-                <svg viewBox="0 0 100 34" preserveAspectRatio="none">
-                  <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke" />
-                  <path d="M0 30 L10 27 L20 28 L30 22 L40 24 L50 17 L60 19 L70 12 L80 13 L90 7 L100 4 L100 34 L0 34Z" fill="color-mix(in srgb, var(--teal) 18%, transparent)" />
-                </svg>
-                <ul>
-                  {['Checking', 'Brokerage', 'Retirement'].map((a, i) => (
-                    <li>
-                      <span>{a}</span>
-                      <span class="redact" style={`width:${[30, 55, 40][i]}%`} />
-                    </li>
-                  ))}
-                </ul>
-                <p class="ask">
-                  <kbd>⌘K</kbd> Ask Locus anything
-                </p>
-              </div>
-            )}
-            {b.id === 'phyt' && (
-              <div class="mock phone">
-                <div class="device">
-                  <img src="/brand/phyt.png" width="64" height="64" alt="" loading="lazy" />
-                  <p class="pixel">Today · Push</p>
-                  <ul>
-                    <li>
-                      Bench <span>4×8</span>
-                    </li>
-                    <li>
-                      Overhead press <span>3×10</span>
-                    </li>
-                    <li>
-                      Dips <span>3×12</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
-            {b.id === 'faceless' && (
-              <div class="mock reel">
-                {[
-                  { name: 'Money Math', tag: 'Money, measured.', color: 'var(--gold)', bars: [12, 18, 15, 24, 22, 30, 34, 40] },
-                  { name: 'NYC Numbers', tag: 'The city, measured.', color: 'var(--teal)', bars: [40, 33, 27, 22, 16, 11] },
-                  { name: 'Scale Compare', tag: 'The world, to scale.', color: 'var(--coral)', bars: [6, 40] },
-                ].map((page) => (
-                  <div class="frame" style={`--c: ${page.color}`}>
-                    <p class="page pixel">{page.name}</p>
-                    <svg viewBox="0 0 60 50">
-                      {page.bars.map((h, i) => (
-                        <rect
-                          x={4 + i * (52 / page.bars.length)}
-                          y={48 - h}
-                          width={52 / page.bars.length - 2}
-                          height={h}
-                          fill={i === page.bars.length - 1 || page.bars.length < 7 && i === 0 ? page.color : 'var(--violet)'}
-                        />
-                      ))}
-                    </svg>
-                    <p class="cap">{page.tag}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {b.id === 'site' && (
-              <div class="mock site">
-                <img src="/art/panorama.png" width="480" height="180" alt="" loading="lazy" />
-                <p class="here pixel">▼ You are here</p>
-              </div>
-            )}
-          </div>
+          <a class="shot" href={`/projects/${b.id}`} tabindex="-1" aria-hidden="true">
+            <BuildScreen id={b.id} />
+          </a>
 
           <div class="info">
             <p class="meta">
               <span class="status pixel">{b.status}</span>
-              {b.url && (
-                <a class="site-link" href={b.url}>
-                  {b.url.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+              {siteLinks(b).map((l) => (
+                <a class="site-link" href={l.url}>
+                  {host(l.url)} ↗
                 </a>
-              )}
+              ))}
               {b.repo && (
                 <span class="repo">
                   <Icon name={b.repo.visibility === 'public' ? 'github' : 'lock'} color="gray" scale={1.25} />
-                  {b.repo.visibility === 'public' ? <a href={`https://github.com/charliebrockmeier/${b.repo.name}`}>{b.repo.name}</a> : <span>{b.repo.name} · private</span>}
+                  {b.repo.visibility === 'public' ? <a href={repoUrl(b)!}>{b.repo.name}</a> : <span>{b.repo.name} · private</span>}
                 </span>
               )}
             </p>
-            <h3 class="pixel">{b.name}</h3>
+            <h3 class="pixel">
+              <a href={`/projects/${b.id}`}>{b.name}</a>
+            </h3>
             <p class="line">{b.line}</p>
             {b.stats && (
               <dl class="stats">
@@ -172,35 +61,16 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
               <summary class="pixel">How it works</summary>
               <p>{b.detail}</p>
             </details>
+            <a class="open pixel" href={`/projects/${b.id}`}>
+              Open project page<span class="visually-hidden">: {b.name}</span> →
+            </a>
           </div>
         </li>
       ))
     }
   </ul>
 
-  <aside class="github panel">
-    <Icon name="github" color="violet" scale={3} />
-    <div>
-      <h3 class="pixel">On GitHub</h3>
-      <p>
-        Most of my side projects live in private repos: {builds.filter((b) => b.repo?.visibility === 'private').map((b) => b.repo!.name).join(', ')}.
-        {publicRepos.length > 0 ? ` ${publicRepos.length} public:` : ' This site is public.'}
-      </p>
-      {
-        publicRepos.length > 0 && (
-          <ul class="repos" role="list">
-            {publicRepos.slice(0, 8).map((r) => (
-              <li>
-                <a href={r.url}>{r.name}</a>
-                {r.language && <span>{r.language}</span>}
-              </li>
-            ))}
-          </ul>
-        )
-      }
-    </div>
-    <a class="btn ghost" href="https://github.com/charliebrockmeier">github.com/charliebrockmeier</a>
-  </aside>
+  <GitHubWall />
 </section>
 
 <style>
@@ -216,11 +86,13 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     padding: var(--space-xs);
   }
 
-  .screen {
-    height: 190px;
-    overflow: hidden;
-    background: #110d22;
-    box-shadow: inset 0 0 0 2px var(--line);
+  .shot {
+    display: block;
+    transition: filter 120ms steps(2);
+  }
+
+  .shot:hover {
+    filter: brightness(1.12);
   }
 
   .info {
@@ -260,6 +132,10 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
   h3 {
     font-size: var(--step-2);
     line-height: 1;
+  }
+
+  h3 a {
+    color: inherit;
   }
 
   .line {
@@ -307,334 +183,17 @@ const publicRepos = (live.github?.repos ?? []) as { name: string; description: s
     font-size: var(--step--1);
   }
 
-  /* Mock screens */
-  .mock {
-    height: 100%;
-    padding: 12px;
-    color: var(--ink);
-    font-size: 11px;
-    line-height: 1.35;
-  }
-
-  .redact {
-    display: inline-block;
-    height: 7px;
-    background: var(--line);
-  }
-
-  .mail .bar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--ink-soft);
-  }
-
-  .mail .bar i {
-    width: 7px;
-    height: 7px;
-    background: var(--line);
-  }
-
-  .mail .subject {
-    margin-top: 6px;
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-  }
-
-  .chips span {
-    padding: 1px 6px;
-    background: var(--panel-2);
+  .open {
+    align-self: flex-start;
+    margin-top: auto;
+    padding-top: 0.4rem;
     color: var(--teal);
-  }
-
-  .mail ul {
-    display: grid;
-    gap: 6px;
-    margin-top: 10px;
-  }
-
-  .mail li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .tag {
-    color: var(--ink-soft);
-    font-size: 10px;
-  }
-
-  .tag.hit {
-    padding: 0 5px;
-    background: var(--gold);
-    color: var(--bg);
-    font-weight: 700;
-  }
-
-  .book {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: 10px;
-  }
-
-  .book .tiles {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-    align-content: center;
-  }
-
-  .book .tiles span {
-    display: grid;
-    place-items: center;
-    aspect-ratio: 1;
-    background: color-mix(in srgb, var(--g) 25%, var(--bg));
-    color: var(--g);
-    font-family: var(--font-pixel);
-    font-size: 14px;
-  }
-
-  .book .tiles .sel {
-    box-shadow: 0 0 0 2px var(--ink);
-  }
-
-  .flags {
-    display: grid;
-    align-content: center;
-    gap: 3px;
-    color: var(--coral);
-  }
-
-  .flags .pixel {
-    color: var(--ink);
-    font-size: 14px;
-  }
-
-  .dim {
-    color: var(--ink-soft);
-  }
-
-  .locus {
-    display: grid;
-    grid-template-rows: auto 60px 1fr auto;
-    gap: 6px;
-  }
-
-  .locus .brand {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  .locus .brand span {
-    color: var(--ink-soft);
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .locus svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .locus ul {
-    display: grid;
-    gap: 5px;
-  }
-
-  .locus li {
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    align-items: center;
-    color: var(--ink-soft);
-  }
-
-  .ask {
-    padding: 3px 8px;
-    background: #17142a;
-    box-shadow: inset 0 0 0 1px var(--line);
-    color: var(--ink-soft);
-  }
-
-  .ask kbd {
-    margin-right: 4px;
-    padding: 0 4px;
-    background: var(--teal);
-    color: var(--bg);
-    font: inherit;
-    font-weight: 700;
-  }
-
-  .phone {
-    display: grid;
-    place-items: center;
-    padding: 8px;
-  }
-
-  .device {
-    width: 120px;
-    height: 100%;
-    padding: 8px;
-    border-radius: 14px;
-    background: #050409;
-    box-shadow: 0 0 0 3px var(--line);
-    text-align: center;
-  }
-
-  .device img {
-    width: 44px;
-    height: 44px;
-    margin: 2px auto 4px;
-  }
-
-  .device .pixel {
-    color: var(--gold);
-    font-size: 13px;
-  }
-
-  .device ul {
-    display: grid;
-    gap: 3px;
-    margin-top: 4px;
-    text-align: left;
-  }
-
-  .device li {
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 5px;
-    background: #17142a;
-    font-size: 10px;
-  }
-
-  .device li span {
-    color: var(--teal);
-  }
-
-  .reel {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px;
-  }
-
-  .frame {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 4px;
-    width: 30%;
-    max-width: 96px;
-    height: 100%;
-    padding: 6px;
-    background: linear-gradient(#1b1533, #110d22);
-    box-shadow: 0 0 0 2px var(--line);
-  }
-
-  .frame svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .cap {
-    padding: 3px;
-    background: var(--ink);
-    color: var(--bg);
-    font-size: 9px;
-    font-weight: 700;
-  }
-
-  .page {
-    color: var(--c);
-    font-size: 11px;
-    line-height: 1;
-  }
-
-  .site {
-    position: relative;
-    padding: 0;
-  }
-
-  .site img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 60% 100%;
-    image-rendering: pixelated;
-  }
-
-  .here {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    translate: -50% 0;
-    padding: 0 0.5em;
-    background: var(--gold);
-    color: var(--bg);
-    font-size: 13px;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .here {
-      animation: builds-bob 1.2s steps(2) infinite;
-    }
-  }
-
-  @keyframes builds-bob {
-    50% {
-      translate: -50% 3px;
-    }
-  }
-
-  .github {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-m);
-    margin-top: var(--space-s);
-    padding: var(--space-s) var(--space-m);
-  }
-
-  .github h3 {
-    margin-bottom: 0.2rem;
-  }
-
-  .github p {
-    color: var(--ink-soft);
-    font-size: var(--step--1);
-  }
-
-  .repos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem 1rem;
-    margin-top: 0.4rem;
-    font-size: var(--step--1);
-  }
-
-  .repos span {
-    margin-left: 0.35rem;
-    color: var(--ink-soft);
-    font-size: 0.75rem;
+    font-size: var(--step-1);
+    font-size-adjust: cap-height 0.7;
   }
 
   @media (max-width: 899px) {
     .grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .github {
       grid-template-columns: minmax(0, 1fr);
     }
   }

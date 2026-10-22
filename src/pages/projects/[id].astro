@@ -1,0 +1,486 @@
+---
+// One page per crafted item: /projects/<id>. Short facts come from the build in
+// profile.ts, the long-form copy from src/data/projects.ts.
+import Base from '../../layouts/Base.astro';
+import BuildScreen from '../../components/BuildScreen.astro';
+import FacelessTour from '../../components/FacelessTour.astro';
+import Footer from '../../components/Footer.astro';
+import Hud from '../../components/Hud.astro';
+import Icon from '../../components/Icon.astro';
+import LocusTour from '../../components/LocusTour.astro';
+import ProjectMark from '../../components/ProjectMark.astro';
+import { builds, site, type Build } from '../../data/profile';
+import { projects } from '../../data/projects';
+
+export function getStaticPaths() {
+  return builds.map((build, index) => ({ params: { id: build.id }, props: { build, index } }));
+}
+
+interface Props {
+  build: Build;
+  index: number;
+}
+
+const { build: b, index } = Astro.props;
+const p = projects[b.id];
+const total = builds.length;
+const prev = builds[(index - 1 + total) % total];
+const next = builds[(index + 1) % total];
+// "API handlers" keeps its capitals; "Weekly runs" becomes "weekly runs".
+const lower = (s: string) => (/^[A-Z]{2}/.test(s) ? s : s.toLowerCase());
+const numbers = p.numbers ?? b.stats?.map(([label, value]) => ({ value, label: lower(label) })) ?? [];
+const repoUrl = b.repo?.visibility === 'public' ? `https://github.com/charliebrockmeier/${b.repo.name}` : null;
+const allLinks = b.links ?? [];
+// The header already shows a public repo, so it isn't repeated next to it.
+const links = allLinks.filter((l) => l.url !== repoUrl);
+const inviteOnly = /invite/i.test(b.status) && allLinks.length === 0;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<Base title={`${b.name} | ${site.name}`} description={b.line}>
+  <Hud />
+  <main class="wrap project">
+    <nav class="crumbs pixel" aria-label="Breadcrumb">
+      <a href="/#builds">← Crafted items</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{b.name}</span>
+    </nav>
+
+    <header class="head panel">
+      <div class="emblem">
+        <ProjectMark id={b.id} size={96} />
+      </div>
+      <div class="title">
+        <p class="kicker pixel">Personal project · {pad(index + 1)}/{pad(total)}</p>
+        <h1 class="pixel">{b.name}</h1>
+        <p class="line">{b.line}</p>
+        <p class="meta">
+          <span class="status pixel">{b.status}</span>
+          {
+            b.repo && (
+              <span class="repo">
+                <Icon name={b.repo.visibility === 'public' ? 'github' : 'lock'} color="gray" scale={1.5} />
+                {repoUrl ? <a href={repoUrl}>{b.repo.name}</a> : <span>{b.repo.name} · private repo</span>}
+              </span>
+            )
+          }
+          {
+            links.map((l) => (
+              <a class="ext" href={l.url}>
+                {l.label} ↗
+              </a>
+            ))
+          }
+        </p>
+      </div>
+    </header>
+
+    <figure class="monitor panel">
+      <BuildScreen id={b.id} large />
+      <figcaption>Illustration of {b.name}. Names and numbers in it are made up, except the stats on this page.</figcaption>
+    </figure>
+
+    {
+      numbers.length > 0 && (
+        <dl class="numbers panel">
+          {numbers.map((n) => (
+            <div>
+              <dt>{n.label}</dt>
+              <dd class="pixel">{n.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )
+    }
+
+    <div class="cols">
+      <section class="what" aria-labelledby="what">
+        <h2 id="what" class="label pixel">What it does</h2>
+        {p.what.map((para) => <p>{para}</p>)}
+      </section>
+
+      <aside class="sheet panel" aria-label="Project details">
+        <dl>
+          <div>
+            <dt class="pixel">Status</dt>
+            <dd>
+              <span class="status pixel">{b.status}</span>
+              <span class="note">{p.statusNote}</span>
+            </dd>
+          </div>
+          <div>
+            <dt class="pixel">Stack</dt>
+            <dd>
+              <ul class="chips" role="list">
+                {b.stack.map((s) => <li>{s}</li>)}
+              </ul>
+            </dd>
+          </div>
+          <div>
+            <dt class="pixel">Code</dt>
+            <dd>
+              {b.repo ? (repoUrl ? <a href={repoUrl}>github.com/charliebrockmeier/{b.repo.name} ↗</a> : <span>{b.repo.name}, a private repo</span>) : <span>Not on GitHub</span>}
+            </dd>
+          </div>
+          <div>
+            <dt class="pixel">Links</dt>
+            <dd>
+              {allLinks.length > 0 ? (
+                <ul role="list">
+                  {allLinks.map((l) => (
+                    <li>
+                      <a href={l.url}>{l.label} ↗</a>
+                    </li>
+                  ))}
+                </ul>
+              ) : inviteOnly ? (
+                <span class="invite pixel">
+                  <Icon name="lock" color="gold" scale={1.25} /> Invite only
+                </span>
+              ) : (
+                <span class="note">No public link yet</span>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+
+    <section class="how" aria-labelledby="how">
+      <h2 id="how" class="label pixel">How it works</h2>
+      <ol class="steps" role="list">
+        {
+          p.how.map((s, i) => (
+            <li class="step">
+              <span class="n pixel" aria-hidden="true">
+                {pad(i + 1)}
+              </span>
+              <h3 class="pixel">{s.title}</h3>
+              <p>{s.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    {b.id === 'locus' && <LocusTour />}
+    {b.id === 'faceless' && <FacelessTour />}
+
+    <nav class="pager" aria-label="More projects">
+      <a class="btn ghost" href={`/projects/${prev.id}`} rel="prev">← {prev.name}</a>
+      <a class="all pixel" href="/#builds">All projects</a>
+      <a class="btn ghost" href={`/projects/${next.id}`} rel="next">{next.name} →</a>
+    </nav>
+  </main>
+  <Footer />
+</Base>
+
+<script>
+  // The home page's shortcuts: E talks to Charlie, R opens the resume.
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+    const key = e.key.toLowerCase();
+    if (key === 'e') location.href = '/#talk';
+    else if (key === 'r') location.href = '/resume';
+  });
+</script>
+
+<style>
+  .project {
+    padding-top: var(--space-m);
+  }
+
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    color: var(--ink-soft);
+    font-size: var(--step-1);
+  }
+
+  .crumbs [aria-current] {
+    color: var(--ink);
+  }
+
+  /* Title card */
+  .head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-top: var(--space-s);
+    padding: clamp(1rem, 3vw, 1.75rem);
+  }
+
+  .emblem {
+    display: grid;
+    place-items: center;
+    width: 136px;
+    height: 136px;
+    background: radial-gradient(circle at 50% 40%, #4a2a63, var(--bg-2) 75%);
+    box-shadow:
+      inset 0 0 0 var(--px) var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .kicker {
+    color: var(--teal);
+    font-size: var(--step-1);
+  }
+
+  h1 {
+    margin-top: 0.2rem;
+    font-size: clamp(2.5rem, 1.5rem + 4vw, 4.5rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    text-shadow: 0.06em 0.06em 0 var(--shadow);
+  }
+
+  .line {
+    max-width: 52ch;
+    margin-top: var(--space-xs);
+    font-size: var(--step-1);
+    line-height: 1.45;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    margin-top: var(--space-s);
+    font-size: var(--step--1);
+  }
+
+  .status {
+    padding: 0.05em 0.5em;
+    background: var(--panel-2);
+    color: var(--teal);
+    font-size: var(--step-0);
+  }
+
+  .repo,
+  .invite {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ink-soft);
+  }
+
+  .invite {
+    padding: 0.05em 0.5em;
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
+    color: var(--gold);
+    font-size: var(--step-0);
+  }
+
+  .ext {
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  /* The big screen */
+  .monitor {
+    margin-top: var(--space-m);
+    padding: var(--space-s);
+  }
+
+  .monitor figcaption {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  /* Numbers */
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: var(--space-s);
+    margin-top: var(--space-m);
+    padding: var(--space-s) var(--space-m);
+  }
+
+  .numbers div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .numbers dd {
+    color: var(--gold);
+    font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
+    line-height: 1;
+  }
+
+  .numbers dt {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  /* What it does + spec sheet */
+  .cols {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    margin-top: var(--space-xl);
+  }
+
+  .label {
+    margin-bottom: var(--space-s);
+    color: var(--gold);
+    font-size: var(--step-3);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .what p {
+    max-width: 62ch;
+    font-size: var(--step-1);
+    line-height: 1.6;
+  }
+
+  .what p + p {
+    margin-top: var(--space-s);
+  }
+
+  .sheet {
+    padding: var(--space-m);
+  }
+
+  .sheet dl {
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .sheet dt {
+    color: var(--ink-soft);
+    font-size: var(--step-0);
+  }
+
+  .sheet dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  .note {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chips li {
+    padding: 2px 8px;
+    background: var(--bg-2);
+    box-shadow: inset 0 0 0 1px var(--line);
+    font-size: var(--step--1);
+  }
+
+  /* How it works */
+  .how {
+    margin-top: var(--space-xl);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: var(--space-s);
+    counter-reset: step;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'n title' 'n text';
+    column-gap: var(--space-s);
+    align-content: start;
+    padding: var(--space-s);
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 2px var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .n {
+    grid-area: n;
+    color: var(--gold);
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .step h3 {
+    grid-area: title;
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .step p {
+    grid-area: text;
+    margin-top: 0.3rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  /* Prev / next */
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-m);
+    border-top: 2px solid var(--line);
+  }
+
+  .all {
+    font-size: var(--step-1);
+  }
+
+  @media (max-width: 899px) {
+    .cols {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 559px) {
+    .head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .emblem {
+      width: 104px;
+      height: 104px;
+    }
+
+    .emblem :global(.mark) {
+      width: 72px;
+      height: 72px;
+    }
+
+    .emblem :global(.mark svg),
+    .emblem :global(.mark img) {
+      width: 72px;
+      height: 72px;
+    }
+
+    .pager {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
+    }
+
+    .pager .btn {
+      justify-content: center;
+    }
+  }
+</style>

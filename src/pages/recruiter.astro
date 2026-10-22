@@ -1,0 +1,1052 @@
+---
+// For recruiters and collaborators: the whole profile on one screen, with every way
+// to reach out. Facts come from profile.ts; only what it lacks is in recruiter.ts.
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import ProjectMark from '../components/ProjectMark.astro';
+import photo from '../assets/photo/source.jpg';
+import { builds, character, email, links, resume, resumePdf, site } from '../data/profile';
+import { recruiter } from '../data/recruiter';
+
+const linkedin = links.find((l) => l.label === 'LinkedIn');
+const github = links.find((l) => l.label === 'GitHub');
+const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+const now = resume.experience.find((j) => j.org === 'MSCI') ?? resume.experience[0];
+const before = resume.experience.find((j) => j.org.startsWith('Vantager'));
+
+const llm = resume.skills.filter((s) => /LLM|agent/i.test(s));
+const skillGroups = [
+  { name: 'Finance', items: recruiter.skills.finance },
+  { name: 'AI', items: [...llm, ...recruiter.skills.ai] },
+  { name: 'Code', items: resume.skills.filter((s) => !llm.includes(s)) },
+];
+
+// "API handlers" keeps its capitals; "Tests passing" becomes "tests passing".
+const lower = (s: string) => (/^[A-Z]{2}/.test(s) ? s : s.toLowerCase());
+const featured = recruiter.projects.map((id) => builds.find((b) => b.id === id)).filter((b) => b !== undefined);
+const edu = resume.education;
+---
+
+<Base title={`For recruiters | ${site.name}`} description={resume.summary} theme="paper">
+  <div class="toolbar">
+    <a href="/" class="back pixel">← Back to the game</a>
+    <span class="tools">
+      <a class="tb" href="/resume">Resume</a>
+      <a class="tb solid" href={resumePdf} download>Download PDF</a>
+      <button type="button" class="tb" data-print>Print</button>
+    </span>
+  </div>
+
+  <main class="sheet">
+    <header class="id card">
+      <figure class="photo">
+        <Image src={photo} alt="Charlie Brockmeier" width={120} height={160} widths={[120, 240]} sizes="120px" loading="eager" />
+      </figure>
+      <div class="who">
+        <p class="kicker pixel">{recruiter.kicker}</p>
+        <h1>{site.name}</h1>
+        <p class="role">
+          <strong>{character.title}</strong>, {character.guild}<span class="sep" aria-hidden="true">{' · '}</span>{character.base}
+        </p>
+        <p class="tagline">{site.tagline}</p>
+      </div>
+      <p class="quick">
+        <a class="tb solid" href={`mailto:${email}`}>Email me</a>
+        {linkedin && <a class="tb" href={linkedin.url}>LinkedIn</a>}
+      </p>
+    </header>
+
+    <div class="layout">
+      <div class="main">
+        <section class="card summary" aria-labelledby="summary">
+          <h2 id="summary" class="label pixel">The 30-second version</h2>
+          <p class="lead">{resume.summary}</p>
+          <p class="intro">{recruiter.intro}</p>
+        </section>
+
+        <section class="facts" aria-labelledby="facts">
+          <h2 id="facts" class="visually-hidden">By the numbers</h2>
+          <ul role="list">
+            {
+              recruiter.facts.map((f) => (
+                <li class="card fact">
+                  <p class="value pixel">{f.value}</p>
+                  <p class="what">{f.label}</p>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+
+        <section class="card role-card" aria-labelledby="role">
+          <h2 id="role" class="label pixel">Current role</h2>
+          <article class="job">
+            <p class="when pixel">Now · {now.when}</p>
+            <h3>{character.title}, {character.guild}</h3>
+            <p class="org">{now.org} · {now.where}</p>
+            <ul>{now.points.map((pt) => <li>{pt}</li>)}</ul>
+          </article>
+          {
+            before && (
+              <article class="job">
+                <p class="when pixel">Before · {before.when}</p>
+                <h3>
+                  {before.role}, {before.org.replace(/\s*\(.*\)$/, '')}
+                </h3>
+                <p class="org">{recruiter.previous}</p>
+                <ul>
+                  <li>{before.points[0]}</li>
+                </ul>
+              </article>
+            )
+          }
+          <p class="core">{site.tagline}</p>
+        </section>
+
+        <section class="card projects" aria-labelledby="projects">
+          <h2 id="projects" class="label pixel">Selected projects</h2>
+          <p class="note">Personal projects, built on nights and weekends.</p>
+          <ul role="list">
+            {
+              featured.map((b) => (
+                <li class="project">
+                  <span class="chip" aria-hidden="true">
+                    <ProjectMark id={b.id} size={28} />
+                  </span>
+                  <div>
+                    <h3>
+                      <a href={`/projects/${b.id}`}>{b.name}</a>
+                    </h3>
+                    <p class="status pixel">{b.status}</p>
+                    <p class="line">{b.line}</p>
+                    {b.stats && (
+                      <p class="stat">
+                        {b.stats
+                          .slice(0, 2)
+                          .map(([k, v]) => `${v} ${lower(k)}`)
+                          .join(' · ')}
+                      </p>
+                    )}
+                    <p class="go">
+                      <a href={`/projects/${b.id}`}>
+                        Project page<span class="visually-hidden">: {b.name}</span> →
+                      </a>
+                      <span class="print-url">{short(site.url)}/projects/{b.id}</span>
+                    </p>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="more">
+            <a href="/#builds">All projects</a>
+            {github && <a href={github.url}>Everything on GitHub ↗</a>}
+          </p>
+        </section>
+      </div>
+
+      <aside class="side" aria-label="Contact, resume, skills and education">
+        <section class="card reach" id="contact" aria-labelledby="reach">
+          <h2 id="reach" class="label pixel">Reach out</h2>
+          <p class="email-row">
+            <span class="email" data-email>{email}</span>
+            <button type="button" class="copy pixel" data-copy aria-describedby="copy-status">Copy</button>
+          </p>
+          <p class="copy-status" id="copy-status" role="status" aria-live="polite"></p>
+          <ul class="ways" role="list">
+            <li><a href={`mailto:${email}`}>Email</a><span>{email}</span></li>
+            {linkedin && <li><a href={linkedin.url}>LinkedIn</a><span>{short(linkedin.url)}</span></li>}
+            {github && <li><a href={github.url}>GitHub</a><span>{short(github.url)}</span></li>}
+          </ul>
+
+          <details class="draft">
+            <summary class="pixel">Draft an email</summary>
+            <form action={`mailto:${email}`} method="get" data-draft data-email={email}>
+              <label>
+                <span>Your name</span>
+                <input type="text" id="draft-name" autocomplete="name" />
+              </label>
+              <label>
+                <span>Company</span>
+                <input type="text" id="draft-company" autocomplete="organization" />
+              </label>
+              <label>
+                <span>About</span>
+                <select name="subject" id="draft-topic">
+                  {recruiter.topics.map((t) => <option value={t.subject} data-join={t.join}>{t.label}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Message</span>
+                <textarea name="body" id="draft-message" rows="4"></textarea>
+              </label>
+              <button type="submit" class="tb solid">Open in my email app</button>
+              <p class="fine">Nothing is sent from this page. It opens a draft in your own email app.</p>
+            </form>
+          </details>
+        </section>
+
+        <section class="card get" aria-labelledby="get">
+          <h2 id="get" class="label pixel">Get the resume</h2>
+          <p class="buttons">
+            <a class="tb" href="/resume">Read it here</a>
+            <a class="tb solid" href={resumePdf} download>Download PDF</a>
+          </p>
+          <p class="print-url">{short(site.url)}{resumePdf}</p>
+        </section>
+
+        <section class="card skills" aria-labelledby="skills">
+          <h2 id="skills" class="label pixel">Top skills</h2>
+          {
+            skillGroups.map((g) => (
+              <div class="group">
+                <h3 class="pixel">{g.name}</h3>
+                <ul role="list">
+                  {g.items.map((s) => (
+                    <li>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          }
+        </section>
+
+        <section class="card edu" aria-labelledby="edu">
+          <h2 id="edu" class="label pixel">Education</h2>
+          <h3>{edu.school}</h3>
+          <p>{edu.degree}</p>
+          <p class="soft">{recruiter.education.program}</p>
+          <p class="honor">
+            <strong>{edu.honors}</strong> · {edu.when}
+          </p>
+        </section>
+      </aside>
+    </div>
+  </main>
+</Base>
+
+<script>
+  document.querySelector('[data-print]')?.addEventListener('click', () => print());
+
+  // Copy the email address. The clipboard call stays inside the click handler; if it
+  // isn't allowed, the address is selected so it can be copied by hand.
+  const emailEl = document.querySelector<HTMLElement>('[data-email]');
+  const copyBtn = document.querySelector<HTMLButtonElement>('[data-copy]');
+  const status = document.getElementById('copy-status');
+  let reset = 0;
+
+  const say = (msg: string, label: string) => {
+    if (status) status.textContent = msg;
+    if (copyBtn) copyBtn.textContent = label;
+    clearTimeout(reset);
+    reset = window.setTimeout(() => {
+      if (status) status.textContent = '';
+      if (copyBtn) copyBtn.textContent = 'Copy';
+    }, 4000);
+  };
+
+  const selectEmail = () => {
+    if (!emailEl) return;
+    const range = document.createRange();
+    range.selectNodeContents(emailEl);
+    const sel = getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    const keys = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘C' : 'Ctrl+C';
+    say(`Selected. Press ${keys} to copy.`, 'Selected');
+  };
+
+  copyBtn?.addEventListener('click', () => {
+    const text = emailEl?.textContent?.trim() ?? '';
+    if (!navigator.clipboard?.writeText) return selectEmail();
+    navigator.clipboard.writeText(text).then(() => say(`Copied ${text}`, 'Copied!'), selectEmail);
+  });
+
+  // Draft an email: build a mailto: link from the form, entirely in the browser.
+  const form = document.querySelector<HTMLFormElement>('[data-draft]');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.value.trim() ?? '';
+    const topic = document.getElementById('draft-topic') as HTMLSelectElement | null;
+    const join = topic?.selectedOptions[0]?.dataset.join ?? '';
+    const name = val('draft-name');
+    const company = val('draft-company');
+    const subject = `${topic?.value ?? 'Hello'}${join && company ? ` ${join} ${company}` : ''}`;
+    const sign = [name, company].filter(Boolean).join(', ');
+    const body = [val('draft-message') || 'Hi Charlie,', sign && `\n${sign}`].filter(Boolean).join('\n');
+    location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+</script>
+
+<style is:global>
+  body.paper {
+    --bg: #fbf7ee;
+    --ink: #1b1533;
+    --ink-soft: #4f4868;
+    --rule: #e2dccd;
+    --accent: #7a3460;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.paper a {
+    color: var(--accent);
+  }
+
+  body.paper :focus-visible {
+    outline-color: var(--accent);
+  }
+</style>
+
+<style>
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-xs) var(--space-s);
+    max-width: calc(1180px + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: var(--space-s) var(--gutter) 0;
+  }
+
+  .back {
+    font-size: var(--step-1);
+  }
+
+  .tools,
+  .quick,
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  /* Buttons, paper edition: hard pixel shadows like the game's. */
+  .tb {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.9rem;
+    border: 0;
+    background: #fff;
+    box-shadow:
+      inset 0 0 0 2px var(--rule),
+      3px 3px 0 0 var(--rule);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--label);
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 80ms steps(2);
+  }
+
+  body.paper .tb {
+    color: var(--ink);
+  }
+
+  .tb:hover {
+    text-decoration: none;
+    transform: translate(-1px, -1px);
+  }
+
+  .tb.solid,
+  body.paper .tb.solid {
+    background: var(--accent);
+    box-shadow: 3px 3px 0 0 #4a1d3a;
+    color: #fff;
+  }
+
+  .sheet {
+    max-width: calc(1180px + 2 * var(--gutter));
+    margin: var(--space-s) auto var(--space-2xl);
+    padding-inline: var(--gutter);
+  }
+
+  /* A paper panel with stepped pixel corners and a bevel. */
+  .card {
+    padding: var(--space-m);
+    background: #fff;
+    box-shadow:
+      inset 0 0 0 2px var(--rule),
+      inset -4px -4px 0 0 #efe8d8;
+    clip-path: polygon(
+      0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px)
+    );
+  }
+
+  .label {
+    margin-bottom: var(--space-xs);
+    color: var(--accent);
+    font-size: var(--step-1);
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Who */
+  .id {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-m);
+  }
+
+  .photo img {
+    width: 90px;
+    height: 120px;
+    object-fit: cover;
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+
+  .kicker {
+    color: var(--accent);
+    font-size: var(--step-1);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+
+  .role {
+    margin-top: 0.3rem;
+    font-size: var(--step-1);
+  }
+
+  .tagline {
+    color: var(--ink-soft);
+  }
+
+  .quick {
+    align-self: start;
+  }
+
+  /* Two columns: the story on the left, contact and quick facts on the right. */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-s);
+    margin-top: var(--space-s);
+  }
+
+  .main,
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    min-width: 0;
+  }
+
+  .lead {
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+
+  .intro {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .facts ul {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-s);
+  }
+
+  .fact {
+    container-type: inline-size;
+    padding: var(--space-s);
+  }
+
+  /* Sized to the tile, so "Acquired" always fits. */
+  .value {
+    color: var(--accent);
+    font-size: clamp(1.5rem, 22cqi, 2.5rem);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .what {
+    margin-top: 0.3rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    line-height: 1.4;
+  }
+
+  /* Current role */
+  .job + .job {
+    margin-top: var(--space-s);
+    padding-top: var(--space-s);
+    border-top: 1px dashed var(--rule);
+  }
+
+  .when {
+    color: #1d6f78;
+    font-size: var(--step-0);
+  }
+
+  .job h3 {
+    font-size: var(--step-1);
+  }
+
+  .org {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .job ul {
+    margin-top: 0.3rem;
+    padding-left: 1.1em;
+    list-style: square;
+  }
+
+  .core {
+    margin-top: var(--space-s);
+    padding: 0.5rem 0.75rem;
+    background: #f6f0e2;
+    font-weight: 600;
+  }
+
+  /* Projects */
+  .note {
+    margin-top: -0.25rem;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .projects > ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-s) var(--space-m);
+    margin-top: var(--space-s);
+  }
+
+  .project {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  .chip {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    background: #141026;
+  }
+
+  .project h3 {
+    font-size: var(--step-0);
+  }
+
+  .project h3 a {
+    color: var(--ink);
+  }
+
+  .status {
+    color: #1d6f78;
+    font-size: var(--label);
+    line-height: 1.2;
+  }
+
+  .line {
+    margin-top: 0.2rem;
+    font-size: var(--step--1);
+    line-height: 1.45;
+  }
+
+  .stat {
+    margin-top: 0.2rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .go {
+    margin-top: 0.2rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .more {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem var(--space-m);
+    margin-top: var(--space-s);
+    padding-top: var(--space-xs);
+    border-top: 1px dashed var(--rule);
+    font-weight: 600;
+  }
+
+  .print-url {
+    display: none;
+  }
+
+  /* Reach out */
+  .reach {
+    box-shadow:
+      inset 0 0 0 2px var(--accent),
+      inset -4px -4px 0 0 #f1e3ea;
+  }
+
+  .email-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    margin-top: var(--space-2xs);
+  }
+
+  .email {
+    flex: 1 1 16em;
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+    background: #f6f0e2;
+    box-shadow: inset 0 0 0 2px var(--rule);
+    font-size: var(--step-0);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
+  .copy {
+    flex: 1 0 auto;
+    min-width: 5.5em;
+    padding: 0.4rem 0.8rem;
+    border: 0;
+    background: var(--ink);
+    color: #fff;
+    font-size: var(--step-1);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .copy:hover {
+    background: var(--accent);
+  }
+
+  .copy-status {
+    min-height: 1.4em;
+    margin-top: 0.2rem;
+    color: #1d6f78;
+    font-size: 0.75rem;
+  }
+
+  .ways {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .ways li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 0.75rem;
+  }
+
+  .ways a {
+    font-weight: 700;
+  }
+
+  .ways span {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    overflow-wrap: anywhere;
+  }
+
+  .draft {
+    margin-top: var(--space-s);
+    padding-top: var(--space-xs);
+    border-top: 1px dashed var(--rule);
+  }
+
+  .draft summary {
+    color: var(--accent);
+    font-size: var(--step-1);
+    cursor: pointer;
+  }
+
+  .draft form {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: var(--space-xs);
+  }
+
+  .draft label {
+    display: grid;
+    gap: 0.15rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .draft input,
+  .draft select,
+  .draft textarea {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 2px solid var(--rule);
+    border-radius: 0;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+  }
+
+  .draft input:focus-visible,
+  .draft select:focus-visible,
+  .draft textarea:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 0;
+  }
+
+  .draft textarea {
+    resize: vertical;
+  }
+
+  .draft button {
+    justify-self: start;
+  }
+
+  .fine {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  /* Skills */
+  .group + .group {
+    margin-top: var(--space-xs);
+  }
+
+  .group h3 {
+    color: #1d6f78;
+    font-size: var(--step-0);
+  }
+
+  .group ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0.2rem;
+  }
+
+  .group li {
+    padding: 1px 7px;
+    background: #f6f0e2;
+    font-size: var(--step--1);
+  }
+
+  /* Education */
+  .edu h3 {
+    font-size: var(--step-0);
+  }
+
+  .edu p {
+    font-size: var(--step--1);
+  }
+
+  .soft {
+    color: var(--ink-soft);
+  }
+
+  .honor {
+    margin-top: 0.3rem;
+  }
+
+  /* One column on narrow screens, with contact right after the summary. */
+  @media screen and (max-width: 959px) {
+    .layout {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .main,
+    .side {
+      display: contents;
+    }
+
+    .summary {
+      order: 1;
+    }
+
+    .reach {
+      order: 2;
+    }
+
+    .facts {
+      order: 3;
+    }
+
+    .role-card {
+      order: 4;
+    }
+
+    .projects {
+      order: 5;
+    }
+
+    .skills {
+      order: 6;
+    }
+
+    .edu {
+      order: 7;
+    }
+
+    .get {
+      order: 8;
+    }
+
+    .facts ul {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media screen and (max-width: 639px) {
+    .id {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .photo img {
+      width: 72px;
+      height: 96px;
+    }
+
+    .quick {
+      grid-column: 1 / -1;
+    }
+
+    .projects > ul {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .card {
+      padding: var(--space-s);
+    }
+  }
+
+  @media print {
+    @page {
+      size: Letter;
+      margin: 0.45in 0.5in;
+    }
+
+    body.paper {
+      background: #fff;
+    }
+
+    .toolbar,
+    .quick,
+    .email-row,
+    .copy-status,
+    .draft,
+    .get .buttons,
+    .more,
+    .go a,
+    .intro {
+      display: none;
+    }
+
+    .print-url {
+      display: inline;
+      color: var(--ink-soft);
+      font-size: 7pt;
+    }
+
+    .sheet {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      font-size: 8.5pt;
+      line-height: 1.3;
+    }
+
+    .card {
+      padding: 0;
+      box-shadow: none;
+      clip-path: none;
+      break-inside: avoid;
+    }
+
+    .id {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12pt;
+      padding-bottom: 8pt;
+      border-bottom: 1.5pt solid var(--ink);
+    }
+
+    .photo img {
+      width: 48px;
+      height: 64px;
+    }
+
+    .kicker {
+      font-size: 10pt;
+    }
+
+    h1 {
+      font-size: 20pt;
+    }
+
+    .role {
+      font-size: 10pt;
+    }
+
+    .tagline,
+    .lead {
+      font-size: 9pt;
+    }
+
+    .label {
+      margin-bottom: 3pt;
+      font-size: 10pt;
+    }
+
+    /* One page: the sections interleave in a grid instead of two stacked columns. */
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+      grid-template-areas:
+        'summary reach'
+        'facts facts'
+        'role skills'
+        'projects edu'
+        'projects get';
+      gap: 9pt 18pt;
+      margin-top: 9pt;
+    }
+
+    .main,
+    .side {
+      display: contents;
+    }
+
+    .summary {
+      grid-area: summary;
+    }
+
+    .reach {
+      grid-area: reach;
+    }
+
+    .facts {
+      grid-area: facts;
+    }
+
+    .role-card {
+      grid-area: role;
+    }
+
+    .skills {
+      grid-area: skills;
+    }
+
+    .projects {
+      grid-area: projects;
+    }
+
+    .edu {
+      grid-area: edu;
+    }
+
+    .get {
+      grid-area: get;
+    }
+
+    .facts ul {
+      gap: 8pt;
+    }
+
+    .fact {
+      padding: 5pt 7pt;
+      box-shadow: inset 0 0 0 1pt var(--rule);
+    }
+
+    .value {
+      font-size: 16pt;
+    }
+
+    .what,
+    .org,
+    .note,
+    .stat,
+    .edu p,
+    .ways span {
+      font-size: 7.5pt;
+    }
+
+    .when,
+    .group h3,
+    .job h3,
+    .edu h3,
+    .project h3 {
+      font-size: 9pt;
+    }
+
+    .line,
+    .group li,
+    .status {
+      font-size: 8pt;
+    }
+
+    .job + .job {
+      margin-top: 5pt;
+      padding-top: 5pt;
+    }
+
+    .core {
+      margin-top: 5pt;
+    }
+
+    .ways li {
+      display: block;
+    }
+
+    .ways a {
+      margin-right: 6pt;
+    }
+
+    .core,
+    .group li {
+      background: none;
+      padding: 0;
+    }
+
+    .group ul {
+      gap: 0 8pt;
+    }
+
+    .projects > ul {
+      gap: 6pt 12pt;
+      margin-top: 4pt;
+    }
+
+    .chip {
+      width: 24px;
+      height: 24px;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    a {
+      color: inherit;
+    }
+  }
+</style>

@@ -14,6 +14,7 @@ const year = new Date().getFullYear();
         <a class="btn" href={resumePdf} download><Icon name="doc" color="cream" scale={2} /> Download resume (PDF)</a>
         <a class="btn ghost" href="/resume">Read it here <kbd>R</kbd></a>
       </div>
+      <p class="hire"><a class="pixel" href="/recruiter">Recruiters →</a> everything on one screen, with every way to reach me.</p>
     </div>
     <ul class="links" role="list">
       {
@@ -67,6 +68,18 @@ const year = new Date().getFullYear();
     flex-wrap: wrap;
     gap: var(--space-s);
     margin-top: var(--space-m);
+  }
+
+  .hire {
+    margin-top: var(--space-s);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .hire a {
+    margin-right: 0.35em;
+    font-size: var(--step-1);
+    font-size-adjust: cap-height 0.7;
   }
 
   .links {

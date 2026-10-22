@@ -425,8 +425,9 @@ export const inventory: { equipped: Item[]; bag: Item[] } = {
 
 export type Item = { code: string; name: string; tier: Tier; note: string };
 
-// Crafted items. `mock` picks the illustrated screen shown for each one; every
-// number in a mock is synthetic except the stats listed here.
+// Crafted items. `id` picks the illustrated screen (BuildScreen.astro) and the page at
+// /projects/<id>; the long-form copy for that page lives in src/data/projects.ts.
+// Every number in a mock is synthetic except the stats listed here.
 export type Build = {
   id: 'obituary' | 'portfolio' | 'locus' | 'phyt' | 'faceless' | 'site';
   name: string;
@@ -436,7 +437,8 @@ export type Build = {
   line: string;
   detail: string;
   stats?: [string, string][];
-  url?: string;
+  /** Live sites and public pages. Empty for invite-only apps. */
+  links?: { label: string; url: string }[];
 };
 
 export const builds: Build[] = [
@@ -475,7 +477,7 @@ export const builds: Build[] = [
     name: 'Locus',
     status: 'Live, invite only',
     repo: { name: 'brockmeier-finances', visibility: 'private' },
-    stack: ['Next.js', 'TypeScript', 'Supabase', 'Plaid', 'Vercel'],
+    stack: ['Next.js', 'TypeScript', 'Supabase', 'Plaid', 'Vercel', 'Vitest', 'GitHub Actions'],
     line: 'A personal OS: every account, the calendar and documents in one place, with an AI assistant on top.',
     detail:
       'Net worth, cash flow, forecasts, portfolio and tax views across bank, card, brokerage and retirement accounts, plus tasks, notes and habits. Read-only by design: there is no way for it to move money. Every AI action lands in an approval ledger, and every table has row-level security.',
@@ -483,7 +485,10 @@ export const builds: Build[] = [
       ['Tests passing', '4,349'],
       ['API handlers', '143'],
       ['AI tools', '36'],
+      ['Pages', '50+'],
     ],
+    // Invite only for now; it moves to its own subdomain later.
+    links: [],
   },
   {
     id: 'phyt',
@@ -493,7 +498,7 @@ export const builds: Build[] = [
     stack: ['iOS', 'product design'],
     line: 'A fitness app for iPhone, designed and built end to end. Logo included.',
     detail: 'From the logo to the last screen, mine. More soon at phytapp.org.',
-    url: 'https://phytapp.org/',
+    links: [{ label: 'phytapp.org', url: 'https://phytapp.org/' }],
   },
   {
     id: 'faceless',
@@ -518,6 +523,7 @@ export const builds: Build[] = [
     stack: ['Astro', 'pixel art drawn in code', 'a chess bot'],
     line: 'A player profile with a talking NPC, a chess bot and live chess stats.',
     detail: 'Every pixel is drawn in code. The chess and GitHub numbers refresh on every build.',
+    links: [{ label: 'Source on GitHub', url: 'https://github.com/charliebrockmeier/charliebrockmeier.com' }],
   },
 ];
 

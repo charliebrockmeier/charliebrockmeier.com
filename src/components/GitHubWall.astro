@@ -1,0 +1,232 @@
+---
+// "On GitHub": one tile per repo, public and private, with totals. The list and the
+// merge with the build-time fetch live in src/data/github.ts.
+import Icon from './Icon.astro';
+import { githubTotals as totals, githubUrl, pushedMonth, repos } from '../data/github';
+
+// Language swatches, from the dusk palette.
+const swatch: Record<string, string> = {
+  TypeScript: 'var(--blue)',
+  JavaScript: 'var(--gold)',
+  Python: 'var(--green)',
+  Astro: 'var(--coral)',
+  Java: 'var(--red)',
+  Swift: 'var(--coral)',
+};
+
+const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : (xs[0] ?? ''));
+const totalsLine = [
+  `${totals.public} public, ${totals.private} private.`,
+  totals.active > 0 ? `${totals.active} pushed in ${totals.activeMonth}.` : '',
+  totals.languages.length ? `Written in ${list(totals.languages)}.` : '',
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class="github" aria-labelledby="github-title">
+  <header class="head panel">
+    <Icon name="github" color="violet" scale={3} />
+    <div class="copy">
+      <h3 id="github-title" class="pixel">On GitHub</h3>
+      <p class="totals"><strong>{totals.repos} repos:</strong> {totalsLine}</p>
+      <p class="sub">Most of my personal projects live in private repos. Their tiles link to the project pages instead.</p>
+    </div>
+    <a class="btn ghost" href={githubUrl}>github.com/charliebrockmeier ↗</a>
+  </header>
+
+  <ul class="wall" role="list">
+    {
+      repos.map((r) => (
+        <li class:list={['tile', r.visibility]}>
+          <p class="top">
+            <span class="badge pixel">
+              {r.visibility === 'private' && <Icon name="lock" color="gray" scale={1.25} />}
+              {r.visibility}
+            </span>
+            <span class="when">
+              <span class="visually-hidden">Last push: </span>
+              <time datetime={r.pushed.slice(0, 7)}>{pushedMonth(r.pushed)}</time>
+            </span>
+          </p>
+          <h4 class="name">{r.name}</h4>
+          <p class="desc">{r.description}</p>
+          <p class="langs">
+            {r.languages.map((l) => (
+              <span class="lang">
+                <i style={`--c: ${swatch[l] ?? 'var(--gray)'}`} aria-hidden="true" />
+                {l}
+              </span>
+            ))}
+            {r.stack?.map((s) => (
+              <span class="stack">{s}</span>
+            ))}
+          </p>
+          <p class="go">
+            {r.url && (
+              <a href={r.url}>
+                Repo<span class="visually-hidden">: {r.name}</span> ↗
+              </a>
+            )}
+            {r.project && (
+              <a href={`/projects/${r.project}`}>
+                Project page<span class="visually-hidden"> for {r.name}</span> →
+              </a>
+            )}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .github {
+    margin-top: var(--space-l);
+  }
+
+  .head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-m);
+    padding: var(--space-s) var(--space-m);
+  }
+
+  h3 {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .totals {
+    margin-top: 0.3rem;
+  }
+
+  .totals strong {
+    color: var(--gold);
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .wall {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+    background: var(--bg-2);
+    box-shadow:
+      inset 0 0 0 2px var(--line),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .tile.public {
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, var(--teal) 45%, var(--line)),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0 0.45em;
+    background: var(--panel-2);
+    color: var(--gray);
+    font-size: var(--label);
+    text-transform: uppercase;
+  }
+
+  .public .badge {
+    background: color-mix(in srgb, var(--teal) 16%, var(--bg));
+    color: var(--teal);
+  }
+
+  .when {
+    color: var(--ink-soft);
+  }
+
+  .name {
+    font-size: var(--step-0);
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .desc {
+    flex: 1;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .langs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+  }
+
+  .lang i {
+    width: 8px;
+    height: 8px;
+    background: var(--c);
+  }
+
+  .stack {
+    color: var(--ink-soft);
+  }
+
+  .go {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    font-family: var(--font-pixel);
+    font-size: var(--step-0);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .go:empty {
+    display: none;
+  }
+
+  @media (max-width: 899px) {
+    .head {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .head .btn {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .head .btn {
+      font-size: var(--step-0);
+    }
+  }
+</style>
