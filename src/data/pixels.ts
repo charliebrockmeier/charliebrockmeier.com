@@ -401,6 +401,20 @@ export const icons = {
     '.KKKKKKKKKK.',
     '............',
   ],
+  golf: [
+    '...KK.......',
+    '...K1KK.....',
+    '...K111KK...',
+    '...K11111K..',
+    '...K111KK...',
+    '...K1KK.....',
+    '...KK.......',
+    '...K....KK..',
+    '...K...K33K.',
+    '.KKKKK.K33K.',
+    'K22222KKKKKK',
+    '.KKKKKKKKKK.',
+  ],
 } satisfies Record<string, string[]>;
 
 export type IconName = keyof typeof icons;

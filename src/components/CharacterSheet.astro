@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import photo from '../assets/photo/source.jpg';
 import Icon from './Icon.astro';
+import SkillTree from './SkillTree.astro';
 import { character, stats } from '../data/profile';
 
 const SEGMENTS = 20;
@@ -14,7 +15,7 @@ const point = (i: number, v: number) => {
 };
 const ring = (v: number) => stats.map((_, i) => point(i, v)).join(' ');
 const shape = stats.map((s, i) => point(i, s.value / 100)).join(' ');
-const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', violet: '--violet', coral: '--coral', blue: '--blue', green: '--green' };
+const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', violet: '--violet', coral: '--coral', blue: '--blue', green: '--green', red: '--red' };
 ---
 
 <section id="character" class="section wrap" aria-labelledby="character-title">
@@ -34,8 +35,10 @@ const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', viole
       <dl class="facts">
         <div><dt class="pixel">Class</dt><dd>{character.className}, subclass {character.subclass}</dd></div>
         <div><dt class="pixel">Guild</dt><dd>{character.guild}</dd></div>
+        <div><dt class="pixel">School</dt><dd>{character.school}</dd></div>
         <div><dt class="pixel">Origin</dt><dd>{character.origin}</dd></div>
         <div><dt class="pixel">Base</dt><dd>{character.base}</dd></div>
+        <div><dt class="pixel">Specialty</dt><dd>Private markets × AI</dd></div>
       </dl>
     </div>
 
@@ -71,6 +74,7 @@ const colorVar: Record<string, string> = { gold: '--gold', teal: '--teal', viole
     </div>
   </div>
 
+  <SkillTree />
 </section>
 
 <style>

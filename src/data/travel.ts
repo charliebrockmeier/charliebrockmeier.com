@@ -25,9 +25,9 @@ export const map = { width: W as number, height: H as number, hawaii: HAWAII_BOX
 
 // The main quest, in order.
 export const career: Stop[] = [
-  { id: 'kearney', name: 'Kearney, NE', lon: -99.08, lat: 40.7, kind: 'home', when: 'Until 2021', note: 'Spawn point. Kearney High class of 2021 and student council president, Eagle Scout, then internships at Cash-Wa and Buckle.', label: 'w' },
-  { id: 'lincoln', name: 'Lincoln, NE', lon: -96.7, lat: 40.81, kind: 'school', when: '2021–2025', note: 'University of Nebraska–Lincoln, Raikes School.', label: 's' },
-  { id: 'omaha', name: 'Omaha, NE', lon: -95.94, lat: 41.26, kind: 'work', when: 'Summer 2023', note: 'Covisum internship.', label: 'n' },
+  { id: 'kearney', name: 'Kearney, NE', lon: -99.08, lat: 40.7, kind: 'home', when: 'Until 2021', note: 'Spawn point. Kearney High, class of 2021. Came home for summer jobs: IT at Cash-Wa before college, then Buckle’s e-commerce team in 2022.', label: 'w' },
+  { id: 'lincoln', name: 'Lincoln, NE', lon: -96.7, lat: 40.81, kind: 'school', when: '2021–2025', note: 'University of Nebraska–Lincoln: finance and accounting, the Raikes School honors program, and Saturdays in the Sea of Red.', label: 's' },
+  { id: 'omaha', name: 'Omaha, NE', lon: -95.94, lat: 41.26, kind: 'work', when: 'Summer 2023', note: 'Covisum internship, the summer before junior year.', label: 'n' },
   { id: 'sf', name: 'San Francisco, CA', lon: -122.42, lat: 37.77, kind: 'work', when: 'Summer 2024', note: 'Flew out from Nebraska for a summer in person at Three Bridge Wealth Advisors: lived in the South Bay, worked in the city.', label: 'e' },
   { id: 'nyc', name: 'New York, NY', lon: -74.01, lat: 40.71, kind: 'work', when: 'Summer 2025–now', note: 'Moved east for Vantager, then MSCI at 7 World Trade Center. Current save.', label: 's' },
 ];

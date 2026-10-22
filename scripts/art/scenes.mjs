@@ -220,26 +220,45 @@ export function raikes() {
   const lime = '#d8b98a';
   const limeD = '#a8865e';
   const limeS = '#7a5e48';
-  // Base building with its long, low wings.
-  cv.rect(26, 40, 140, ground - 40, lime);
-  cv.rect(26, 40, 140, 2, limeD);
-  for (let x = 30; x < 164; x += 6) cv.rect(x, 44, 3, 6, rand() > 0.6 ? C.gold : '#4a3a5a');
-  cv.rect(26, 40, 2, ground - 40, limeS);
-  cv.rect(164, 40, 2, ground - 40, limeS);
-  // Central tower with setbacks and tall window slots.
-  const tx = 96;
-  cv.rect(tx - 14, 30, 29, 10, lime);
-  cv.rect(tx - 10, 12, 21, 18, lime);
-  cv.rect(tx - 10, 12, 2, 18, limeD);
-  cv.rect(tx + 9, 12, 2, 18, limeS);
-  for (let x = tx - 6; x <= tx + 6; x += 4) cv.rect(x, 14, 2, 14, '#3a2f55');
-  for (let x = tx - 6; x <= tx + 6; x += 4) cv.px(x, 20, C.gold);
-  cv.rect(tx - 8, 9, 17, 3, limeD);
-  // Gold dome and the Sower.
-  for (let y = 0; y < 6; y++) {
-    const half = Math.round(Math.sqrt(36 - y * y) * 1.2);
-    cv.rect(tx - half, 8 - y, half * 2 + 1, 1, y === 2 ? C.teal : y > 3 ? C.sun : C.gold);
+  // Base building: long, low wings around a central block, like the Capitol's cross plan.
+  cv.rect(22, 44, 148, ground - 44, lime);
+  cv.rect(22, 44, 148, 1, limeD);
+  for (let x = 26; x < 168; x += 5) if (Math.abs(x - 96) > 18) cv.rect(x, 47, 2, 5, rand() > 0.55 ? C.gold : '#4a3a5a');
+  cv.rect(22, 44, 2, ground - 44, limeS);
+  cv.rect(168, 44, 2, ground - 44, limeS);
+  // Corner pavilions.
+  for (const x of [22, 160]) {
+    cv.rect(x, 40, 10, 4, lime);
+    cv.rect(x, 40, 10, 1, limeD);
   }
+  // Central block and entrance steps.
+  const tx = 96;
+  cv.rect(tx - 20, 38, 41, ground - 38, lime);
+  cv.rect(tx - 20, 38, 41, 1, limeD);
+  cv.rect(tx - 20, 38, 2, ground - 38, limeD);
+  cv.rect(tx + 19, 38, 2, ground - 38, limeS);
+  for (let x = tx - 14; x <= tx + 14; x += 4) cv.rect(x, 42, 2, 9, '#3a2f55');
+  for (let y = 0; y < 3; y++) cv.rect(tx - 8 - y * 2, ground - 3 + y, 17 + y * 4, 1, y % 2 ? limeD : lime);
+  // The 400-foot tower: two setbacks, tall window bays lit gold.
+  cv.rect(tx - 8, 18, 17, 20, lime);
+  cv.rect(tx - 8, 18, 2, 20, limeD);
+  cv.rect(tx + 7, 18, 2, 20, limeS);
+  for (let x = tx - 5; x <= tx + 5; x += 3) {
+    cv.rect(x, 20, 1, 16, '#3a2f55');
+    if (rand() > 0.4) cv.px(x, 22 + Math.floor(rand() * 10), C.gold);
+  }
+  cv.rect(tx - 9, 17, 19, 1, limeD);
+  cv.rect(tx - 6, 13, 13, 4, lime);
+  cv.rect(tx - 6, 13, 1, 4, limeD);
+  cv.rect(tx + 6, 13, 1, 4, limeS);
+  for (let x = tx - 4; x <= tx + 4; x += 2) cv.px(x, 14, '#3a2f55');
+  // Octagonal drum, gold-tiled dome with its blue-green band, and the Sower.
+  cv.rect(tx - 4, 10, 9, 3, limeD);
+  for (let y = 0; y < 5; y++) {
+    const half = [4, 4, 3, 2, 1][y];
+    cv.rect(tx - half, 9 - y, half * 2 + 1, 1, y === 1 ? C.teal : y > 2 ? C.sun : C.gold);
+  }
+  cv.rect(tx, 3, 1, 2, C.gold);
   cv.rect(tx, 0, 1, 3, '#2a1f3a');
   cv.px(tx - 1, 1, '#2a1f3a');
   cv.px(tx + 1, 0, '#2a1f3a');
