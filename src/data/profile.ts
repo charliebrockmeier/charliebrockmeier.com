@@ -6,7 +6,7 @@ import type { LogoName } from './logos';
 export const site = {
   url: 'https://charliebrockmeier.com',
   name: 'Charlie Brockmeier',
-  title: 'Charlie Brockmeier | AI products for private markets',
+  title: 'Charlie Brockmeier',
   tagline: 'I work on private markets at MSCI and build software with AI.',
   positioning:
     'Charlie Brockmeier works on private markets at MSCI in New York and builds software with AI. Previously at Vantager, which MSCI acquired in 2026.',
@@ -121,7 +121,7 @@ export const quests: Quest[] = [
     role: 'Kearney High, class of 2021',
     status: 'complete',
     emblems: ['khs', 'cashwa'],
-    summary: 'Grew up here. State tennis medalist, Eagle Scout, and an IT job the summer before college.',
+    summary: 'Where I grew up.',
     objectives: ['Medal at state in tennis', 'Eagle Scout', 'Cash-Wa Distributing, summer 2021: Python macros, and built the IT department’s PCs'],
     reward: 'A ticket to Lincoln',
     unlocked: 'Code',
@@ -140,14 +140,12 @@ export const quests: Quest[] = [
     role: 'B.S.B.A. Finance & Accounting · minors in CS and Math · Raikes School honors program',
     status: 'complete',
     emblems: ['unl', 'buckle', 'covisum'],
-    summary:
-      'Finance and accounting in the College of Business, and computer science through the Raikes School honors program. Summers writing production code; first AI project in 2023.',
+    summary: 'Finance and accounting, plus computer science through the Raikes School honors program.',
     objectives: [
       "Buckle, summer 2022: shipped the e-commerce site's favorites page to production",
       'Covisum, summer 2023: built financial-advisory tools and a client intake form with the CEO',
-      'Junior capstone developer: a GPT-3.5 support assistant for DMSi, trained on 250,000 tickets',
-      "Senior capstone PM: machine learning for Conagra Brands' $500M capital-expenditure decisions",
-      'Wrote The Illiquidity Premium, a paper on private-markets returns',
+      'Junior capstone: a GPT-3.5 support assistant trained on 250,000 tickets',
+      'Senior capstone PM: machine learning for capital-expenditure decisions',
     ],
     reward: 'Graduated with High Distinction',
     link: { label: 'Read The Illiquidity Premium', url: '/writing/illiquidity-premium' },
@@ -184,8 +182,8 @@ export const quests: Quest[] = [
     role: 'Financial Analyst, Investment Committee',
     status: 'complete',
     emblems: ['threebridge'],
-    summary: 'Investment diligence for a multi-family office, in person in San Francisco for the summer of 2024 and part-time after. Learned the job by hand, then automated the repetitive parts.',
-    objectives: ['Intro calls, investment memos and committee overviews', 'Kept the private-investments database up to date', 'Automated research and reporting with Python and AI'],
+    summary: 'Investment diligence for a multi-family office: in San Francisco for summer 2024, then part-time.',
+    objectives: ['Intro calls, investment memos and committee overviews', 'Automated research and reporting with Python'],
     reward: 'How diligence actually works',
     unlocked: 'Private markets',
     levels: { finance: 7, code: 5, ai: 3, lead: 7 },
@@ -205,13 +203,13 @@ export const quests: Quest[] = [
     role: 'Growth & Product Analyst',
     status: 'complete',
     emblems: ['vantager'],
-    summary: 'Joined a small startup early. Its software read the documents fund managers share with investors and drafted diligence reports from them: the job I had done by hand, done with AI.',
+    summary: 'An early hire at a startup that used AI to draft investment diligence reports from fund documents.',
     objectives: ['Diligence templates, data quality and customer feedback', 'Acquired by MSCI in March 2026'],
     reward: 'Acquired',
     unlocked: 'Finance × AI',
     levels: { finance: 8, code: 6, ai: 7, lead: 8 },
     levelUps: [
-      { skill: 'AI diligence', track: 'ai', up: 'new', carries: 'MSCI' },
+      { skill: 'AI diligence', track: 'ai', up: 'new' },
       { skill: 'Product', track: 'lead', up: 'new' },
       { skill: 'Growth', track: 'lead', up: 1 },
       { skill: 'Fund documents', track: 'finance', up: 1 },
@@ -227,15 +225,12 @@ export const quests: Quest[] = [
     role: 'Senior Associate',
     status: 'active',
     emblems: ['msci'],
-    summary: 'Same work as at Vantager, now inside MSCI: software that helps investors evaluate private funds before they put money in.',
-    objectives: ['Joined through the Vantager acquisition', 'Make fund diligence faster'],
+    summary: 'Senior Associate on the Private Assets team, in New York.',
+    objectives: ['Joined through the Vantager acquisition, March 2026'],
     reward: 'In progress',
     unlocked: 'MSCI',
     levels: { finance: 9, code: 6, ai: 8, lead: 8 },
-    levelUps: [
-      { skill: 'Private-markets data', track: 'finance', up: 1 },
-      { skill: 'AI inside a large company', track: 'ai', up: 1 },
-    ],
+    levelUps: [],
     scene: { src: '/art/msci.png', place: 'Lower Manhattan', alt: 'Pixel art: an office desk at night with a chart on the monitor and towers through the window.' },
   },
 ];
@@ -369,7 +364,7 @@ export const dialogue = {
   options: [
     {
       q: 'What do you do at MSCI?',
-      a: "I'm a Senior Associate in MSCI Private Assets, at 7 World Trade. I work on software that helps investors evaluate private funds before they invest. I joined when MSCI acquired Vantager in 2026.",
+      a: "I'm a Senior Associate in MSCI Private Assets, in New York. I joined when MSCI acquired Vantager in 2026.",
     },
     {
       q: 'How did you get here?',
@@ -397,17 +392,14 @@ export const dialogue = {
 // The resume page (/resume): the same facts on one printable page.
 export const resume = {
   summary:
-    'Finance-first builder in private markets. Senior Associate at MSCI Private Assets, working on AI-powered pre-investment diligence for private-fund investors, after joining through MSCI’s acquisition of Vantager, where I was on the early team. Finance and accounting at the University of Nebraska–Lincoln, with minors in computer science and math; shipping LLM products since 2023.',
+    'Senior Associate at MSCI Private Assets in New York. Before that, on the early team at Vantager, which MSCI acquired in 2026. Finance and accounting at the University of Nebraska–Lincoln, with minors in computer science and math.',
   experience: [
     {
       org: 'MSCI',
       role: 'Senior Associate, Private Assets',
       where: 'New York, NY',
       when: 'Mar 2026 – present',
-      points: [
-        'Work on MSCI’s AI-powered pre-investment diligence for private markets: tools that help pensions, endowments, foundations, family offices and wealth managers size up private funds before they commit capital.',
-        'Joined through MSCI’s March 2026 acquisition of Vantager, an AI-native pre-investment diligence platform.',
-      ],
+      points: ['Joined through MSCI’s March 2026 acquisition of Vantager.'],
     },
     {
       org: 'Vantager (acquired by MSCI)',

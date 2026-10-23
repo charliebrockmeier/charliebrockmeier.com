@@ -3,7 +3,7 @@
 import type { Build } from './profile';
 
 export const recruiter = {
-  kicker: 'For recruiters and collaborators',
+  kicker: 'Contact',
   intro: 'Everything in one screen: who I am, what I’ve built, and the fastest ways to reach me.',
 
   // Headline numbers. Each one already appears elsewhere on the site.

@@ -17,7 +17,7 @@ const maxed = branches.reduce((n, b) => n + b.skills.filter((s) => s.level === M
   <header class="head">
     <div>
       <h3 class="pixel">Skill tree</h3>
-      <p>Five branches, {branches.length * tiers.length} skills, from fundamentals to the capstone each one is building toward.</p>
+      <p>Fundamentals on the left, where each branch is headed on the right. Hover or tap a skill for details.</p>
     </div>
     <dl class="totals">
       <div><dt>Skill points</dt><dd class="pixel">{total}</dd></div>
@@ -311,10 +311,34 @@ const maxed = branches.reduce((n, b) => n + b.skills.filter((s) => s.level === M
     line-height: 1;
   }
 
+  /* Details stay out of the way until a skill is hovered or tapped. */
   .note {
-    color: var(--ink-soft);
-    font-size: 0.6875rem;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    z-index: 3;
+    padding: 0.4rem 0.55rem;
+    background: var(--panel-2);
+    box-shadow: inset 0 0 0 2px var(--c), 0 4px 0 var(--shadow);
+    color: var(--ink);
+    font-size: 0.75rem;
     line-height: 1.35;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .node:hover .note,
+  .node:focus-visible .note,
+  .node:focus .note {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .node:hover,
+  .node:focus {
+    z-index: 4;
   }
 
   .needs {

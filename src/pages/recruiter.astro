@@ -16,12 +16,6 @@ const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/
 const now = resume.experience.find((j) => j.org === 'MSCI') ?? resume.experience[0];
 const before = resume.experience.find((j) => j.org.startsWith('Vantager'));
 
-const llm = resume.skills.filter((s) => /LLM|agent/i.test(s));
-const skillGroups = [
-  { name: 'Finance', items: recruiter.skills.finance },
-  { name: 'AI', items: [...llm, ...recruiter.skills.ai] },
-  { name: 'Code', items: resume.skills.filter((s) => !llm.includes(s) && !recruiter.skills.finance.includes(s) && !/diligence|modeling|accounting/i.test(s)) },
-];
 
 // "API handlers" keeps its capitals; "Tests passing" becomes "tests passing".
 const lower = (s: string) => (/^[A-Z]{2}/.test(s) ? s : s.toLowerCase());
@@ -29,7 +23,7 @@ const featured = recruiter.projects.map((id) => builds.find((b) => b.id === id))
 const edu = resume.education;
 ---
 
-<Base title={`For recruiters | ${site.name}`} description={resume.summary} theme="paper">
+<Base title={`Contact | ${site.name}`} description={resume.summary} theme="paper">
   <div class="toolbar">
     <a href="/" class="back pixel">← Back to the game</a>
     <span class="tools">
@@ -61,27 +55,12 @@ const edu = resume.education;
     <div class="layout">
       <div class="main">
         <section class="card summary" aria-labelledby="summary">
-          <h2 id="summary" class="label pixel">The 30-second version</h2>
+          <h2 id="summary" class="label pixel">About</h2>
           <p class="lead">{resume.summary}</p>
-          <p class="intro">{recruiter.intro}</p>
-        </section>
-
-        <section class="facts" aria-labelledby="facts">
-          <h2 id="facts" class="visually-hidden">By the numbers</h2>
-          <ul role="list">
-            {
-              recruiter.facts.map((f) => (
-                <li class="card fact">
-                  <p class="value pixel">{f.value}</p>
-                  <p class="what">{f.label}</p>
-                </li>
-              ))
-            }
-          </ul>
         </section>
 
         <section class="card role-card" aria-labelledby="role">
-          <h2 id="role" class="label pixel">Current role</h2>
+          <h2 id="role" class="label pixel">Work</h2>
           <article class="job">
             <p class="when pixel">Now · {now.when}</p>
             <h3 class="with-logo"><Logo name="msci" scale={1.5} /> {character.title}, {character.guild}</h3>
@@ -104,7 +83,6 @@ const edu = resume.education;
               </article>
             )
           }
-          <p class="core">{site.tagline}</p>
         </section>
 
         <section class="card projects" aria-labelledby="projects">
@@ -150,9 +128,9 @@ const edu = resume.education;
         </section>
       </div>
 
-      <aside class="side" aria-label="Contact, resume, skills and education">
+      <aside class="side" aria-label="Contact, resume and education">
         <section class="card reach" id="contact" aria-labelledby="reach">
-          <h2 id="reach" class="label pixel">Reach out</h2>
+          <h2 id="reach" class="label pixel">Contact</h2>
           <p class="email-row">
             <span class="email" data-email>{email}</span>
             <button type="button" class="copy pixel" data-copy aria-describedby="copy-status">Copy</button>
@@ -192,28 +170,12 @@ const edu = resume.education;
         </section>
 
         <section class="card get" aria-labelledby="get">
-          <h2 id="get" class="label pixel">Get the resume</h2>
+          <h2 id="get" class="label pixel">Resume</h2>
           <p class="buttons">
             <a class="tb" href="/resume">Read it here</a>
             <a class="tb solid" href={resumePdf} download>Download PDF</a>
           </p>
           <p class="print-url">{short(site.url)}{resumePdf}</p>
-        </section>
-
-        <section class="card skills" aria-labelledby="skills">
-          <h2 id="skills" class="label pixel">Top skills</h2>
-          {
-            skillGroups.map((g) => (
-              <div class="group">
-                <h3 class="pixel">{g.name}</h3>
-                <ul role="list">
-                  {g.items.map((s) => (
-                    <li>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            ))
-          }
         </section>
 
         <section class="card edu" aria-labelledby="edu">

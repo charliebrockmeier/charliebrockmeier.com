@@ -58,7 +58,7 @@ const tiles = [
             {g.trips.map((t) => {
               const [c1, c2, c3] = cats[t.cat].color;
               return (
-                <li class="stamp" data-cat={t.cat} style={`--c: ${c1}; --c2: ${c2}; --c3: ${c3}`}>
+                <li class="stamp" data-cat={t.cat} style={`--c: ${c1}; --c2: ${c2}; --c3: ${c3}`} tabindex="0">
                   <article>
                     <PixelArt art={stampArt(t.icon ?? cats[t.cat].icon, t.cat)} scale={3} class="art" />
                     <p class="postmark pixel" aria-hidden="true">
@@ -328,11 +328,31 @@ const tiles = [
     font-weight: 400;
   }
 
+  /* The story behind each stamp appears on hover or tap. */
+  .stamp article {
+    position: relative;
+  }
+
   .stamp .note {
-    margin-top: 2px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 6px 8px;
+    background: #fdf6e3;
+    box-shadow: 0 -2px 0 var(--c);
     color: #3b3256;
     font-size: var(--label);
     line-height: 1.35;
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .stamp:hover .note,
+  .stamp:focus .note,
+  .stamp:focus-visible .note {
+    visibility: visible;
+    opacity: 1;
   }
 
   .kind {

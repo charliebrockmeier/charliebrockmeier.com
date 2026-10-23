@@ -144,7 +144,7 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
                   ))}
                 </ul>
 
-                <div class="ups">
+                {q.levelUps.length > 0 && (<div class="ups">
                   <p class="label pixel">Level ups</p>
                   <ul role="list">
                     {q.levelUps.map((u, j) => (
@@ -155,11 +155,11 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
                       </li>
                     ))}
                   </ul>
-                </div>
+                </div>)}
 
                 {q.extras && (
-                  <details class="extras" open>
-                    <summary class="label pixel">Also in college · {q.extras.length} side quests</summary>
+                  <details class="extras">
+                    <summary class="label pixel">More from college ({q.extras.length})</summary>
                     <ul role="list">
                       {q.extras.map((e, j) => (
                         <li style={`--d: ${j * 0.05}s`}>

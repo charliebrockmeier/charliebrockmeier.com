@@ -81,26 +81,14 @@ const curated: Repo[] = [
     stack: ['Express'],
     pushed: '2024-04',
   },
-  {
-    name: 'ROTHtober',
-    visibility: 'public',
-    description: 'An early React app, started in 2023.',
-    languages: ['JavaScript'],
-    stack: ['React'],
-    pushed: '2023-06',
-  },
-  {
-    name: 'GitLab2023',
-    visibility: 'public',
-    description: 'A Raikes School lab for learning Git: branches, merges and conflicts.',
-    languages: ['Java'],
-    pushed: '2023-02',
-  },
 ];
+
+// Old or trivial public repos left off the wall even when the live fetch lists them.
+const hidden = new Set(['rothtober', 'gitlab2023', 'pear']);
 
 type LiveRepo = { name: string; description: string | null; language: string | null; url: string; pushed: string };
 const gh = (live as { github?: { source?: string; repos?: LiveRepo[] } }).github;
-const liveRepos = gh?.source === 'live' ? (gh.repos ?? []) : null;
+const liveRepos = gh?.source === 'live' ? (gh.repos ?? []).filter((r) => !hidden.has(r.name.toLowerCase())) : null;
 
 function merge(): Repo[] {
   if (!liveRepos) return curated.map((r) => (r.visibility === 'public' ? { ...r, url: r.url ?? `${githubUrl}/${r.name}` } : r));

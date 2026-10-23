@@ -56,7 +56,6 @@ const siteLinks = (b: (typeof builds)[number]) => (b.links ?? []).filter((l) => 
                 ))}
               </dl>
             )}
-            <p class="stack">{b.stack.join(' · ')}</p>
             <details>
               <summary class="pixel">How it works</summary>
               <p>{b.detail}</p>

@@ -21,8 +21,8 @@ export const branches: Branch[] = [
       { name: 'Accounting', level: 5, from: 'UNL', note: 'B.S.B.A. in finance and accounting, High Distinction.' },
       { name: 'Valuation and modeling', level: 4, from: 'UNL', note: 'Case competitions, capstones and a paper on the illiquidity premium.' },
       { name: 'Private-markets diligence', level: 4, from: 'Three Bridge', note: 'Intro calls, investment memos and committee overviews, by hand.' },
-      { name: 'Private-fund analysis', level: 4, from: 'Vantager · MSCI', note: 'Evaluating private funds before investors commit money.' },
-      { name: 'Private markets × AI', level: 3, from: 'MSCI', note: 'Applying AI to fund diligence. Still leveling.', needs: ['AI diligence products'] },
+      { name: 'Private-fund analysis', level: 4, from: 'Vantager', note: 'Evaluating private funds before investors commit money.' },
+      { name: 'Private markets × AI', level: 3, from: 'Vantager', note: 'Applying AI to fund diligence. Still leveling.', needs: ['AI diligence products'] },
     ],
   },
   {

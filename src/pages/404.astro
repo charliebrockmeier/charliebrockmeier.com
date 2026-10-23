@@ -1,0 +1,49 @@
+---
+// Not found: a wrong turn off I-80, with the way back.
+import Base from '../layouts/Base.astro';
+import PixelArt from '../components/PixelArt.astro';
+import { sprite } from '../data/pixels';
+---
+
+<Base title="Page not found | Charlie Brockmeier" description="This page doesn't exist." noindex>
+  <main class="lost wrap">
+    <PixelArt art={sprite} scale={6} label="Charlie, looking lost" class="who" />
+    <p class="code pixel">404</p>
+    <h1 class="pixel">Wrong turn</h1>
+    <p>This page doesn't exist. The road back is this way.</p>
+    <p class="links">
+      <a class="btn" href="/">Back to the start</a>
+      <a class="btn ghost" href="/resume">Resume</a>
+    </p>
+  </main>
+</Base>
+
+<style>
+  .lost {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-s);
+    min-height: 100vh;
+    align-content: center;
+    padding-block: var(--space-xl);
+    text-align: center;
+  }
+
+  .code {
+    color: var(--gold);
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  h1 {
+    font-size: var(--step-4);
+    line-height: 1;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs);
+  }
+</style>

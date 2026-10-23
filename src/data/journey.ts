@@ -195,7 +195,7 @@ export const stops: Stop[] = [
     place: '7 World Trade Center',
     when: '2026 – now',
     role: 'MSCI Private Assets · Senior Associate',
-    line: 'Vantager was acquired by MSCI. Now building private-markets diligence tools downtown. That’s the road so far; more chapters to come.',
+    line: 'Vantager was acquired by MSCI in 2026. That’s the road so far; more chapters to come.',
   },
 ];
 
