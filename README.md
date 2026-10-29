@@ -4,7 +4,7 @@ Charlie Brockmeier's personal site: a pixel-art player profile, with a one-page 
 
 - `/`: the profile. The walk from Kearney to New York, the quest log, skill tree, map, chess (with a bot you can play), projects and travel.
 - `/resume`: the same facts on one printable page (press <kbd>R</kbd> on the home page). The PDF is `public/charlie-brockmeier-resume.pdf`.
-- `/recruiter`: contact, resume and work on one screen.
+- `/contact`: email, links and the resume.
 - `/projects/<id>`: a page per project.
 - `/writing/illiquidity-premium`: a paper from college.
 

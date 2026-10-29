@@ -7,7 +7,7 @@ export default defineConfig({
   site: 'https://charliebrockmeier.com',
   output: 'static',
   trailingSlash: 'never',
-  redirects: { '/contact': '/recruiter' },
+  redirects: { '/recruiter': '/contact' },
   fonts: [
     {
       provider: fontProviders.local(),

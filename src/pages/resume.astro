@@ -1,12 +1,12 @@
 ---
-// The resume: everything on one clean, printable page. /recruiter has the longer pitch.
+// The resume: everything on one clean, printable page.
 import Base from '../layouts/Base.astro';
 import { character, email, links, resume, resumePdf, site } from '../data/profile';
 
 const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
 ---
 
-<Base title={`Resume | ${site.name}`} description={resume.summary} theme="paper">
+<Base title={`Resume | ${site.name}`} description={`${site.name}'s resume.`} theme="paper">
   <div class="toolbar">
     <a href="/" class="back">Back to the game</a>
     <span class="actions">
@@ -18,7 +18,6 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
   <main class="cv">
     <header>
       <h1>{site.name}</h1>
-      <p class="role">{site.tagline}</p>
       <p class="contact">
         {character.base}
         <span aria-hidden="true"> · </span>
@@ -34,7 +33,6 @@ const contact = links.filter((l) => ['LinkedIn', 'GitHub'].includes(l.label));
       </p>
     </header>
 
-    <p class="summary">{resume.summary}</p>
 
     <section aria-labelledby="exp">
       <h2 id="exp">Experience</h2>

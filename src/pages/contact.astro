@@ -1,0 +1,327 @@
+---
+// Contact: email (with a copy button), the other places to find Charlie, a
+// draft-an-email form that opens the visitor's own mail app, and the resume.
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import photo from '../assets/photo/source.jpg';
+import { character, email, links, resumePdf, site } from '../data/profile';
+
+const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+const elsewhere = links.filter((l) => l.label !== 'Email');
+const topics = [
+  { label: 'Just saying hi', subject: 'Hello from charliebrockmeier.com' },
+  { label: 'A project', subject: 'A project' },
+  { label: 'Something else', subject: 'Hello' },
+];
+---
+
+<Base title={`Contact | ${site.name}`} description={`How to reach ${site.name}.`} theme="paper">
+  <div class="toolbar">
+    <a href="/" class="back pixel">← Back to the game</a>
+    <a class="tb" href="/resume">Resume</a>
+  </div>
+
+  <main class="card">
+    <header class="id">
+      <Image src={photo} alt="Charlie Brockmeier" width={96} height={128} widths={[96, 192]} sizes="96px" loading="eager" class="photo" />
+      <div>
+        <p class="kicker pixel">Contact</p>
+        <h1>{site.name}</h1>
+        <p class="where">{character.origin} → {character.base}</p>
+      </div>
+    </header>
+
+    <section aria-labelledby="email-title">
+      <h2 id="email-title" class="label pixel">Email</h2>
+      <p class="email-row">
+        <span class="email" data-email>{email}</span>
+        <button type="button" class="copy pixel" data-copy aria-describedby="copy-status">Copy</button>
+      </p>
+      <p class="copy-status" id="copy-status" role="status" aria-live="polite"></p>
+
+      <details class="draft">
+        <summary class="pixel">Draft an email</summary>
+        <form action={`mailto:${email}`} method="get" data-draft data-email={email}>
+          <label>
+            <span>Your name</span>
+            <input type="text" id="draft-name" autocomplete="name" />
+          </label>
+          <label>
+            <span>About</span>
+            <select name="subject" id="draft-topic">
+              {topics.map((t) => <option value={t.subject}>{t.label}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Message</span>
+            <textarea name="body" id="draft-message" rows="4"></textarea>
+          </label>
+          <button type="submit" class="tb solid">Open in my email app</button>
+          <p class="fine">Nothing is sent from this page. It opens a draft in your own email app.</p>
+        </form>
+      </details>
+    </section>
+
+    <section aria-labelledby="elsewhere-title">
+      <h2 id="elsewhere-title" class="label pixel">Elsewhere</h2>
+      <ul class="ways" role="list">
+        {elsewhere.map((l) => (
+          <li>
+            <a href={l.url}>{l.label}</a>
+            <span>{short(l.url)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section aria-labelledby="resume-title">
+      <h2 id="resume-title" class="label pixel">Resume</h2>
+      <p class="buttons">
+        <a class="tb" href="/resume">Read it here</a>
+        <a class="tb solid" href={resumePdf} download>Download PDF</a>
+      </p>
+    </section>
+  </main>
+</Base>
+
+<script>
+  // Copy the email address. The clipboard call stays inside the click handler; if it
+  // isn't allowed, the address is selected so it can be copied by hand.
+  const emailEl = document.querySelector<HTMLElement>('[data-email]');
+  const copyBtn = document.querySelector<HTMLButtonElement>('[data-copy]');
+  const status = document.getElementById('copy-status');
+  let reset = 0;
+
+  const say = (msg: string, label: string) => {
+    if (status) status.textContent = msg;
+    if (copyBtn) copyBtn.textContent = label;
+    clearTimeout(reset);
+    reset = window.setTimeout(() => {
+      if (status) status.textContent = '';
+      if (copyBtn) copyBtn.textContent = 'Copy';
+    }, 4000);
+  };
+
+  const selectEmail = () => {
+    if (!emailEl) return;
+    const range = document.createRange();
+    range.selectNodeContents(emailEl);
+    const sel = getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    const keys = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘C' : 'Ctrl+C';
+    say(`Selected. Press ${keys} to copy.`, 'Selected');
+  };
+
+  copyBtn?.addEventListener('click', () => {
+    const text = emailEl?.textContent?.trim() ?? '';
+    if (!navigator.clipboard?.writeText) return selectEmail();
+    navigator.clipboard.writeText(text).then(() => say(`Copied ${text}`, 'Copied!'), selectEmail);
+  });
+
+  // Draft an email: build a mailto: link from the form, entirely in the browser.
+  const form = document.querySelector<HTMLFormElement>('[data-draft]');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.value.trim() ?? '';
+    const subject = (document.getElementById('draft-topic') as HTMLSelectElement | null)?.value ?? 'Hello';
+    const name = val('draft-name');
+    const body = [val('draft-message') || 'Hi Charlie,', name && `\n${name}`].filter(Boolean).join('\n');
+    location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+</script>
+
+<style is:global>
+  body.paper {
+    --bg: #fbf7ee;
+    --ink: #1b1533;
+    --ink-soft: #4f4868;
+    --rule: #e2dccd;
+    --accent: #7a3460;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.paper a {
+    color: var(--accent);
+  }
+</style>
+
+<style>
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-m) var(--gutter) 0;
+  }
+
+  .back {
+    font-size: var(--step-1);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .tb {
+    display: inline-block;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink) !important;
+    font: inherit;
+    font-size: var(--label);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .tb.solid {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff !important;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-m);
+    max-width: 640px;
+    margin: var(--space-m) auto var(--space-2xl);
+    padding: clamp(1.25rem, 5vw, 2.5rem) var(--gutter);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+  }
+
+  .id {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+  }
+
+  .id :global(.photo) {
+    width: 72px;
+    height: auto;
+    border-radius: 4px;
+  }
+
+  .kicker,
+  .label {
+    color: var(--accent);
+    font-size: var(--label);
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .where {
+    color: var(--ink-soft);
+  }
+
+  section {
+    padding-top: var(--space-s);
+    border-top: 1px solid var(--rule);
+  }
+
+  .email-row {
+    display: flex;
+    margin-top: 6px;
+  }
+
+  .email {
+    flex: 1;
+    min-width: 0;
+    padding: 0.55rem 0.75rem;
+    overflow-wrap: anywhere;
+    background: #f6f1e4;
+    border: 1px solid var(--rule);
+    border-right: 0;
+    font-weight: 600;
+  }
+
+  .copy {
+    padding: 0 1rem;
+    border: 0;
+    background: var(--ink);
+    color: #fff;
+    font-size: var(--step-0);
+    cursor: pointer;
+  }
+
+  .copy-status {
+    min-height: 1.2em;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .draft summary {
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .draft form {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .draft label {
+    display: grid;
+    gap: 2px;
+    font-size: var(--label);
+  }
+
+  .draft input,
+  .draft select,
+  .draft textarea {
+    padding: 0.45rem 0.55rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font: inherit;
+  }
+
+  .draft button {
+    justify-self: start;
+  }
+
+  .fine {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .ways {
+    display: grid;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ways li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 var(--space-s);
+  }
+
+  .ways span {
+    color: var(--ink-soft);
+    font-size: var(--label);
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>

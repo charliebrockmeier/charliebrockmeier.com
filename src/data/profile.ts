@@ -7,9 +7,9 @@ export const site = {
   url: 'https://charliebrockmeier.com',
   name: 'Charlie Brockmeier',
   title: 'Charlie Brockmeier',
-  tagline: 'I work on private markets at MSCI and build software with AI.',
+  tagline: 'A Nebraska kid in New York who builds things, plays chess every day and follows the Huskers anywhere.',
   positioning:
-    'Charlie Brockmeier works on private markets at MSCI in New York and builds software with AI. Previously at Vantager, which MSCI acquired in 2026.',
+    'Charlie Brockmeier, from Kearney, Nebraska, now in New York. The road so far, the things he builds, chess, golf and the Huskers.',
 };
 
 export const email = 'charliebrockmeier@gmail.com';
@@ -27,15 +27,13 @@ export const links: { label: string; handle: string; url: string; icon: IconName
 export const character = {
   className: 'Finance',
   subclass: 'AI builder',
-  title: 'Senior Associate',
-  guild: 'MSCI Private Assets',
   base: 'New York, NY',
   origin: 'Kearney, Nebraska',
   school: 'University of Nebraska–Lincoln',
   bio: [
-    "I'm Charlie. I work on private markets at MSCI in New York, and I build software, mostly with AI.",
-    'I grew up in Kearney, Nebraska, and studied finance and accounting at the University of Nebraska–Lincoln, with computer science through the Raikes School. I spent a summer in San Francisco doing investment diligence by hand, then joined Vantager, a small startup that used AI to do a lot of that work. MSCI bought Vantager in 2026, and I came with it.',
-    'Outside work: golf, a game of chess every day, piano, and Husker football.',
+    "I'm Charlie. I grew up in Kearney, Nebraska, went to college in Lincoln, spent a summer in San Francisco, and live in New York now.",
+    'I like building things, mostly with AI: an app that runs my own finances, an engine that turns public data into short videos, an iPhone app, and this site.',
+    'Outside of that: golf, a game of chess every day, piano for more than ten years, and Husker football wherever they play.',
   ],
 };
 
@@ -225,7 +223,7 @@ export const quests: Quest[] = [
     role: 'Senior Associate',
     status: 'active',
     emblems: ['msci'],
-    summary: 'Senior Associate on the Private Assets team, in New York.',
+    summary: 'Where the road is right now.',
     objectives: ['Joined through the Vantager acquisition, March 2026'],
     reward: 'In progress',
     unlocked: 'MSCI',
@@ -363,36 +361,30 @@ export const dialogue = {
   greeting: "Hey, I'm Charlie. What do you want to know?",
   options: [
     {
-      q: 'What do you do at MSCI?',
-      a: "I'm a Senior Associate in MSCI Private Assets, in New York. I joined when MSCI acquired Vantager in 2026.",
+      q: 'Where are you from?',
+      a: 'Kearney, Nebraska. Then Lincoln for college, a summer in San Francisco, and now New York.',
     },
     {
-      q: 'How did you get here?',
-      a: 'Finance and accounting at the University of Nebraska–Lincoln, with code internships in the summers. Then fund diligence by hand at a multi-family office in San Francisco, and an AI startup, Vantager, that MSCI bought.',
+      q: "What's the road been like?",
+      a: 'Finance and accounting at the University of Nebraska–Lincoln, with code internships in the summers. A summer doing investment diligence in San Francisco. Then Vantager, a startup in New York that MSCI bought in 2026, which is where I am now.',
     },
     {
-      q: 'What have you built?',
-      a: 'My first LLM product in 2023, a support assistant trained on 250,000 tickets. Since then, personal projects: Locus, an app that runs my own finances; a short-video engine built on public data; an obituary monitor; and an iPhone app called Phyt.',
+      q: 'What do you build?',
+      a: 'Mostly things with AI, on nights and weekends: Locus, an app that runs my own finances; an engine that turns public data into short videos; an obituary monitor; and an iPhone app called Phyt. The first one was a support assistant in 2023.',
     },
     {
       q: 'What do you do for fun?',
       a: 'Golf, chess every day (you can play my bot above), piano, and Husker football.',
     },
     {
-      q: 'Where are you from?',
-      a: 'Kearney, Nebraska. Then Lincoln for college, a summer in San Francisco, and now New York.',
-    },
-    {
       q: 'How do I reach you?',
-      a: `LinkedIn or email, ${email}. Press R for the resume.`,
+      a: `Email ${email}, or LinkedIn.`,
     },
   ],
 };
 
 // The resume page (/resume): the same facts on one printable page.
 export const resume = {
-  summary:
-    'Senior Associate at MSCI Private Assets in New York. Before that, on the early team at Vantager, which MSCI acquired in 2026. Finance and accounting at the University of Nebraska–Lincoln, with minors in computer science and math.',
   experience: [
     {
       org: 'MSCI',

@@ -2,7 +2,6 @@
 import Icon from './Icon.astro';
 import Panorama from './Panorama.astro';
 import PixelArt from './PixelArt.astro';
-import Logo from './Logo.astro';
 import { sprite } from '../data/pixels';
 import live from '../data/live.json';
 import { character, chess, links, resumePdf, site } from '../data/profile';
@@ -30,12 +29,12 @@ const github = links.find((l) => l.label === 'GitHub');
       <p class="tagline">{site.tagline}</p>
       <dl class="status">
         <div>
-          <dt class="pixel">Current quest</dt>
-          <dd class="with-logo"><Logo name="msci" scale={1.25} /> {character.title}, {character.guild}</dd>
+          <dt class="pixel">Hometown</dt>
+          <dd>{character.origin}</dd>
         </div>
         <div>
-          <dt class="pixel">Previously</dt>
-          <dd class="with-logo"><Logo name="vantager" scale={1.25} /> Vantager, acquired by MSCI</dd>
+          <dt class="pixel">Home base</dt>
+          <dd>{character.base}</dd>
         </div>
         <div>
           <dt class="pixel">Streak</dt>
