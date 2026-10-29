@@ -9,7 +9,7 @@ export const site = {
   title: 'Charlie Brockmeier',
   tagline: 'A Nebraska kid in New York who builds things, plays chess every day and follows the Huskers anywhere.',
   positioning:
-    'Charlie Brockmeier, from Kearney, Nebraska, now in New York. The road so far, the things he builds, chess, golf and the Huskers.',
+    'Charlie Brockmeier, from Kearney, Nebraska, now at MSCI in New York. The road so far, the things he builds, chess, golf and the Huskers.',
 };
 
 export const email = 'charliebrockmeier@gmail.com';
@@ -31,7 +31,7 @@ export const character = {
   origin: 'Kearney, Nebraska',
   school: 'University of Nebraska–Lincoln',
   bio: [
-    "I'm Charlie. I grew up in Kearney, Nebraska, went to college in Lincoln, spent a summer in San Francisco, and live in New York now.",
+    "I'm Charlie. I grew up in Kearney, Nebraska, went to college in Lincoln, spent a summer in San Francisco, and now work at MSCI in New York.",
     'I like building things, mostly with AI: an app that runs my own finances, an engine that turns public data into short videos, an iPhone app, and this site.',
     'Outside of that: golf, a game of chess every day, piano for more than ten years, and Husker football wherever they play.',
   ],
@@ -103,6 +103,8 @@ export type Quest = {
   unlocked: string;
   levels: Record<Track, number>;
   levelUps: { skill: string; track: Track; up: number | 'new'; carries?: string }[];
+  /** Life moments in this chapter, oldest first: a short dated line with an icon. */
+  moments?: { when: string; what: string; icon: IconName; big?: boolean }[];
   /** A page worth opening from this chapter, e.g. a paper. */
   link?: { label: string; url: string };
   /** College gets a longer list of everything else that happened. */
@@ -120,7 +122,13 @@ export const quests: Quest[] = [
     status: 'complete',
     emblems: ['khs', 'cashwa'],
     summary: 'Where I grew up.',
-    objectives: ['Medal at state in tennis', 'Eagle Scout', 'Cash-Wa Distributing, summer 2021: Python macros, and built the IT department’s PCs'],
+    objectives: [],
+    moments: [
+      { when: '2019', what: 'Eagle Scout', icon: 'fleur' },
+      { when: 'High school', what: 'Medal at state in tennis', icon: 'medal' },
+      { when: 'May 2021', what: 'Graduated from Kearney High', icon: 'cap', big: true },
+      { when: 'Summer 2021', what: 'IT job at Cash-Wa', icon: 'bolt' },
+    ],
     reward: 'A ticket to Lincoln',
     unlocked: 'Code',
     levels: { finance: 0, code: 1, ai: 0, lead: 2 },
@@ -144,6 +152,13 @@ export const quests: Quest[] = [
       'Covisum, summer 2023: built financial-advisory tools and a client intake form with the CEO',
       'Junior capstone: a GPT-3.5 support assistant trained on 250,000 tickets',
       'Senior capstone PM: machine learning for capital-expenditure decisions',
+    ],
+    moments: [
+      { when: 'Aug 2021', what: 'Moved to Lincoln', icon: 'husker' },
+      { when: 'Summer 2022', what: 'Buckle internship', icon: 'bolt' },
+      { when: 'Summer 2023', what: 'Covisum internship', icon: 'bolt' },
+      { when: '2023', what: 'First AI project', icon: 'chip' },
+      { when: 'May 2025', what: 'Graduated with High Distinction', icon: 'cap', big: true },
     ],
     reward: 'Graduated with High Distinction',
     link: { label: 'Read The Illiquidity Premium', url: '/writing/illiquidity-premium' },
@@ -182,6 +197,10 @@ export const quests: Quest[] = [
     emblems: ['threebridge'],
     summary: 'Investment diligence for a multi-family office: in San Francisco for summer 2024, then part-time.',
     objectives: ['Intro calls, investment memos and committee overviews', 'Automated research and reporting with Python'],
+    moments: [
+      { when: 'Jan 2024', what: 'Started part-time', icon: 'chart' },
+      { when: 'Summer 2024', what: 'In person in San Francisco', icon: 'fire' },
+    ],
     reward: 'How diligence actually works',
     unlocked: 'Private markets',
     levels: { finance: 7, code: 5, ai: 3, lead: 7 },
@@ -203,6 +222,11 @@ export const quests: Quest[] = [
     emblems: ['vantager'],
     summary: 'An early hire at a startup that used AI to draft investment diligence reports from fund documents.',
     objectives: ['Diligence templates, data quality and customer feedback', 'Acquired by MSCI in March 2026'],
+    moments: [
+      { when: 'Mar 2025', what: 'Joined, part-time', icon: 'chip' },
+      { when: 'Summer 2025', what: 'Moved to New York', icon: 'fire' },
+      { when: 'Mar 2026', what: 'Acquired by MSCI', icon: 'trophy', big: true },
+    ],
     reward: 'Acquired',
     unlocked: 'Finance × AI',
     levels: { finance: 8, code: 6, ai: 7, lead: 8 },
@@ -224,7 +248,11 @@ export const quests: Quest[] = [
     status: 'active',
     emblems: ['msci'],
     summary: 'Where the road is right now.',
-    objectives: ['Joined through the Vantager acquisition, March 2026'],
+    objectives: [],
+    moments: [
+      { when: 'Mar 2026', what: 'Joined MSCI', icon: 'chart' },
+      { when: 'Now', what: '7 World Trade Center', icon: 'fire' },
+    ],
     reward: 'In progress',
     unlocked: 'MSCI',
     levels: { finance: 9, code: 6, ai: 8, lead: 8 },
@@ -361,12 +389,16 @@ export const dialogue = {
   greeting: "Hey, I'm Charlie. What do you want to know?",
   options: [
     {
+      q: 'What do you do now?',
+      a: "I'm at MSCI in New York, on the Private Assets team. I got there when MSCI bought Vantager, the startup I'd joined.",
+    },
+    {
       q: 'Where are you from?',
       a: 'Kearney, Nebraska. Then Lincoln for college, a summer in San Francisco, and now New York.',
     },
     {
       q: "What's the road been like?",
-      a: 'Finance and accounting at the University of Nebraska–Lincoln, with code internships in the summers. A summer doing investment diligence in San Francisco. Then Vantager, a startup in New York that MSCI bought in 2026, which is where I am now.',
+      a: 'Finance and accounting at the University of Nebraska–Lincoln, with code internships in the summers. A summer doing investment diligence in San Francisco. Then Vantager, a startup in New York that MSCI bought in 2026.',
     },
     {
       q: 'What do you build?',
