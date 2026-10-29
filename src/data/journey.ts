@@ -60,8 +60,11 @@ export const vehicles: Record<string, { x: number; w: number; h: number; speed: 
   convertible: { x: 258, w: 52, h: 18, speed: 54 },
   muni: { x: 310, w: 96, h: 28, speed: 30 },
   taxi: { x: 406, w: 52, h: 19, speed: 56 },
+  // Only for life moments (never picked at random): Cash-Wa's delivery truck and a car packed for college.
+  cashwa: { x: 458, w: 56, h: 19, speed: 40 },
+  packed: { x: 514, w: 52, h: 19, speed: 64 },
 };
-export const vehicleSheet = { w: 458, h: 28 };
+export const vehicleSheet = { w: 566, h: 28 };
 
 /** The Vantager icon (the cut gem with its sparkle), drawn on the office sign. Swap here if it changes. */
 export const vantagerMark = {
@@ -141,7 +144,7 @@ export const stops: Stop[] = [
     place: 'University of Nebraska–Lincoln',
     when: '2021 – 2025',
     role: 'Raikes School honors program · Finance & Accounting',
-    line: 'Four years at Nebraska: finance and accounting with computer science and math minors. Game days in the sea of red.',
+    line: 'Four years at Nebraska: finance and accounting with computer science and math minors, game days in the sea of red, and graduation in May 2025 with High Distinction.',
   },
   {
     id: 'omaha',
@@ -191,12 +194,49 @@ export const stops: Stop[] = [
   {
     id: 'wtc',
     x: 4040,
-    chapter: 'Chapter 4 · Current save',
+    chapter: 'Chapter 4 · You are here',
     place: '7 World Trade Center',
-    when: '2026 – now',
-    role: 'MSCI Private Assets · Senior Associate',
-    line: 'Vantager was acquired by MSCI in 2026. That’s the road so far; more chapters to come.',
+    when: 'Now',
+    role: 'MSCI · New York',
+    line: 'Vantager was acquired by MSCI in March 2026, and this is where I am today. That’s the road so far; more chapters to come.',
   },
+];
+
+/**
+ * Life moments: small scenes that play as the walker reaches `x`, each with a dated
+ * caption (a toast on the walk, a line on its stop's card in the static strip).
+ * Listed west to east. `finale` moments are told by the checkpoint banner instead of a toast.
+ */
+export type Moment = { id: string; x: number; stop: string; when: string; what: string; finale?: boolean };
+
+export const moments: Moment[] = [
+  { id: 'home', x: 392, stop: 'home', when: 'Home', what: 'Grew up in Kearney' },
+  { id: 'khs', x: 566, stop: 'khs', when: 'May 2021', what: 'Graduated from Kearney High' },
+  { id: 'cashwa', x: 752, stop: 'cashwa', when: 'Summer 2021', what: 'IT job at Cash-Wa' },
+  { id: 'college', x: 824, stop: 'lincoln', when: 'Aug 2021', what: 'Off to Lincoln' },
+  { id: 'buckle', x: 886, stop: 'buckle', when: 'Summer 2022', what: 'Internship at Buckle' },
+  { id: 'unl', x: 1406, stop: 'lincoln', when: 'May 2025', what: 'Graduated from UNL, with High Distinction' },
+  { id: 'covisum', x: 1776, stop: 'omaha', when: 'Summer 2023', what: 'Internship at Covisum' },
+  { id: 'sf', x: 1898, stop: 'sf', when: 'Summer 2024', what: 'A summer in San Francisco' },
+  { id: 'nyc', x: 3014, stop: 'walkup', when: 'Summer 2025', what: 'Moved to New York' },
+  { id: 'vantager', x: 3288, stop: 'vantager', when: '2025', what: 'Joined Vantager' },
+  { id: 'msci', x: 3352, stop: 'vantager', when: 'Mar 2026', what: 'Vantager acquired by MSCI' },
+  { id: 'now', x: 4040, stop: 'wtc', when: 'Now', what: 'MSCI, New York', finale: true },
+];
+
+/**
+ * What the walker carries or wears, over stretches of the walk [from, to): a box on the way
+ * to college, a laptop at the internships, the cap after graduating (it flies off over the
+ * Missouri), shades for the summer in San Francisco, and a box again on moving day.
+ */
+export const walkerProps: { prop: 'box' | 'laptop' | 'cap' | 'cap-fly' | 'shades'; from: number; to: number }[] = [
+  { prop: 'box', from: 824, to: 872 },
+  { prop: 'laptop', from: 886, to: 936 },
+  { prop: 'cap', from: 1406, to: 1592 },
+  { prop: 'cap-fly', from: 1592, to: 1760 },
+  { prop: 'laptop', from: 1776, to: 1822 },
+  { prop: 'shades', from: 1898, to: 2200 },
+  { prop: 'box', from: 3014, to: 3074 },
 ];
 
 /** Time of day (0–3) at a given x, interpolated from timeKeys. */

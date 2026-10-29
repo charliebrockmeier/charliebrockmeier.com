@@ -21,6 +21,7 @@ export function nebraska(cv, rand) {
   capitol(cv, rand);
   haymarket(cv, rand);
   stadium(cv, rand);
+  commencement(cv);
   guideSign(cv, 1478, ['OMAHA', '57']);
   omaha(cv, rand);
   covisum(cv);
@@ -300,14 +301,16 @@ function cashWa(cv) {
   cv.rect(x0 + 47, 146, x1 - x0 - 47, 1, '#c9bfd9');
 }
 
+/** The Buckle store's center and roofline, and its sign's width (the overlay lights the sign up). */
+export const BUCKLE = { cx: 898, top: 120, signW: 11 + 4 + textWidth('BUCKLE') };
+
 function buckle(cv) {
   // A Buckle store under the Archway (Buckle started in Kearney in 1948 and is still
   // headquartered there): the rounded B monogram and the name on a stone band, then
   // display windows full of denim.
-  const cx = 898;
+  const { cx, top } = BUCKLE;
   const x0 = cx - 42;
   const x1 = cx + 42;
-  const top = 120;
   cv.rect(x0, top, x1 - x0, LAWN - top, '#e9e0d0');
   cv.rect(x0 - 1, top - 2, x1 - x0 + 2, 2, '#232323');
   cv.rect(x0, top, x1 - x0, 1, '#f4f4f4');
@@ -707,6 +710,38 @@ function stadium(cv, rand) {
   cv.px(1468, 95, C.gold);
 }
 
+/** Where the graduates stand on the commencement stage (the overlay gives them caps to toss). */
+export const STAGE = { x0: 1402, x1: 1464, deck: 140 };
+
+function commencement(cv) {
+  // May 2025: a commencement stage in front of the stadium's east wall, a scarlet
+  // backdrop (UNL over CLASS OF 2025) behind the graduates, cream bunting on the deck.
+  const { x0, x1, deck } = STAGE;
+  const cx = (x0 + x1) / 2;
+  const cream = '#fdf6e3';
+  const scarlet = '#e43b44';
+  const dark = '#7a2030';
+  for (const x of [x0 + 1, x1 - 3]) {
+    cv.rect(x, 115, 2, deck - 115, '#d6ccb8');
+    cv.px(x, 115, cream);
+    cv.px(x + 1, 114, C.gold);
+  }
+  cv.rect(x0 + 3, 116, x1 - x0 - 6, 15, dark);
+  cv.rect(x0 + 4, 117, x1 - x0 - 8, 13, scarlet);
+  cv.rect(x0 + 4, 117, x1 - x0 - 8, 1, '#ff6b7f');
+  centerText(cv, cx, 118, '· UNL ·', cream);
+  centerText(cv, cx, 124, 'CLASS OF 2025', cream);
+  // The deck: a cream edge, a scarlet skirt with bunting, steps up on the left.
+  cv.rect(x0, deck, x1 - x0, 1, cream);
+  cv.rect(x0, deck + 1, x1 - x0, LAWN - deck - 1, '#a82a34');
+  for (let x = x0 + 1; x < x1; x += 4) {
+    cv.rect(x, deck + 1, 3, 1, cream);
+    cv.px(x + 1, deck + 2, cream);
+  }
+  cv.rect(x0, LAWN - 1, x1 - x0, 1, dark);
+  for (let i = 0; i < 3; i++) cv.rect(x0 - 3 - i * 2, deck + 3 + i * 3, 3 + i * 2, 3, i % 2 ? '#d6ccb8' : cream);
+}
+
 // --- Omaha -------------------------------------------------------------------
 
 function omaha(cv, rand) {
@@ -765,12 +800,13 @@ function omaha(cv, rand) {
   rand();
 }
 
+/** Covisum's office (the overlay lights up its sign). */
+export const COVISUM = { x0: 1762, x1: 1804, top: 108 };
+
 function covisum(cv) {
   // Covisum's office on the riverfront: a glass box with the name on top. (The company's
   // own logo couldn't be confirmed, so the sign is just the name.)
-  const x0 = 1762;
-  const x1 = 1804;
-  const top = 108;
+  const { x0, x1, top } = COVISUM;
   cv.rect(x0, top, x1 - x0, LAWN - top, '#8a94b4');
   cv.rect(x0, top, 2, LAWN - top, '#b8c0d4');
   cv.rect(x1 - 2, top, 2, LAWN - top, '#6a7494');

@@ -4,13 +4,16 @@
 // a far layer at half speed, three cloud bands, a walker and a vehicle sheet. An
 // SVG overlay carries everything that moves in place, grouped by zone so only the
 // zone on screen animates. Vehicles are placed by the script in world space and
-// only ever appear or vanish off-screen. 7 WTC is a checkpoint, not the end: a
-// save, fireworks, and a sign pointing on down the road. Without JS, or with
-// reduced motion, it's a static strip.
+// only ever appear or vanish off-screen. Along the way, life moments (src/data/journey.ts)
+// play as the walker reaches them: a small scene, a dated toast, sometimes something
+// to wear or carry. 7 WTC is where he is now, not the end: a YOU ARE HERE pin,
+// fireworks, and a sign pointing on down the road. Without JS, or with reduced
+// motion, it's a static strip, with the moments listed on each stop's card.
 import Icon from './Icon.astro';
-import { FONT } from '../../scripts/art/journey-kit.mjs';
-import { FAST_TRAVEL_SF } from '../../scripts/art/journey-west.mjs';
-import { camera, journeyArt, regions, stops, timeKeys, vehicles, vehicleSheet } from '../data/journey';
+import { FONT, LAWN, textWidth } from '../../scripts/art/journey-kit.mjs';
+import { BUCKLE, COVISUM, FAST_TRAVEL_SF, STAGE } from '../../scripts/art/journey-west.mjs';
+import { MOVING, OFFICE, OFFICE_SIGN } from '../../scripts/art/journey-city.mjs';
+import { camera, journeyArt, moments, regions, stops, timeKeys, vantagerMark, vehicles, vehicleSheet, walkerProps } from '../data/journey';
 
 const { nearWidth: NW, farWidth: FW, height: H, ground: G, feet, farSpeed, farAlignView, walker: WK, lanes } = journeyArt;
 const config = {
@@ -24,6 +27,10 @@ const config = {
   sheetH: vehicleSheet.h,
   farMax: lanes.farMax,
   ww: WK.w,
+  moments: moments.filter((m) => !m.finale).map(({ id, x }) => ({ id, x })),
+  props: walkerProps,
+  // Cash-Wa's truck waits at the dock (32 rows above its lane) until the walker reaches `at`.
+  truck: { x: 728, y: LAWN - lanes.far, at: moments.find((m) => m.id === 'cashwa')!.x },
 };
 
 // Pixel discs for the sun and moon, one rect per run.
@@ -228,6 +235,131 @@ const neon = [...'OPEN'].flatMap((ch, i) =>
   ),
 );
 const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 100;
+
+// --- Life moments -------------------------------------------------------------
+// Each scene is a group the script marks `go` as the walker reaches its moment. Without
+// motion it holds a still: caps in the air, the truck at the dock, the banner up.
+/** Graduates in gowns, 5×9 with feet on the bottom row; the cap is separate, so it can fly. */
+const grad = (x: number, feet: number, gown: string, stole: string, hair: string) =>
+  px(['.HHH.', '.SSS.', '.SSS.', 'GGRGG', 'GGRGG', 'SGGGS', '.GGG.', '.GGG.', '.K.K.'], { H: hair, S: '#f2c4a2', G: gown, R: stole, K: '#141026' }, x, feet - 8);
+/** A mortarboard, level and tipped (the two frames of a spin), sitting on a 5-wide head at (x, top). */
+const board = (x: number, top: number, [t, d, c, y]: string[]) => [
+  px(['...TTT...', 'TTTTTTTTT', '.KDDDDDKY', '..KKCKK.Y'], { T: t, D: d, C: c, Y: y, K: '#141026' }, x - 2, top - 4),
+  px(['......TT.', '...TTTTDK', 'TTTTTDDK.', '.KDDDKY..', '..KCKKY..'], { T: t, D: d, C: c, Y: y, K: '#141026' }, x - 2, top - 5),
+];
+const hairs = ['#5c3a2e', '#e0c088', '#141026', '#8a5a3c', '#3d2a28', '#c9a26b'];
+const khsCaps = [
+  ['#3b5dc9', '#29366f', '#24305a', '#ffcd75'],
+  ['#ffe9a8', '#ffcd75', '#29366f', '#3b5dc9'],
+];
+const unlCaps = [
+  ['#e43b44', '#a82a34', '#7a2030', '#fdf6e3'],
+  ['#fdf6e3', '#c9bfd9', '#3d3858', '#e43b44'],
+];
+const toss = (xs: number[], feet: number, gown: string, stole: string, caps: string[][], k: number) =>
+  xs.map((x, i) => ({
+    body: grad(x, feet, gown, stole, hairs[(i + k) % hairs.length]),
+    cap: board(x, feet - 8, caps[i % caps.length]),
+    tx: ((i * 5 + k) % 9) - 4,
+    ty: -(50 + ((i * 13 + k) % 28)),
+    d: ((i * 0.11 + k * 0.03) % 0.36).toFixed(2),
+  }));
+const khsClass = toss([596, 603, 610, 617], LAWN - 1, '#3b54b0', '#ffcd75', khsCaps, 1);
+const unlClass = toss([1409, 1417, 1425, 1433, 1441, 1449], STAGE.deck - 1, '#3d3858', '#e43b44', unlCaps, 2);
+/** Confetti bursting up from (cx, cy) and drifting down. */
+const confetti = (cx: number, cy: number, n: number, colors: string[], k: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = ((-165 + ((i * 47 + k * 13) % 150)) * Math.PI) / 180;
+    const r = 12 + ((i * 29 + k) % 24);
+    return { x: cx, y: cy, dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r), c: colors[i % colors.length], w: i % 3 ? 1 : 2, d: ((i * 0.07) % 0.4).toFixed(2) };
+  });
+const khsBurst = confetti(605, 128, 22, ['#3b5dc9', '#ffcd75', '#ffe9a8', '#73c6f7'], 1);
+const unlBurst = [...confetti(1412, 112, 18, ['#e43b44', '#fdf6e3', '#ffcd75'], 2), ...confetti(1452, 112, 18, ['#fdf6e3', '#e43b44', '#ff6b7f'], 5)];
+const acqColors = ['#ffcd75', '#73eff7', '#ff6b9d', '#a7f070', '#fdf6e3'];
+const acqBurst = [...confetti(OFFICE.x + 20, OFFICE.roof - 2, 24, acqColors, 3), ...confetti(OFFICE.x + OFFICE.w - 20, OFFICE.roof - 2, 24, acqColors, 7)];
+/** A one-pixel frame around a sign, and a four-point sparkle: a sign lighting up. */
+const frame = (x: number, y: number, w: number, h: number) => [
+  { x, y, w, h: 1 },
+  { x, y: y + h - 1, w, h: 1 },
+  { x, y, w: 1, h },
+  { x: x + w - 1, y, w: 1, h },
+];
+const sparkle = (x: number, y: number) => px(['..Y..', '..Y..', 'YYWYY', '..Y..', '..Y..'], { Y: '#ffe9a8', W: '#ffffff' }, x - 2, y - 2);
+const signs = {
+  buckle: { x: Math.round(BUCKLE.cx - BUCKLE.signW / 2) - 3, y: BUCKLE.top + 1, w: BUCKLE.signW + 6, h: 11 },
+  covisum: { x: COVISUM.x0 + 3, y: COVISUM.top + 2, w: COVISUM.x1 - COVISUM.x0 - 6, h: 11 },
+  vantager: { x: OFFICE_SIGN.x - 1, y: OFFICE_SIGN.y - 1, w: OFFICE_SIGN.w + 2, h: OFFICE_SIGN.h + 2 },
+};
+/** Moving boxes, like the art's: taped cardboard. */
+const box = (w: number, h: number, ox: number, oy: number) =>
+  px(
+    Array.from({ length: h }, (_, y) =>
+      Array.from({ length: w }, (_, x) => (x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 'K' : Math.abs(x - (w / 2 - 0.5)) < 1 && y < 4 ? 'P' : y < 3 ? 'T' : x === w - 2 ? 'D' : 'C')).join(''),
+    ),
+    { K: '#5c3a2e', C: '#c9a26b', T: '#e9d0a8', D: '#a8865e', P: '#f4e0b0' },
+    ox,
+    oy,
+  );
+const drops = [
+  { runs: box(8, 6, MOVING.x + 13, LAWN - 14), d: 0.15 },
+  { runs: box(7, 5, MOVING.x + 3, LAWN - 22), d: 0.5 },
+];
+// The acquisition: a banner that unrolls from the office roof.
+const acq = 'ACQUIRED BY MSCI';
+const acqW = textWidth(acq) + 8;
+const acqX = Math.round(OFFICE.x + (OFFICE.w - acqW) / 2);
+// 7 WTC, now: a YOU ARE HERE pin over MSCI's sign, and a ping around the walker's feet.
+const pinX = camera.end;
+const pin = px(
+  ['...KKKKK...', '..KRRRRRK..', '.KRRLRRRRK.', 'KRRLWWWRRRK', 'KRRWWWWWRRK', 'KRRWWWWWRRK', 'KRRRWWWRRRK', '.KRRRRRRRK.', '..KRRRRRK..', '...KRRRK...', '....KRK....', '.....K.....'],
+  { K: '#0c0a18', R: '#e43b44', L: '#ff9aa2', W: '#fdf6e3' },
+  pinX - 5,
+  99,
+);
+const here = 'YOU ARE HERE';
+const hereW = textWidth(here) + 6;
+const ring = (rx: number, ry: number) =>
+  Array.from({ length: 2 * ry + 1 }, (_, j) => {
+    const dy = j - ry;
+    const half = Math.round(rx * Math.sqrt(1 - (dy / (ry + 0.5)) ** 2));
+    return Math.abs(dy) === ry ? [{ x: pinX - half, y: feet + dy, w: 2 * half + 1 }] : [{ x: pinX - half, y: feet + dy, w: 2 }, { x: pinX + half - 1, y: feet + dy, w: 2 }];
+  }).flat();
+const rings = [ring(12, 2), ring(20, 3), ring(28, 4)];
+// Static stills of the two moment vehicles, cut from the vehicle sheet (live, they drive).
+const still = (type: string, x: number, bottom: number) => {
+  const v = vehicles[type];
+  return { x, y: bottom - v.h, w: v.w, h: v.h, view: `${v.x} ${vehicleSheet.h - v.h} ${v.w} ${v.h}` };
+};
+const stills = [still('cashwa', config.truck.x, LAWN), still('packed', 846, lanes.far)];
+
+// What the walker wears or carries, in walker pixels (18×28, facing right; y < 0 is above the head).
+const walkerGear = {
+  cap: px(['...TTTTTTTTTTTTT..', '..KKKKKKKKKKKKKKK.', '...Y.KCCCCCCCK....', '...Y.KCCCCCCCCK...', '...Y.KKKKKKKKKK...', '..YYY.............'], { T: '#3d3858', K: '#0c0a18', C: '#1b1533', Y: '#ffcd75' }, 0, -2),
+  shades: px(['..KKKK', 'KKKGKK', '..KKKK'], { K: '#0c0a18', G: '#73eff7' }, 10, 6),
+  box: px(['.KKKKKKKK.', '.KTTTPTTK.', '.KCCCPCCK.', 'SKCCCCCCKS', 'SKCCCCCDKS', '.KCCCCCDK.', '.KKKKKKKK.'], { K: '#5c3a2e', T: '#e9d0a8', P: '#f4e0b0', C: '#c9a26b', D: '#a8865e', S: '#f2c4a2' }, 8, 14),
+  laptop: px(['.KKKKKKKK.', '.KBBBBBBK.', '.KBWWBBBK.', '.KBBWWWBK.', 'SKBBBBBBKS', '.KKKKKKKK.', 'GGGGGGGGGG'], { K: '#3d3858', B: '#73eff7', W: '#c6fff5', S: '#f2c4a2', G: '#94a0c2' }, 8, 13),
+};
+
+// Toast icons, one per moment.
+const icon = (rows: string[], pal: Record<string, string>) => ({ w: rows[0].length, h: rows.length, runs: px(rows, pal) });
+const capIcon = ([t, d, c, y]: string[]) => icon(['....TT....', '..TTTTTT..', 'TTTTTTTTTT', '..DDDDDD.Y', '...CCCC..Y', '...CCCC.YY'], { T: t, D: d, C: c, Y: y });
+const laptopIcon = icon(['.KKKKKKKK.', '.KBBBBBBK.', '.KBWWBBBK.', '.KBBWWWBK.', '.KBBBBBBK.', '.KKKKKKKK.', 'GGGGGGGGGG'], { K: '#94a0c2', B: '#2fa8b5', W: '#c6fff5', G: '#c9cfe0' });
+const boxIcon = icon(['KKKKKKKKK', 'KTTTPTTTK', 'KCCCPCCCK', 'KCCCCCCDK', 'KCCCCCCDK', 'KKKKKKKKK'], { K: '#5c3a2e', T: '#e9d0a8', P: '#f4e0b0', C: '#c9a26b', D: '#a8865e' });
+const icons: Record<string, ReturnType<typeof icon>> = {
+  home: icon(['....RR....', '...RRRR...', '..RRRRRR..', '.RRRRRRRR.', 'RRRRRRRRRR', '.WWWWWWWW.', '.WGGWWDDW.', '.WGGWWDDW.', '.WWWWWDDW.'], { R: '#b8405e', W: '#e9d0a8', G: '#73c6f7', D: '#8a4a44' }),
+  khs: capIcon(khsCaps[0]),
+  cashwa: icon(['WWWWWWW...', 'WRRRRRWRR.', 'WWWWWWWRGR', 'WWWWWWWRRR', 'RRRRRRRRRR', '.KK....KK.'], { W: '#f4f4f4', R: '#e43b44', G: '#c6e6f2', K: '#94a0c2' }),
+  college: boxIcon,
+  buckle: laptopIcon,
+  unl: capIcon(unlCaps[0]),
+  covisum: laptopIcon,
+  sf: icon(['Y...Y...Y', '.Y.YYY.Y.', '..YYYYY..', '.KKKYKKK.', 'YKKKKKKKY', '.YKKYKKY.', '..YYYYY..', '.Y.YYY.Y.', 'Y...Y...Y'], { Y: '#ffcd75', K: '#0c0a18' }),
+  nyc: icon(['..KKKKKK...', '..KTTPTK...', '..KCCCCK...', 'KKKKKKKKKK.', 'KTTTPKTTPTK', 'KCCCCKCCCCK', 'KCCCDKCCCDK', 'KKKKKKKKKKK'], { K: '#5c3a2e', T: '#e9d0a8', P: '#f4e0b0', C: '#c9a26b', D: '#a8865e' }),
+  vantager: icon(vantagerMark.mark, { '#': '#ddebef' }),
+  msci: icon(['.Y..R..B.', '...B...Y.', 'R....Y...', '..Y.....R', '.....GG..', '....GGG..', '...GGG...', '..GGG....', '.GG......'], { Y: '#ffcd75', R: '#ff6b9d', B: '#73eff7', G: '#a7f070' }),
+};
+const toasts = moments.filter((m) => !m.finale);
+const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
 ---
 
 <section id="journey" class="journey section" aria-labelledby="journey-title" data-journey data-config={JSON.stringify(config)}>
@@ -285,7 +417,7 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       <div
         class="viewport"
         role="img"
-        aria-label="A pixel-art street from Kearney, Nebraska, past Kearney High, Cash-Wa and a Buckle store, under the Archway, through Lincoln and Omaha past Covisum, across San Francisco past Three Bridge and the Golden Gate to Pebble Beach, then New York: Union Square and the Vantager office, the Flatiron, a walk-up and 7 World Trade Center with MSCI's sign, where a sign points on down the road to the next chapter."
+        aria-label="A pixel-art street through Charlie's life: Kearney, Nebraska, where Kearney High's class of 2021 tosses their caps, past Cash-Wa and a Buckle store, under the Archway to Lincoln and a commencement stage for UNL's class of 2025, through Omaha past Covisum, across San Francisco past Three Bridge and the Golden Gate to Pebble Beach, then New York: moving boxes, Union Square and the Vantager office with an ACQUIRED BY MSCI banner, the Flatiron, a walk-up and 7 World Trade Center with MSCI's sign and a YOU ARE HERE pin, where a sign points on down the road to the next chapter."
       >
         <div class="layer far" data-far>
           <img src="/art/journey-far.png" width={FW} height={H} alt="" loading="lazy" decoding="async" />
@@ -332,6 +464,35 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
                 <rect x="623" y="71" width="5" height="4" fill="#29366f" />
               </g>
               {[[797, 58], [797, 122], [975, 74], [975, 138]].map(([x, y], i) => <rect class="glint slow" x={x} y={y} width="6" height="4" fill="#fff3c4" style={`animation-delay:-${i * 0.8}s`} />)}
+
+              <!-- Moments: Kearney High's class of 2021 tossing their caps; the Buckle sign lighting up. -->
+              <g class="scene" data-scene="khs">
+                {
+                  khsClass.map((g) => (
+                    <g class="grad">
+                      {g.body.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                      <g class="toss" style={`--tx:${g.tx}px;--ty:${g.ty}px;animation-delay:${g.d}s`}>
+                        <g class="spin-a">{g.cap[0].map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                        <g class="spin-b">{g.cap[1].map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      </g>
+                    </g>
+                  ))
+                }
+                {khsBurst.map((c) => <rect class="confetti" x={c.x} y={c.y} width={c.w} height="1" fill={c.c} style={`--dx:${c.dx}px;--dy:${c.dy}px;animation-delay:${c.d}s`} />)}
+              </g>
+              <g class="scene" data-scene="buckle">
+                <g class="flash">
+                  {frame(signs.buckle.x, signs.buckle.y, signs.buckle.w, signs.buckle.h).map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#ffe9a8" />)}
+                  {sparkle(signs.buckle.x + signs.buckle.w, signs.buckle.y).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+              </g>
+              {
+                stills.map((v) => (
+                  <svg class="still" x={v.x} y={v.y} width={v.w} height={v.h} viewBox={v.view} style={`height:${v.h}px`}>
+                    <image href="/art/journey-vehicles.png" width={vehicleSheet.w} height={vehicleSheet.h} />
+                  </svg>
+                ))
+              }
             </g>
 
             <!-- Lincoln on game day: a falcon over the Capitol, lights, the crowd, the board, the balloons. -->
@@ -367,6 +528,22 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
                   {nFlag(k).map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} fill={r.fill} />)}
                 </g>
               ))}
+
+              <!-- Moment: commencement, May 2025. Caps in the air and confetti over the stage. -->
+              <g class="scene" data-scene="unl">
+                {
+                  unlClass.map((g) => (
+                    <g class="grad">
+                      {g.body.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                      <g class="toss" style={`--tx:${g.tx}px;--ty:${g.ty}px;animation-delay:${g.d}s`}>
+                        <g class="spin-a">{g.cap[0].map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                        <g class="spin-b">{g.cap[1].map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      </g>
+                    </g>
+                  ))
+                }
+                {unlBurst.map((c) => <rect class="confetti" x={c.x} y={c.y} width={c.w} height="1" fill={c.c} style={`--dx:${c.dx}px;--dy:${c.dy}px;animation-delay:${c.d}s`} />)}
+              </g>
             </g>
 
             <!-- Omaha: the Missouri catching the light, a cyclist on the bridge, the runway to San Francisco past Covisum. -->
@@ -376,6 +553,12 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
                 {cyclist.map((r) => <rect x={r.x - 4} y={r.y + 108} width={r.w} height="1" fill={r.fill} />)}
               </g>
               {Array.from({ length: 7 }, (_, i) => <rect class="runway" x={FAST_TRAVEL_SF - 10 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
+              <g class="scene" data-scene="covisum">
+                <g class="flash">
+                  {frame(signs.covisum.x, signs.covisum.y, signs.covisum.w, signs.covisum.h).map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#ffe9a8" />)}
+                  {sparkle(signs.covisum.x + signs.covisum.w, signs.covisum.y).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+              </g>
             </g>
 
             <!-- San Francisco: the cable car and its bell, fog through the Gate, pickleball, a hiker. -->
@@ -490,6 +673,45 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
               <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
               <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
               <rect class="beacon" x="3520" y="0" width="1" height="1" fill="#ff3b4f" style="animation-delay:-0.8s" />
+              <!-- Moments: moving day; joining Vantager; the acquisition, with a banner off the roof. -->
+              <g class="scene" data-scene="nyc">
+                {drops.map((b) => <g class="drop" style={`animation-delay:${b.d}s`}>{b.runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>)}
+              </g>
+              <g class="scene" data-scene="vantager">
+                <g class="flash">
+                  {frame(signs.vantager.x, signs.vantager.y, signs.vantager.w, signs.vantager.h).map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#ffe9a8" />)}
+                  {sparkle(OFFICE_SIGN.x + 3, OFFICE_SIGN.y + 3).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                  {sparkle(OFFICE_SIGN.x + 21, OFFICE_SIGN.y + 13).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+              </g>
+              <g class="scene" data-scene="msci">
+                <g class="unroll">
+                  <rect x={acqX} y={OFFICE.roof + 3} width={acqW} height="11" fill="#0c0a18" />
+                  <rect x={acqX + 1} y={OFFICE.roof + 3} width={acqW - 2} height="10" fill="#29366f" />
+                  <rect x={acqX + 1} y={OFFICE.roof + 12} width={acqW - 2} height="1" fill="#ffcd75" />
+                  {label(acq, '#fdf6e3', acqX + 4, OFFICE.roof + 6).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+                {acqBurst.map((c) => <rect class="confetti" x={c.x} y={c.y} width={c.w} height="1" fill={c.c} style={`--dx:${c.dx}px;--dy:${c.dy}px;animation-delay:${c.d}s`} />)}
+              </g>
+              <!-- Now: a YOU ARE HERE pin over MSCI's sign, and a ping where the walker stands. -->
+              <g class="ping">
+                {
+                  rings.map((ring, i) => (
+                    <g style={`animation-delay:${i * 0.25}s`}>
+                      {ring.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill="#ffcd75" />)}
+                    </g>
+                  ))
+                }
+              </g>
+              <g class="here">
+                <g class="pin">
+                  <rect x={pinX - hereW / 2} y="87" width={hereW} height="10" fill="#0c0a18" />
+                  <rect x={pinX - hereW / 2 + 1} y="88" width={hereW - 2} height="8" fill="#b8405e" />
+                  <rect x={pinX - hereW / 2 + 1} y="88" width={hereW - 2} height="1" fill="#ff6b7f" />
+                  {label(here, '#fdf6e3', pinX - hereW / 2 + 3, 90).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                  {pin.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+              </g>
               <!-- The road keeps going: the next chapter is "???", and fog rolls in past it. -->
               <g class="unknown">{label('???', '#ffcd75', 4108, 136).map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
               <g class="fog road-fog">
@@ -512,7 +734,17 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
 
       <div class="walker-box" data-walker aria-hidden="true">
         <i class="shadow"></i>
-        <div class="walker" data-body></div>
+        <div class="walker" data-body>
+          <svg class="props" data-props viewBox="0 -6 18 34" shape-rendering="crispEdges">
+            {
+              Object.entries(walkerGear).map(([k, runs]) => (
+                <g class={`gear-${k}`}>
+                  {runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                </g>
+              ))
+            }
+          </svg>
+        </div>
       </div>
 
       <div class="progress" aria-hidden="true">
@@ -531,17 +763,40 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
                 {s.role} · {s.when}
               </p>
               <p class="line">{s.line}</p>
+              {momentsAt(s.id).length > 0 && (
+                <ul class="moment-list" role="list">
+                  {momentsAt(s.id).map((m) => (
+                    <li>
+                      <span class="pixel">{m.when}</span> · {m.what}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))
         }
       </ol>
 
+      <div class="moments" aria-hidden="true">
+        {
+          toasts.map((m) => (
+            <div class="moment" data-toast={m.id}>
+              <svg viewBox={`0 0 ${icons[m.id].w} ${icons[m.id].h}`} width={icons[m.id].w * 2} height={icons[m.id].h * 2} shape-rendering="crispEdges">
+                {icons[m.id].runs.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+              </svg>
+              <p>
+                <span class="pixel">{m.when}</span>
+                {m.what}
+              </p>
+            </div>
+          ))
+        }
+      </div>
       <div class="banner" aria-hidden="true">
-        <p class="save pixel">Checkpoint · progress saved</p>
+        <p class="save pixel">You are here · Now</p>
         <p class="where pixel">7 World Trade Center</p>
-        <p class="who">MSCI Private Assets · New York</p>
-        <p class="next">Saved. The road keeps going →</p>
-        <p class="loading pixel">Loading next chapter<span>.</span><span>.</span><span>.</span></p>
+        <p class="who">MSCI · New York</p>
+        <p class="next">This is where I am today. The road keeps going →</p>
       </div>
       <div class="toast" aria-hidden="true">
         <Icon name="trophy" color="gold" scale={2.5} />
@@ -565,11 +820,22 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     const cfg = JSON.parse(root.dataset.config!);
     const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
     const all = (s: string) => [...root.querySelectorAll<HTMLElement>(s)];
-    const [track, stage, near, far, walker, body, fill, sun, rays, moon, cars] = ['track', 'stage', 'near', 'far', 'walker', 'body', 'fill', 'sun', 'rays', 'moon', 'cars'].map((n) => q(`[data-${n}]`));
+    const [track, stage, near, far, walker, body, fill, sun, rays, moon, cars, props] = ['track', 'stage', 'near', 'far', 'walker', 'body', 'fill', 'sun', 'rays', 'moon', 'cars', 'props'].map((n) => q(`[data-${n}]`));
     const skies = all('[data-sky]');
     const clouds = all('[data-cloud]');
     const cards = all('[data-stop]');
     const zones = all('.zone').map((el) => ({ el, from: +el.dataset.from!, to: +el.dataset.to!, on: false }));
+    // Life moments: each one's scene and toast, and what the walker wears along the way.
+    const marks = (cfg.moments as { id: string; x: number }[]).map((m) => ({
+      ...m,
+      on: false,
+      scene: root.querySelector(`[data-scene="${m.id}"]`),
+      toast: root.querySelector<HTMLElement>(`[data-toast="${m.id}"]`)!,
+    }));
+    const gear = cfg.props as { prop: string; from: number; to: number }[];
+    const worn: Record<string, boolean> = {};
+    const bob = [0, 1, 0, -1, 0, 1, 0, -1];
+    let shown: HTMLElement | null = null;
     const span = cfg.end - cfg.start;
     const clamp = (v: number) => Math.min(1, Math.max(0, v));
     const timeAt = (x: number) => {
@@ -597,12 +863,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     let running = false;
     let snap = true;
 
-    type Car = { el: HTMLElement; x: number; dir: number; w: number; v: number; type: string; wait: number };
+    // `y` lifts a car out of its lane (onto the curb); `hold` parks it until the walker reaches that x.
+    type Car = { el: HTMLElement; x: number; y: number; dir: number; w: number; v: number; type: string; wait: number; hold: number };
     const fleet: Car[] = Array.from({ length: 7 }, (_, i) => {
       const el = document.createElement('i');
       el.className = 'car';
       cars.append(el);
-      return { el, x: 0, dir: i % 2 ? -1 : 1, w: 0, v: 0, type: '', wait: 0 };
+      return { el, x: 0, y: 0, dir: i % 2 ? -1 : 1, w: 0, v: 0, type: '', wait: 0, hold: 0 };
     });
     const style = (c: Car) => {
       const v = cfg.vehicles[c.type];
@@ -610,13 +877,13 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       c.el.dataset.lane = c.dir > 0 ? 'far' : 'near';
     };
     // Place a car at x (or just off the edge it will drive in from) with a type for that region.
-    const spawn = (c: Car, L: number, x?: number) => {
+    const spawn = (c: Car, L: number, x?: number, cast?: string, speed?: number) => {
       const list: string[] = cfg.regions.findLast((r: { from: number }) => r.from <= Math.max(0, x ?? L)).vehicles;
-      let type = list[Math.floor(Math.random() * list.length)];
+      let type = cast ?? list[Math.floor(Math.random() * list.length)];
       // The far lane passes behind the walker's feet, so only cars short enough to clear them.
       if (c.dir > 0 && cfg.vehicles[type].h > cfg.farMax) type = 'sedan';
       const v = cfg.vehicles[type];
-      Object.assign(c, { type, w: v.w, v: v.speed * (0.85 + Math.random() * 0.3), wait: Math.random() * 3 });
+      Object.assign(c, { type, y: 0, hold: 0, w: v.w, v: speed ?? v.speed * (0.85 + Math.random() * 0.3), wait: Math.random() * 3 });
       const fromLeft = x === undefined && c.dir * c.v > vel;
       c.x = x ?? (fromLeft ? L - c.w - 8 : L + vw + 8);
       // Never on top of another car in the lane: step past it, away from the screen.
@@ -624,10 +891,17 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       for (let o; (o = clash()); ) c.x = fromLeft ? o.x - c.w - 18 : o.x + o.w + 18;
       style(c);
     };
+    // A moment's vehicle takes over the far-lane car farthest from view.
+    const recast = (L: number, type: string, x?: number, speed?: number) => {
+      const c = fleet.filter((o) => o.dir > 0 && !o.hold).reduce((a, b) => (Math.abs(b.x - cam) > Math.abs(a.x - cam) ? b : a));
+      spawn(c, L, x, type, speed);
+      return c;
+    };
 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - (then || now)) / 1000);
       then = now;
+      const first = snap;
       const p = clamp((top - track.getBoundingClientRect().top) / total);
       const target = cfg.start + span * ease(clamp(p / (1 - cfg.dwell)));
       const prev = cam;
@@ -645,8 +919,10 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       if (Math.abs(d) > 0.02) {
         dist += Math.abs(d);
         still = now;
+        const f = Math.floor(dist / 3) % 8;
         body.classList.toggle('back', d < 0);
-        body.style.backgroundPosition = `${-(Math.floor(dist / 3) % 8) * cfg.ww * s}px 0`;
+        body.style.backgroundPosition = `${-f * cfg.ww * s}px 0`;
+        props.style.transform = `translateY(${bob[f] * s}px)`;
       }
       body.classList.toggle('idle', now - still > 220);
 
@@ -667,12 +943,21 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
         if (snap) spawn(c, L, L - 120 + Math.random() * (vw + 240));
         for (const o of fleet) {
           const gap = (o.x - c.x) * c.dir;
-          if (o !== c && o.dir === c.dir && gap > 0 && gap < (c.dir > 0 ? c.w : o.w) + 14) c.v = Math.min(c.v, o.v);
+          if (o !== c && o.dir === c.dir && o.y > -12 && !c.hold && gap > 0 && gap < (c.dir > 0 ? c.w : o.w) + 14) c.v = Math.min(c.v, o.v);
+        }
+        // Parked until the walker comes by, then pulling out from the curb into the lane.
+        if (c.hold && cam >= c.hold) {
+          c.v = Math.min(cfg.vehicles[c.type].speed, c.v + 16 * dt);
+          c.y = Math.min(0, c.y + c.v * dt * 0.7);
+          if (!c.y) c.hold = 0;
         }
         c.x += c.dir * c.v * dt;
-        if ((c.x > L + vw + 40 || c.x + c.w < L - 40) && (c.wait -= dt) < 0) spawn(c, L);
-        c.el.style.transform = `translate3d(${Math.round(c.x * s)}px,0,0)${c.dir < 0 ? ' scaleX(-1)' : ''}`;
+        if (!c.hold && (c.x > L + vw + 40 || c.x + c.w < L - 40) && (c.wait -= dt) < 0) spawn(c, L);
+        c.el.style.transform = `translate3d(${Math.round(c.x * s)}px,${Math.round(c.y * s)}px,0)${c.dir < 0 ? ' scaleX(-1)' : ''}`;
       }
+      // Cash-Wa's truck waits at the dock for the walker, parked while the dock is out of view.
+      const T = cfg.truck;
+      if (cam < T.at && (snap || L + vw + 40 < T.x) && !fleet.some((c) => c.hold)) Object.assign(recast(L, 'cashwa', T.x), { x: T.x, v: 0, y: T.y, hold: T.at });
       snap = false;
 
       // Overlay zones animate only while on screen.
@@ -680,6 +965,24 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
         const on = z.from < L + vw + 40 && z.to > L - 40;
         if (on !== z.on) z.el.classList.toggle('on', (z.on = on));
       }
+
+      // Life moments play as the walker reaches them, with a toast (not on a jump or a fast
+      // scroll); walking back past one resets it, to play again.
+      for (const m of marks) {
+        const on = cam >= m.x;
+        if (on === m.on) continue;
+        m.on = on;
+        m.scene?.classList.toggle('go', on);
+        if (!on || first || Math.abs(vel) > 700) continue;
+        // Off to college: a packed car comes up from behind and overtakes the walker.
+        if (m.id === 'college') recast(L, 'packed', undefined, Math.max(cfg.vehicles.packed.speed, vel + 40));
+        shown?.classList.remove('show');
+        void m.toast.offsetWidth;
+        (shown = m.toast).classList.add('show');
+      }
+      for (const g of gear) worn[g.prop] = false;
+      for (const g of gear) worn[g.prop] ||= cam >= g.from && cam < g.to;
+      for (const k in worn) props.classList.toggle(k, worn[k]);
 
       // Game day, flyovers, captions, progress, and the checkpoint.
       root.classList.toggle('game-on', cam > 1180 && cam < 1560);
@@ -760,11 +1063,12 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   .skip,
   .banner,
   .toast,
+  .moments,
   .cars {
     display: none;
   }
 
-  .journey:global(.live) :is(.sky, .far, .walker-box, .progress, .skip, .banner, .cars) {
+  .journey:global(.live) :is(.sky, .far, .walker-box, .progress, .skip, .banner, .moments, .cars) {
     display: block;
   }
 
@@ -846,6 +1150,34 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     color: var(--ink-soft);
     font-size: var(--step--1);
     line-height: 1.45;
+  }
+
+  /* The stop's life moments, dated. On the walk they're toasts, so here they're for screen readers. */
+  .moment-list {
+    margin: var(--space-2xs) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+    line-height: 1.4;
+  }
+
+  .moment-list li {
+    margin-top: 3px;
+  }
+
+  .moment-list .pixel {
+    color: var(--gold);
+    font-size: var(--label);
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .journey:global(.live) .moment-list {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /* Live: a sticky stage the page scrolls through. */
@@ -1073,6 +1405,31 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     transform: scaleX(-1);
   }
 
+  /* What the walker wears or carries: a cap, shades, a box, a laptop. */
+  .props {
+    position: absolute;
+    left: 0;
+    top: calc(var(--s) * -6px);
+    width: calc(var(--s) * var(--ww) * 1px);
+    height: calc(var(--s) * 34px);
+    overflow: visible;
+  }
+
+  .props g {
+    display: none;
+  }
+
+  .props:is(:global(.cap), :global(.cap-fly)) .gear-cap,
+  .props:global(.shades) .gear-shades,
+  .props:global(.box) .gear-box,
+  .props:global(.laptop) .gear-laptop {
+    display: inline;
+  }
+
+  .journey:global(.arrived) .props {
+    display: none;
+  }
+
   .cars {
     position: absolute;
     inset: 0;
@@ -1225,12 +1582,43 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     font-size: var(--step--1);
   }
 
-  .loading {
-    margin-top: 4px;
+  /* Life moments: a dated caption slides in, holds, and slides out. */
+  .moment {
+    --out: calc(100% + var(--gutter) + 12px);
+    position: absolute;
+    top: calc(var(--space-s) + 26px);
+    right: var(--gutter);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: min(320px, calc(100% - 2 * var(--gutter)));
+    padding: 0.5rem 0.9rem 0.5rem 0.7rem;
+    background: var(--panel-2);
+    box-shadow:
+      inset 0 0 0 2px var(--teal),
+      4px 4px 0 0 var(--shadow);
+    font-size: var(--step--1);
+    line-height: 1.3;
+    transform: translateX(var(--out));
+    visibility: hidden;
+  }
+
+  .moment svg {
+    flex: none;
+  }
+
+  .moment .pixel {
+    display: block;
     color: var(--gold);
     font-size: var(--label);
     letter-spacing: 0.06em;
+    text-transform: uppercase;
     font-size-adjust: cap-height 0.7;
+  }
+
+  .moment:global(.show) {
+    visibility: visible;
   }
 
   .toast {
@@ -1303,6 +1691,41 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
 
   .ball {
     transform: translate(2530px, 137px);
+  }
+
+  /* Moment scenes at rest. Without motion they hold a still: caps in the air,
+     the boxes stacked, the banner up, the pin over 7 WTC. */
+  .confetti,
+  .flash,
+  .spin-b {
+    opacity: 0;
+  }
+
+  .journey:not(:global(.live)) .toss {
+    transform: translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.8));
+  }
+
+  .unroll {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+
+  .ping,
+  .journey:global(.live) .still,
+  .journey:global(.live):not(:global(.arrived)) .here {
+    display: none;
+  }
+
+  .journey:global(.live) .drop {
+    opacity: 0;
+  }
+
+  .journey:global(.live) .unroll {
+    transform: scaleY(0);
+  }
+
+  .journey:global(.arrived) .ping {
+    display: inline;
   }
 
   .hiker {
@@ -1388,8 +1811,8 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
     .journey:global(.arrived) .walker {
       transform: none;
       animation:
-        road-wave 0.9s steps(1) 4,
-        road-breathe 1.4s steps(1) 3.6s infinite;
+        road-wave 0.9s steps(1) 6,
+        road-breathe 1.4s steps(1) 5.4s infinite;
     }
 
     .blades {
@@ -1518,16 +1941,68 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
       animation: road-neon 1.4s steps(1) infinite;
     }
 
-    .loading span {
-      animation: road-twinkle 1.2s steps(1) infinite;
+    /* Life moments: toasts, the walker's gear, and each scene once it's `go`. */
+    .moment:global(.show) {
+      animation: road-toast 3.8s steps(4) both;
     }
 
-    .loading span:nth-child(2) {
-      animation-delay: 0.2s;
+    .walker:global(.idle) .props {
+      animation: road-bob 1.4s steps(1) infinite;
     }
 
-    .loading span:nth-child(3) {
-      animation-delay: 0.4s;
+    .props:global(.cap) .gear-cap,
+    .props:global(.shades) .gear-shades {
+      animation: road-gear-on 0.4s steps(4) both;
+    }
+
+    .props:global(.cap-fly) .gear-cap {
+      animation: road-cap-fly 1.6s steps(16) both;
+    }
+
+    .props:is(:global(.box), :global(.laptop)) g {
+      animation: road-gear-up 0.3s steps(3) both;
+    }
+
+    .scene:global(.go) .grad {
+      animation: road-hop 0.4s steps(1) 3;
+    }
+
+    .scene:global(.go) .toss {
+      animation: road-toss 1.9s steps(4) both;
+    }
+
+    .scene:global(.go) .spin-a {
+      animation: road-frame 0.32s steps(1) 6;
+    }
+
+    .scene:global(.go) .spin-b {
+      animation: road-frame-b 0.32s steps(1) 6;
+    }
+
+    .scene:global(.go) .confetti {
+      animation: road-confetti 2.6s steps(6) both;
+    }
+
+    .scene:global(.go) .flash {
+      animation: road-blink 2.2s steps(1) both;
+    }
+
+    .scene:global(.go) .drop {
+      animation: road-drop 0.9s steps(6) both;
+    }
+
+    .scene:global(.go) .unroll {
+      animation: road-unroll 0.6s steps(6) 0.4s both;
+    }
+
+    .journey:global(.arrived) .here {
+      animation:
+        road-pin-drop 0.8s steps(8) 0.3s both,
+        road-pin-bob 1.1s steps(2) 1.1s infinite;
+    }
+
+    .journey:global(.arrived) .ping g {
+      animation: road-ping 1.5s steps(1) infinite;
     }
 
     .win {
@@ -1923,6 +2398,210 @@ const pct = (x: number) => ((x - camera.start) / (camera.end - camera.start)) * 
   @keyframes road-lobby {
     to {
       opacity: 0.35;
+    }
+  }
+
+  @keyframes road-toast {
+    0%,
+    100% {
+      transform: translateX(var(--out));
+    }
+    10%,
+    88% {
+      transform: none;
+    }
+  }
+
+  /* Idle breathing lifts the head a pixel on the second frame; the gear follows. */
+  @keyframes road-bob {
+    0%,
+    100% {
+      transform: none;
+    }
+    50% {
+      transform: translateY(calc(var(--s) * -1px));
+    }
+  }
+
+  @keyframes road-gear-on {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes road-gear-up {
+    from {
+      transform: translateY(3px);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* Off the head and away on the wind, over the Missouri. */
+  @keyframes road-cap-fly {
+    0% {
+      opacity: 1;
+      transform: none;
+    }
+    25% {
+      transform: translate(-1px, -12px);
+    }
+    60% {
+      opacity: 1;
+      transform: translate(6px, -34px);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(22px, -64px);
+    }
+  }
+
+  @keyframes road-hop {
+    0%,
+    100% {
+      transform: none;
+    }
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+
+  /* A cap's arc: up, a little drift, and back down onto the graduate's head. */
+  @keyframes road-toss {
+    0%,
+    100% {
+      transform: none;
+    }
+    12% {
+      transform: translate(calc(var(--tx) * 0.25), calc(var(--ty) * 0.55));
+    }
+    25% {
+      transform: translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.85));
+    }
+    40% {
+      transform: translate(calc(var(--tx) * 0.75), var(--ty));
+    }
+    55% {
+      transform: translate(var(--tx), calc(var(--ty) * 0.85));
+    }
+    70% {
+      transform: translate(calc(var(--tx) * 0.75), calc(var(--ty) * 0.55));
+    }
+    86% {
+      transform: translate(calc(var(--tx) * 0.35), calc(var(--ty) * 0.15));
+    }
+  }
+
+  @keyframes road-confetti {
+    0% {
+      opacity: 0;
+      transform: none;
+    }
+    2% {
+      opacity: 1;
+      transform: none;
+    }
+    30% {
+      transform: translate(var(--dx), var(--dy));
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(var(--dx) * 1.5), calc(var(--dy) + 46px));
+    }
+  }
+
+  @keyframes road-blink {
+    0%,
+    20%,
+    40%,
+    60% {
+      opacity: 1;
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes road-drop {
+    0% {
+      opacity: 0;
+      transform: translateY(-40px);
+    }
+    2% {
+      opacity: 1;
+      transform: translateY(-40px);
+    }
+    60%,
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+    78% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes road-unroll {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  /* The pin drops in over MSCI's sign, bounces, then bobs. */
+  @keyframes road-pin-drop {
+    0% {
+      opacity: 0;
+      transform: translateY(-70px);
+    }
+    8% {
+      opacity: 1;
+    }
+    65%,
+    100% {
+      transform: none;
+    }
+    80% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes road-pin-bob {
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes road-ping {
+    0% {
+      opacity: 1;
+    }
+    35%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Narrower: the stop's card fills the top, so a moment comes in along the bottom, over the street. */
+  @media (max-width: 799px) {
+    .moment {
+      top: auto;
+      bottom: 10px;
     }
   }
 
