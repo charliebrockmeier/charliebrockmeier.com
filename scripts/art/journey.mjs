@@ -2,7 +2,8 @@
 //   journey-near      4400×210  the places themselves, walked past at full speed
 //   journey-far       2460×210  hills, the sea and skylines that drift past at half speed
 //   journey-walker     234×28   Charlie: 8 walk frames, 2 idle, 3 facing out (wave)
-//   journey-vehicles   458×28   pickups, a tractor, buses, a convertible, a streetcar, cabs
+//   journey-vehicles   566×28   pickups, a tractor, buses, a convertible, a streetcar, cabs,
+//                               and for life moments Cash-Wa's truck and a car packed for college
 //   journey-clouds     480×240  three cloud bands, in day and dusk colors
 // The sky is CSS. Positions and time of day come from src/data/journey.ts. The
 // places themselves live in journey-west, journey-coast and journey-city.
@@ -568,6 +569,58 @@ export function journeyVehicles() {
   cv.rect(x + 1, B - 4, 51, 2, '#a87830');
   cv.rect(x + 49, B - 9, 2, 2, '#ffe9a8');
   cv.rect(x + 1, B - 9, 2, 2, '#ff6b7f');
+  for (const wx of [x + 11, x + 41]) {
+    well(wx);
+    wheel(wx);
+  }
+
+  // Cash-Wa's delivery truck: a white box with the name in red, a red cab.
+  x = v.cashwa.x;
+  cv.rect(x + 1, B - 18, 38, 14, '#5a5878');
+  cv.rect(x + 2, B - 17, 36, 12, '#f4f4f4');
+  cv.rect(x + 2, B - 17, 36, 1, '#ffffff');
+  cv.rect(x + 2, B - 7, 36, 2, '#a82a34');
+  text(cv, x + 6, B - 14, 'CASH-WA', '#a82a34');
+  cv.rect(x + 1, B - 4, 52, 2, '#3d3858');
+  cv.poly([[x + 40, B - 4], [x + 40, B - 14], [x + 48, B - 14], [x + 53, B - 8], [x + 54, B - 4]], '#a82a34');
+  cv.rect(x + 40, B - 14, 8, 1, '#e43b44');
+  cv.poly([[x + 42, B - 9], [x + 42, B - 13], [x + 47, B - 13], [x + 51, B - 9]], glass);
+  cv.line(x + 44, B - 12, x + 46, B - 10, '#ffffff');
+  cv.rect(x + 52, B - 7, 2, 2, '#ffe9a8');
+  cv.rect(x + 1, B - 6, 1, 2, '#ff6b7f');
+  for (const wx of [x + 12, x + 46]) {
+    well(wx);
+    wheel(wx);
+  }
+
+  // Off to college: a station wagon, boxes in the back and strapped to the roof.
+  x = v.packed.x;
+  cv.poly([[x + 1, B - 3], [x + 1, B - 13], [x + 34, B - 13], [x + 40, B - 9], [x + 50, B - 8], [x + 51, B - 3]], '#38b764');
+  cv.rect(x + 2, B - 8, 48, 1, '#a7f070');
+  cv.rect(x + 3, B - 12, 13, 4, glass);
+  cv.rect(x + 18, B - 12, 8, 4, glass);
+  cv.poly([[x + 28, B - 8], [x + 28, B - 12], [x + 33, B - 12], [x + 37, B - 8]], glass);
+  cv.rect(x + 4, B - 11, 5, 3, '#c9a26b');
+  cv.rect(x + 10, B - 10, 5, 2, '#a8865e');
+  cv.rect(x + 19, B - 11, 4, 3, '#c9a26b');
+  cv.line(x + 30, B - 11, x + 32, B - 9, '#ffffff');
+  cv.rect(x + 17, B - 12, 1, 8, '#257156');
+  cv.rect(x + 27, B - 12, 1, 8, '#257156');
+  cv.rect(x + 1, B - 4, 51, 2, '#257156');
+  cv.rect(x + 49, B - 7, 2, 2, '#ffe9a8');
+  cv.rect(x + 1, B - 7, 2, 2, '#ff6b7f');
+  // The roof rack: two rails, three boxes and a strap.
+  cv.rect(x + 3, B - 14, 30, 1, '#566c86');
+  for (const [bx, bw, bh] of [
+    [x + 4, 9, 4],
+    [x + 14, 8, 3],
+    [x + 23, 9, 4],
+  ]) {
+    cv.rect(bx, B - 14 - bh, bw, bh, '#5c3a2e');
+    cv.rect(bx + 1, B - 13 - bh, bw - 2, bh - 1, '#c9a26b');
+    cv.rect(bx + 1, B - 13 - bh, bw - 2, 1, '#e9d0a8');
+  }
+  cv.rect(x + 3, B - 16, 30, 1, '#141026');
   for (const wx of [x + 11, x + 41]) {
     well(wx);
     wheel(wx);

@@ -8,6 +8,10 @@ import { vantagerMark } from '../../src/data/journey.ts';
 import { logos } from '../../src/data/logos.ts';
 
 export const WTC7 = { x: 3990, w: 100, top: 30 };
+/** The Vantager office on Union Square, and its sign (the overlay celebrates there). */
+export const OFFICE = { x: 3276, w: 92, roof: 57 };
+const signW = 4 + vantagerMark.mark[0].length + 4 + textWidth(vantagerMark.word) + 5;
+export const OFFICE_SIGN = { x: OFFICE.x + Math.round((OFFICE.w - signW) / 2), y: 118, w: signW, h: 17 };
 
 /** MSCI's lockup as on its logo: the wordmark, then the globe (lifted from the emblem in logos.ts). */
 const MSCI_LETTERS = {
@@ -48,6 +52,34 @@ function nextChapter(cv) {
   cv.rect(x + 3, y + 23, 20, 7, '#141026');
 }
 
+/** A taped moving box, (x, y) its top-left corner. */
+function movingBox(cv, x, y, w, h) {
+  cv.rect(x, y, w, h, '#5c3a2e');
+  cv.rect(x + 1, y + 1, w - 2, h - 2, '#c9a26b');
+  cv.rect(x + 1, y + 1, w - 2, 2, '#e9d0a8');
+  cv.rect(x + w - 2, y + 3, 1, h - 4, '#a8865e');
+  cv.rect(x + Math.floor(w / 2) - 1, y + 1, 2, Math.min(4, h - 2), '#f4e0b0');
+}
+
+/** Moving day, summer 2025: boxes off the fast-travel ride (more drop in on the overlay), and two at the walk-up. */
+export const MOVING = { x: 3000 };
+
+function movingDay(cv) {
+  const { x } = MOVING;
+  movingBox(cv, x, LAWN - 10, 12, 10);
+  movingBox(cv, x + 12, LAWN - 8, 10, 8);
+  movingBox(cv, x + 2, LAWN - 17, 9, 7);
+  // A hand truck parked beside the pile: handle, frame, nose plate, wheel.
+  cv.rect(x + 26, LAWN - 18, 3, 1, '#94a0c2');
+  cv.rect(x + 27, LAWN - 17, 1, 15, '#94a0c2');
+  cv.rect(x + 24, LAWN - 2, 4, 1, '#94a0c2');
+  cv.rect(x + 28, LAWN - 3, 2, 2, '#141026');
+  cv.px(x + 29, LAWN - 2, '#566c86');
+  // At the walk-up's stoop.
+  movingBox(cv, 3706, LAWN - 9, 11, 9);
+  movingBox(cv, 3708, LAWN - 15, 8, 6);
+}
+
 export function newYork(cv, rand) {
   unionSquare(cv, rand);
   flatiron(cv, rand);
@@ -55,6 +87,7 @@ export function newYork(cv, rand) {
   streetLife(cv);
   walkUp(cv, rand);
   downtown(cv, rand);
+  movingDay(cv);
 }
 
 function unionSquare(cv, rand) {
@@ -119,15 +152,14 @@ function unionSquare(cv, rand) {
     cv.px(sx + 14, 148, C.cream);
   });
   // The Vantager office: big lit windows and the sign.
-  const ox = 3276;
+  const ox = OFFICE.x;
   cv.rect(ox, 60, 92, LAWN - 60, '#3a3858');
   cv.rect(ox, 60, 2, LAWN - 60, '#5a5878');
-  cv.rect(ox - 2, 57, 96, 3, '#2b2a48');
+  cv.rect(ox - 2, OFFICE.roof, 96, 3, '#2b2a48');
   windowGrid(cv, ox + 5, 66, 84, 52, rand, { dx: 9, dy: 10, ww: 7, wh: 7, lit: 0.7, on: ['#ffe9a8', '#ffcd75', '#c6fff5'], off: '#1b1a33' });
   // The sign: Vantager's gem on Insight Sky Blue, then the name. Swap via vantagerMark.
   const gem = vantagerMark.mark;
-  const signW = 4 + gem[0].length + 4 + textWidth(vantagerMark.word) + 5;
-  const sx = ox + Math.round((92 - signW) / 2);
+  const sx = OFFICE_SIGN.x;
   cv.rect(sx, 118, signW, 17, vantagerMark.sign);
   cv.rect(sx, 118, signW, 1, '#ffffff');
   cv.rect(sx, 134, signW, 1, vantagerMark.accent);
