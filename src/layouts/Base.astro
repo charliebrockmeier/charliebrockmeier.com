@@ -1,5 +1,6 @@
 ---
 import { Font } from 'astro:assets';
+import CommandPalette from '../components/CommandPalette.astro';
 import '../styles/tokens.css';
 import '../styles/global.css';
 
@@ -46,5 +47,6 @@ const ogImage = new URL('/og.png', Astro.site);
   </head>
   <body class={theme}>
     <slot />
+    <CommandPalette />
   </body>
 </html>
