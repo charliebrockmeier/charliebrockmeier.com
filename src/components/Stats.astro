@@ -1,18 +1,20 @@
 ---
-// Chess (live from chess.com at build time), the chess bot, and Claude usage.
+// Chess (live from chess.com at build time), the chess bot, Claude usage and a year of Spotify.
 import Chess from './Chess.astro';
 import ClaudeStats from './ClaudeStats.astro';
+import SpotifyStats from './SpotifyStats.astro';
 ---
 
 <section id="stats" class="section wrap" aria-labelledby="stats-title">
   <header class="section-head">
     <span class="num">05</span>
     <h2 id="stats-title">Stats</h2>
-    <p>Chess and Claude, by the numbers.</p>
+    <p>Chess, Claude and Spotify, by the numbers.</p>
   </header>
 
   <Chess />
   <slot />
   <ClaudeStats />
+  <SpotifyStats />
 
 </section>

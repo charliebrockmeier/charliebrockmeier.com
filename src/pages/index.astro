@@ -38,7 +38,7 @@ import { site } from '../data/profile';
 </Base>
 
 <script>
-  // Game-style shortcuts: E jumps to the dialogue box, R opens the resume.
+  // Game-style shortcuts: E jumps to the dialogue box, R opens the resume, C the contact page.
   addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
     if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
@@ -48,6 +48,8 @@ import { site } from '../data/profile';
       document.querySelector<HTMLElement>('[data-choice]')?.focus({ preventScroll: true });
     } else if (key === 'r') {
       location.href = '/resume';
+    } else if (key === 'c') {
+      location.href = '/contact';
     }
   });
 </script>

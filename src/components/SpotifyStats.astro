@@ -1,0 +1,348 @@
+---
+// A year of Spotify, from Charlie's own data export (src/data/spotify.json). The
+// numbers are aggregated once from the streaming-history files; nothing personal from
+// the export is kept. A ten-hour box-fan track is left out of the music and owned up to
+// at the bottom instead.
+import Icon from './Icon.astro';
+import spotify from '../data/spotify.json';
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+const month = (ym: string) =>
+  new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const span = `${month(spotify.window.from)} to ${month(spotify.window.to)}`;
+
+const maxArtist = Math.max(...spotify.topArtists.map((a) => a.hours));
+const maxHour = Math.max(...spotify.byHour);
+const peak = spotify.byHour.indexOf(maxHour);
+const clock = (h: number) => `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`;
+const ranks = ['1ST', '2ND', '3RD', '4TH', '5TH', '6TH'];
+const club = spotify.wrapped2025.club
+  .toLowerCase()
+  .split('_')
+  .map((w) => w[0].toUpperCase() + w.slice(1))
+  .join(' ');
+const colors = ['var(--green)', 'var(--teal)', 'var(--gold)', 'var(--coral)', 'var(--violet)', 'var(--blue)'];
+---
+
+<article class="spotify panel" aria-labelledby="spotify-title" data-rise>
+  <header class="head">
+    <Icon name="note" color="green" scale={2.5} />
+    <h3 id="spotify-title" class="pixel">Spotify</h3>
+    <p class="source">My streaming history, {span}</p>
+  </header>
+
+  <div class="body">
+    <div class="lead">
+      <p class="big pixel">{fmt(spotify.hours)}</p>
+      <p class="label">hours of music in a year</p>
+      <dl class="rows">
+        <div><dt>Plays</dt><dd class="pixel">{fmt(spotify.plays)}</dd></div>
+        <div><dt>Artists</dt><dd class="pixel">{fmt(spotify.artists)}</dd></div>
+        <div><dt>Days with music</dt><dd class="pixel">{spotify.days} / 365</dd></div>
+        <div><dt>Longest run</dt><dd class="pixel">{spotify.bestStreak} days</dd></div>
+      </dl>
+
+      <figure class="clock">
+        <figcaption class="pixel cap">When I listen <span>peak {clock(peak)}</span></figcaption>
+        <div class="bars" role="img" aria-label={`Listening by hour of day, Eastern time. The peak is ${clock(peak)}.`}>
+          {spotify.byHour.map((h, i) => <i class:list={{ peak: i === peak }} style={`--h: ${Math.max(2, (h / maxHour) * 100).toFixed(1)}%; --i: ${i}`} />)}
+        </div>
+        <div class="ticks" aria-hidden="true"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>
+      </figure>
+    </div>
+
+    <div class="tables">
+      <div>
+        <p class="pixel cap">Top artists</p>
+        <ol class="artists" role="list">
+          {
+            spotify.topArtists.map((a, i) => (
+              <li style={`--w: ${((a.hours / maxArtist) * 100).toFixed(1)}%; --c: ${colors[i]}; --i: ${i}`}>
+                <span class="rank pixel">{ranks[i]}</span>
+                <span class="name">{a.name}</span>
+                <span class="track">
+                  <span class="fill" />
+                </span>
+                <span class="val pixel">{Math.round(a.hours)}h</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+
+      <div>
+        <p class="pixel cap">High scores <span>plays</span></p>
+        <ol class="scores" role="list">
+          {
+            spotify.topTracks.map((t, i) => (
+              <li>
+                <span class="rank pixel">{ranks[i]}</span>
+                <span class="song">
+                  <b>{t.name}</b> <span>{t.artist}</span>
+                </span>
+                <span class="val pixel">{t.plays}</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <ul class="wrapped" role="list" aria-label="From Spotify Wrapped 2025">
+    <li class="pixel tag">Wrapped 2025</li>
+    <li><b class="pixel">{fmt(spotify.wrapped2025.minutes)}</b> minutes</li>
+    <li><b class="pixel">{spotify.wrapped2025.genres}</b> genres</li>
+    <li>Listening age <b class="pixel">{spotify.wrapped2025.listeningAge}</b></li>
+    <li>{club}, <b class="pixel">{spotify.wrapped2025.clubRole.toLowerCase()}</b></li>
+  </ul>
+
+  <p class="quip">Not counted above: {spotify.boxFanHours} hours of a ten-hour box-fan track.</p>
+</article>
+
+<style>
+  .spotify {
+    margin-top: var(--space-s);
+    padding: clamp(1rem, 2vw, 1.4rem);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.6rem;
+  }
+
+  .head h3 {
+    font-size: var(--step-2);
+    line-height: 1;
+  }
+
+  .source {
+    margin-left: auto;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-m);
+    margin-top: var(--space-s);
+  }
+
+  .big {
+    color: var(--green);
+    font-size: clamp(2.5rem, 1.8rem + 2.4vw, 3.75rem);
+    line-height: 0.9;
+    font-size-adjust: cap-height 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label {
+    margin-top: var(--space-2xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-xs) var(--space-s);
+    margin-top: var(--space-s);
+  }
+
+  .rows dt {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .rows dd {
+    font-size: var(--step-1);
+    line-height: 1.1;
+    font-size-adjust: cap-height 0.7;
+  }
+
+  .cap {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--gold);
+    font-size: var(--label);
+  }
+
+  .cap span {
+    color: var(--ink-soft);
+  }
+
+  /* 24 pixel columns, one per hour of the day. */
+  .clock {
+    margin-top: var(--space-s);
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    align-items: end;
+    gap: 2px;
+    height: 104px;
+    margin-top: 6px;
+    padding: 4px;
+    background: var(--bg);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .bars i {
+    height: var(--h);
+    background: var(--green);
+    opacity: 0.55;
+  }
+
+  .bars i.peak {
+    background: var(--gold);
+    opacity: 1;
+  }
+
+  .ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2px;
+    color: var(--ink-soft);
+    font-size: 0.6875rem;
+  }
+
+  .tables {
+    display: grid;
+    gap: var(--space-s);
+    align-content: start;
+  }
+
+  .tables ol {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .rank {
+    color: var(--gold);
+    font-size: var(--step-0);
+  }
+
+  .artists li {
+    display: grid;
+    grid-template-columns: 2.2rem 8.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--step--1);
+  }
+
+  .name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .track {
+    height: 12px;
+    background: var(--bg);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .fill {
+    display: block;
+    width: var(--w);
+    height: 100%;
+    background: repeating-linear-gradient(90deg, var(--c) 0 6px, color-mix(in srgb, var(--c) 55%, transparent) 6px 8px);
+  }
+
+  .val {
+    text-align: right;
+  }
+
+  .scores li {
+    display: grid;
+    grid-template-columns: 2.2rem minmax(0, 1fr) 2.5rem;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding-bottom: 6px;
+    border-bottom: 2px dotted var(--line);
+    font-size: var(--step--1);
+  }
+
+  .song b {
+    font-weight: 600;
+  }
+
+  .song span {
+    color: var(--ink-soft);
+  }
+
+  .scores .val {
+    color: var(--green);
+    font-size: var(--step-0);
+  }
+
+  .wrapped {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--space-s);
+  }
+
+  .wrapped li {
+    padding: 4px 10px;
+    background: var(--bg);
+    box-shadow: inset 0 0 0 2px var(--line);
+    font-size: var(--step--1);
+  }
+
+  .wrapped b {
+    color: var(--green);
+    font-size: var(--step-0);
+    font-weight: 400;
+  }
+
+  .wrapped .tag {
+    background: var(--green);
+    box-shadow: none;
+    color: var(--bg);
+    font-size: var(--step-0);
+  }
+
+  .quip {
+    margin-top: var(--space-s);
+    padding-top: var(--space-xs);
+    border-top: 2px dashed var(--line);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    font-style: italic;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.motion) .spotify:not(:global(.risen)) .fill {
+      width: 0;
+    }
+
+    :global(.motion) .spotify:not(:global(.risen)) .bars i {
+      height: 2%;
+    }
+
+    .fill {
+      transition: width 1s steps(14) calc(0.3s + var(--i) * 0.12s);
+    }
+
+    .bars i {
+      transition: height 0.6s steps(6) calc(0.2s + var(--i) * 0.03s);
+    }
+  }
+
+  @media (max-width: 759px) {
+    .body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .artists li {
+      grid-template-columns: 2.2rem 6.5rem minmax(0, 1fr) 2.5rem;
+    }
+  }
+</style>

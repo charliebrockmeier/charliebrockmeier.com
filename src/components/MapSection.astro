@@ -71,7 +71,10 @@ const movers = [
     id: r.id,
     href: `#p-${r.kind === 'flight' ? 'f-' : ''}${r.id}`,
     sprite: r.kind === 'flight' ? plane : r.cat === 'ski' ? skiCar : car,
-    west: r.west,
+    // Planes turn with their arc (rotate="auto" points the nose along the path), so
+    // they never need mirroring. Cars stay level and face the way they're driving.
+    flight: r.kind === 'flight',
+    west: r.kind !== 'flight' && r.west,
     ...loop(r.len, r.kind === 'flight' ? 34 : 16, r.reveal.delay + r.reveal.dur, i),
   })),
 ];
@@ -193,7 +196,7 @@ const stopLogos: Record<string, LogoName[]> = {
                       <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />
                     ))}
                   </g>
-                  <animateMotion dur={m.dur} begin={m.begin} repeatCount="indefinite" calcMode="linear" keyPoints={m.motion.keyPoints} keyTimes={m.motion.keyTimes}>
+                  <animateMotion dur={m.dur} begin={m.begin} repeatCount="indefinite" calcMode="linear" rotate={m.flight ? 'auto' : undefined} keyPoints={m.motion.keyPoints} keyTimes={m.motion.keyTimes}>
                     <mpath href={m.href} />
                   </animateMotion>
                   <animate attributeName="opacity" dur={m.dur} begin={m.begin} repeatCount="indefinite" calcMode="linear" values={m.fade.values} keyTimes={m.fade.keyTimes} />

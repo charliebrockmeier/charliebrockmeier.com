@@ -1,0 +1,161 @@
+{
+ "window": {
+  "from": "2025-11",
+  "to": "2026-10"
+ },
+ "hours": 506,
+ "plays": 10663,
+ "artists": 1675,
+ "tracks": 4504,
+ "days": 347,
+ "bestStreak": 109,
+ "topArtists": [
+  {
+   "name": "Dylan Gossett",
+   "hours": 17.2
+  },
+  {
+   "name": "Empire Of The Sun",
+   "hours": 15.5
+  },
+  {
+   "name": "Morgan Wallen",
+   "hours": 11.4
+  },
+  {
+   "name": "Noah Kahan",
+   "hours": 11.4
+  },
+  {
+   "name": "Zach Bryan",
+   "hours": 8.2
+  },
+  {
+   "name": "Juice WRLD",
+   "hours": 7.9
+  }
+ ],
+ "topTracks": [
+  {
+   "name": "Following the Sun",
+   "artist": "SUPER-Hi",
+   "plays": 74
+  },
+  {
+   "name": "No Broke Boys",
+   "artist": "Disco Lines",
+   "plays": 67
+  },
+  {
+   "name": "Man I Need",
+   "artist": "Olivia Dean",
+   "plays": 66
+  },
+  {
+   "name": "Coal",
+   "artist": "Dylan Gossett",
+   "plays": 50
+  },
+  {
+   "name": "Dark Secrets",
+   "artist": "Empire Of The Sun",
+   "plays": 48
+  }
+ ],
+ "byHour": [
+  5.9,
+  1.8,
+  0.2,
+  0.4,
+  0.0,
+  1.0,
+  10.9,
+  85.2,
+  31.2,
+  18.9,
+  20.1,
+  26.3,
+  33.7,
+  32.9,
+  33.2,
+  31.9,
+  27.5,
+  28.0,
+  30.2,
+  34.0,
+  21.0,
+  13.2,
+  9.8,
+  8.3
+ ],
+ "byMonth": [
+  {
+   "m": "2025-11",
+   "hours": 30.9
+  },
+  {
+   "m": "2025-12",
+   "hours": 42.9
+  },
+  {
+   "m": "2026-01",
+   "hours": 75.6
+  },
+  {
+   "m": "2026-02",
+   "hours": 54.9
+  },
+  {
+   "m": "2026-03",
+   "hours": 48.3
+  },
+  {
+   "m": "2026-04",
+   "hours": 37.1
+  },
+  {
+   "m": "2026-05",
+   "hours": 41.6
+  },
+  {
+   "m": "2026-06",
+   "hours": 32.1
+  },
+  {
+   "m": "2026-07",
+   "hours": 38.5
+  },
+  {
+   "m": "2026-08",
+   "hours": 27.1
+  },
+  {
+   "m": "2026-09",
+   "hours": 26.9
+  },
+  {
+   "m": "2026-10",
+   "hours": 49.6
+  }
+ ],
+ "byWeekday": [
+  88.8,
+  74.9,
+  71.3,
+  66.0,
+  58.4,
+  59.9,
+  86.3
+ ],
+ "boxFanHours": 140,
+ "wrapped2025": {
+  "minutes": 33524,
+  "artists": 1612,
+  "tracks": 3258,
+  "genres": 309,
+  "listeningAge": 60,
+  "club": "SOFT_HEARTS_CLUB",
+  "clubRole": "LEADER",
+  "topFanPercent": 0.7
+ }
+}
