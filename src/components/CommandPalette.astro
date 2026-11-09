@@ -7,6 +7,7 @@
 import { achievements, builds, email, quests, resumePdf } from '../data/profile';
 import { branches } from '../data/skills';
 import { trips } from '../data/sidequests';
+import { paper2026 } from '../data/paper2026';
 
 type Item = { g: string; t: string; h?: string; href?: string; act?: string; k?: string };
 
@@ -26,7 +27,8 @@ const sections: Item[] = [
 const pages: Item[] = [
   { t: 'Contact', h: 'Email, links and a note', href: '/contact', k: 'recruiter reach hire email' },
   { t: 'Resume', h: 'One page', href: '/resume', k: 'cv experience' },
-  { t: 'The illiquidity premium', h: 'Paper', href: '/writing/illiquidity-premium', k: 'research private markets writing' },
+  { t: paper2026.title, h: 'Paper, 2026', href: '/writing/illiquidity-premium', k: 'research private markets writing illiquidity' },
+  { t: 'The illiquidity premium (2025 original)', h: 'Paper, 2025', href: '/writing/illiquidity-premium-2025', k: 'research capstone writing' },
   ...builds.map((b) => ({ t: b.name, h: 'Project', href: `/projects/${b.id}`, k: b.line })),
 ].map((p) => ({ ...p, g: 'Pages' }));
 
@@ -43,9 +45,10 @@ const story: Item[] = quests.flatMap((q) => [
 ]);
 const skills: Item[] = branches.flatMap((b) => b.skills.map((s) => ({ g: 'Skills', t: s.name, h: `${b.name} · ${s.from}`, href: '/#character', k: s.note })));
 const travel: Item[] = trips.map((t) => ({ g: 'Trips', t: `${t.place}, ${t.state}`, h: String(t.year), href: '/#side-quests', k: t.note }));
+const paper: Item[] = paper2026.sections.map((x) => ({ g: 'Paper', t: x.heading, h: paper2026.title, href: `/writing/illiquidity-premium#${x.id}`, k: 'illiquidity premium private markets' }));
 const badges: Item[] = achievements.map((a) => ({ g: 'Achievements', t: a.name, h: a.note, href: '/#achievements' }));
 
-const index = [...sections, ...pages, ...actions, ...story, ...skills, ...travel, ...badges];
+const index = [...sections, ...pages, ...actions, ...story, ...skills, ...paper, ...travel, ...badges];
 ---
 
 <dialog class="palette" aria-label="Search the site" data-palette>
@@ -82,7 +85,7 @@ const index = [...sections, ...pages, ...actions, ...story, ...skills, ...travel
   const list = document.querySelector<HTMLUListElement>('[data-palette-list]');
   const count = document.querySelector<HTMLElement>('[data-palette-count]');
   const items: Item[] = JSON.parse(document.querySelector('[data-palette-index]')?.textContent || '[]');
-  const GROUPS = ['Actions', 'Go to', 'Pages', 'Story', 'Skills', 'Achievements', 'Trips'];
+  const GROUPS = ['Actions', 'Go to', 'Pages', 'Story', 'Skills', 'Paper', 'Achievements', 'Trips'];
 
   // Fuzzy match: every query character must appear in order. Consecutive runs and
   // word starts score higher; matches in the title beat matches in the keywords.
