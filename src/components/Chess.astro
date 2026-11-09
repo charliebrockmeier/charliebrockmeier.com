@@ -3,7 +3,7 @@
 // whole year; offline it falls back to the streak and the September snapshot.
 import Icon from './Icon.astro';
 import live from '../data/live.json';
-import { chess as known, statBlocks } from '../data/profile';
+import { chess as known, statBlocks, streakOn } from '../data/profile';
 
 type Month = { games: number; wins: number } | null;
 type Live = {
@@ -39,8 +39,10 @@ const block = statBlocks.find((b) => b.id === 'chess')!;
 
 // The streak: the larger of the live count and the number Charlie gave us.
 const DAY = 86_400_000;
-const asOf = isLive ? data.asOf : known.streakAsOf;
-const streak = Math.max(data.streak ?? 0, known.streakDays);
+const today = new Date();
+const counted = streakOn(today);
+const streak = Math.max(data.streak ?? 0, counted);
+const asOf = isLive && (data.streak ?? 0) >= counted ? data.asOf : today.toISOString().slice(0, 10);
 const end = new Date(`${asOf}T12:00:00Z`);
 const streakStart = new Date(end.getTime() - (streak - 1) * DAY);
 const fmt = (d: Date, opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' }) =>
@@ -120,7 +122,7 @@ const maxOpening = Math.max(1, ...(data.openings ?? []).map((o) => o.games));
   <div class="top">
     <div class="leads">
       <div>
-        <p class="big pixel"><Icon name="fire" color="coral" scale={4} class="flame" />{n(streak)}</p>
+        <p class="big pixel"><Icon name="fire" color="coral" scale={4} class="flame" /><span data-streak={known.streakDays} data-streak-asof={known.streakAsOf}>{n(streak)}</span></p>
         <p class="label">day streak. Every day since {fmt(streakStart)}.</p>
       </div>
       {

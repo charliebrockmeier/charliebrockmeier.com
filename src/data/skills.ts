@@ -32,8 +32,8 @@ export const branches: Branch[] = [
     color: 'teal',
     tagline: 'Since 2023',
     skills: [
-      { name: 'LLM products', level: 4, from: 'UNL', note: 'A GPT-3.5 support assistant trained on 250,000 tickets, in 2023.' },
-      { name: 'Machine learning', level: 3, from: 'UNL', note: 'Senior capstone: ML for $500M of capital-expenditure decisions.' },
+      { name: 'LLM products', level: 4, from: 'UNL', note: 'AI engineer on the DMSi capstone: a GPT-3.5 assistant trained on 250,000 tickets, 2023.' },
+      { name: 'Machine learning', level: 3, from: 'UNL', note: 'Conagra Brands capstone: ML for $500M of capital-expenditure decisions.' },
       { name: 'Agents and automation', level: 4, from: 'Personal projects', note: 'Scheduled agents that scrape, check and email on their own.', needs: ['Python'] },
       { name: 'AI diligence products', level: 4, from: 'Vantager', note: 'Drafting diligence reports from fund documents.', needs: ['Private-markets diligence'] },
       { name: 'Checking AI output', level: 3, from: 'Personal projects', note: 'Every number checked against its source; every AI action needs approval.' },
@@ -61,7 +61,7 @@ export const branches: Branch[] = [
     tagline: 'What to build, and for whom',
     skills: [
       { name: 'Customer conversations', level: 4, from: 'Covisum', note: 'Built a client intake form side by side with the CEO.' },
-      { name: 'Product management', level: 4, from: 'UNL', note: 'PM of the senior capstone for Conagra Brands.' },
+      { name: 'Product management', level: 4, from: 'UNL', note: 'Product manager of the Conagra Brands senior capstone.' },
       { name: 'Data quality and QA', level: 4, from: 'Vantager', note: 'Checked AI-generated reports for accuracy.' },
       { name: 'Growth', level: 3, from: 'Vantager', note: 'Growth and product analyst at an early-stage startup.', needs: ['Customer conversations'] },
       { name: 'Design', level: 3, from: 'Personal projects', note: 'Phyt from logo to last screen, and every pixel here.' },

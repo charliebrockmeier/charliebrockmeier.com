@@ -5,6 +5,26 @@
 ---
 
 <script>
+  // The chess streak keeps counting between deploys: each [data-streak] number is
+  // the last known streak plus the days since that date, if that's higher.
+  for (const el of document.querySelectorAll<HTMLElement>('[data-streak]')) {
+    const since = Math.floor((Date.now() - Date.parse(`${el.dataset.streakAsof}T12:00:00Z`)) / 86_400_000);
+    const days = Number(el.dataset.streak) + Math.max(0, since);
+    if (days > Number(el.textContent?.replace(/,/g, '') || 0)) el.textContent = days.toLocaleString('en-US');
+  }
+
+  // Only animate what's on screen: sections out of view get .offscreen, which pauses
+  // every CSS animation inside them until they scroll back in.
+  if ('IntersectionObserver' in window) {
+    const sections = document.querySelectorAll<HTMLElement>('main > section, main > div > section, .hero');
+    const pauser = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) e.target.classList.toggle('offscreen', !e.isIntersecting);
+      },
+    );
+    sections.forEach((el) => pauser.observe(el));
+  }
+
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const items = [...document.querySelectorAll<HTMLElement>('[data-rise]')];
     for (const el of items) {
@@ -29,6 +49,12 @@
 </script>
 
 <style is:global>
+  .offscreen *,
+  .offscreen *::before,
+  .offscreen *::after {
+    animation-play-state: paused !important;
+  }
+
   .motion [data-rise]:not(.risen) {
     opacity: 0;
     transform: translateY(18px);

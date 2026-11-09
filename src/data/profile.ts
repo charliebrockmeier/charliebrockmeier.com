@@ -62,7 +62,11 @@ export type StatBlock = {
 
 // Charlie's chess streak as of the date below (he told us). The build-time fetch
 // (scripts/fetch-stats.mjs) replaces it with live numbers when chess.com is reachable.
-export const chess = { games: 275, wins: 139, month: 'September 2026', streak: '567', streakDays: 567, streakAsOf: '2026-10-22' };
+export const chess = { games: 275, wins: 139, month: 'September 2026', streakDays: 605, streakAsOf: '2026-11-09' };
+
+/** The streak on a given day, counting forward from the last number Charlie gave us. */
+export const streakOn = (date: Date = new Date()) =>
+  chess.streakDays + Math.max(0, Math.floor((date.getTime() - Date.parse(`${chess.streakAsOf}T12:00:00Z`)) / 86_400_000));
 
 export const statBlocks: StatBlock[] = [
   {
@@ -71,7 +75,7 @@ export const statBlocks: StatBlock[] = [
     icon: 'knight',
     color: 'gold',
     source: 'September 2026 recap',
-    big: { value: '567', label: 'day streak' },
+    big: { value: String(chess.streakDays), label: 'day streak' },
     rows: [
       ['Games in September', '275'],
       ['Wins', '139'],
@@ -105,6 +109,8 @@ export type Quest = {
   levelUps: { skill: string; track: Track; up: number | 'new'; carries?: string }[];
   /** Life moments in this chapter, oldest first: a short dated line with an icon. */
   moments?: { when: string; what: string; icon: IconName; big?: boolean }[];
+  /** Standout roles in this chapter, shown as their own tiles. */
+  highlights?: { role: string; org: string; when: string; what: string }[];
   /** A page worth opening from this chapter, e.g. a paper. */
   link?: { label: string; url: string };
   /** College gets a longer list of everything else that happened. */
@@ -150,15 +156,18 @@ export const quests: Quest[] = [
     objectives: [
       "Buckle, summer 2022: shipped the e-commerce site's favorites page to production",
       'Covisum, summer 2023: built financial-advisory tools and a client intake form with the CEO',
-      'Junior capstone: a GPT-3.5 support assistant trained on 250,000 tickets',
-      'Senior capstone PM: machine learning for capital-expenditure decisions',
     ],
     moments: [
       { when: 'Aug 2021', what: 'Moved to Lincoln', icon: 'husker' },
       { when: 'Summer 2022', what: 'Buckle internship', icon: 'bolt' },
       { when: 'Summer 2023', what: 'Covisum internship', icon: 'bolt' },
-      { when: '2023', what: 'First AI project', icon: 'chip' },
+      { when: '2023', what: 'AI engineer, DMSi capstone', icon: 'chip' },
+      { when: '2024', what: 'Product manager, Conagra capstone', icon: 'chart' },
       { when: 'May 2025', what: 'Graduated with High Distinction', icon: 'cap', big: true },
+    ],
+    highlights: [
+      { role: 'AI engineer', org: 'DMSi', when: 'Junior capstone, 2023–24', what: 'Built a GPT-3.5 support assistant trained on 250,000 support tickets.' },
+      { role: 'Product manager', org: 'Conagra Brands', when: 'Senior capstone, 2024–25', what: 'Led a team using machine learning on $500M of capital-expenditure decisions.' },
     ],
     reward: 'Graduated with High Distinction',
     link: { label: 'Read The Illiquidity Premium', url: '/writing/illiquidity-premium' },
@@ -370,10 +379,10 @@ export type Achievement = { icon: IconName; color: string; name: string; note: s
 
 export const achievements: Achievement[] = [
   { icon: 'trophy', color: 'gold', name: 'Acquired', note: 'Vantager was bought by MSCI in 2026. I was on the team.' },
-  { icon: 'chip', color: 'teal', name: 'Early adopter', note: 'First LLM product in 2023, trained on 250,000 support tickets.' },
+  { icon: 'chip', color: 'teal', name: 'Early adopter', note: 'AI engineer on an LLM support assistant for DMSi in 2023, trained on 250,000 tickets.' },
   { icon: 'cap', color: 'blue', name: 'High Distinction', note: 'University of Nebraska–Lincoln, 2025.' },
   { icon: 'coins', color: 'violet', name: 'Treasurer', note: 'Ran an $850K annual budget for 110 members.' },
-  { icon: 'fire', color: 'coral', name: 'Unbroken', note: '567 days of chess in a row, and counting.' },
+  { icon: 'fire', color: 'coral', name: 'Unbroken', note: 'A game of chess every day for 600+ days, and counting.' },
   { icon: 'chart', color: 'teal', name: 'Top 7%', note: 'Rapid 1209 on chess.com.' },
   { icon: 'medal', color: 'gold', name: 'State medalist', note: 'Nebraska state tennis.' },
   { icon: 'fleur', color: 'gold', name: 'Eagle Scout', note: 'Earned in 2019.' },
@@ -485,8 +494,8 @@ export const resume = {
     when: 'May 2025',
     honors: 'Graduated with High Distinction · Regents Scholar',
     points: [
-      "Senior capstone, product manager: machine learning for Conagra Brands' $500M capital-expenditure decisions.",
-      'Junior capstone, developer: GPT-3.5 support assistant for DMSi, trained on 250,000 support tickets.',
+      'Senior capstone, product manager for Conagra Brands: machine learning for $500M of capital-expenditure decisions.',
+      'Junior capstone, AI engineer for DMSi: a GPT-3.5 support assistant trained on 250,000 support tickets.',
       'Teaching assistant, Honors Computer Science I and II.',
     ],
   },

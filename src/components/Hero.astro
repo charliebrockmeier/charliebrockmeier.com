@@ -5,10 +5,10 @@ import PixelArt from './PixelArt.astro';
 import Logo from './Logo.astro';
 import { sprite } from '../data/pixels';
 import live from '../data/live.json';
-import { character, chess, links, resumePdf, site } from '../data/profile';
+import { character, chess, links, resumePdf, site, streakOn } from '../data/profile';
 
 // The live count from the build-time fetch, or the number Charlie gave us.
-const streak = Math.max(live.chess?.streak ?? 0, chess.streakDays).toLocaleString('en-US');
+const streak = Math.max(live.chess?.streak ?? 0, streakOn()).toLocaleString('en-US');
 const github = links.find((l) => l.label === 'GitHub');
 ---
 
@@ -39,7 +39,7 @@ const github = links.find((l) => l.label === 'GitHub');
         </div>
         <div>
           <dt class="pixel">Streak</dt>
-          <dd class="streak"><Icon name="fire" color="coral" scale={2} /> {streak} days of chess</dd>
+          <dd class="streak"><Icon name="fire" color="coral" scale={2} /> <span data-streak={chess.streakDays} data-streak-asof={chess.streakAsOf}>{streak}</span> days of chess</dd>
         </div>
       </dl>
       <div class="cta">

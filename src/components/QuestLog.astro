@@ -13,7 +13,6 @@ const TRACKS: { key: Track; label: string; color: string }[] = [
   { key: 'lead', label: 'Leadership', color: 'var(--coral)' },
 ];
 const MAX = 10;
-const trackColor = Object.fromEntries(TRACKS.map((t) => [t.key, t.color]));
 
 // Chart geometry: one column per chapter plus one for the chapter that hasn't
 // happened yet, levels 0–10 bottom to top.
@@ -112,7 +111,6 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
   <ol class="path" role="list">
     {
       quests.map((q, i) => {
-        const prev = quests[i - 1]?.levels ?? { finance: 0, code: 0, ai: 0, lead: 0 };
         return (
           <li class:list={['stop', q.status]} data-reveal>
             <span class="node" aria-hidden="true" />
@@ -160,18 +158,18 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
                   </ul>
                 )}
 
-                {q.levelUps.length > 0 && (<div class="ups">
-                  <p class="label pixel">Level ups</p>
-                  <ul role="list">
-                    {q.levelUps.map((u, j) => (
-                      <li style={`--c: ${trackColor[u.track]}; --d: ${j * 0.12}s`}>
-                        <span class="delta pixel">{u.up === 'new' ? 'NEW' : `+${u.up}`}</span>
-                        <span class="skill">{u.skill}</span>
-                        {u.carries && <span class="carries">→ {u.carries}</span>}
+                {q.highlights && (
+                  <ul class="highlights" role="list">
+                    {q.highlights.map((h) => (
+                      <li>
+                        <p class="role pixel">{h.role}</p>
+                        <p class="org">{h.org}</p>
+                        <p class="hl-when">{h.when}</p>
+                        <p class="hl-what">{h.what}</p>
                       </li>
                     ))}
                   </ul>
-                </div>)}
+                )}
 
                 {q.extras && (
                   <details class="extras">
@@ -188,21 +186,6 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
                 )}
 
                 <div class="progress">
-                  <dl class="levels">
-                    {TRACKS.map((t) => (
-                      <div style={`--c: ${t.color}`}>
-                        <dt class="pixel">{t.label}</dt>
-                        <dd aria-label={`${t.label} level ${q.levels[t.key]} of ${MAX}`}>
-                          {Array.from({ length: MAX }, (_, k) => (
-                            <i
-                              class:list={{ on: k < q.levels[t.key], new: k >= prev[t.key] && k < q.levels[t.key] }}
-                              style={`--d: ${k * 0.05}s`}
-                            />
-                          ))}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
                   <p class="loot pixel">
                     <span>Unlocked: {q.unlocked}</span>
                     <span>Reward: {q.reward}</span>
@@ -365,17 +348,8 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .ahead {
-      animation: quest-march 1.2s steps(4) infinite;
-    }
 
-    .next-col text {
-      animation: quest-glow 1.6s steps(2) infinite;
-    }
 
-    .loading::after {
-      animation: quest-dots 1.6s steps(4) infinite;
-    }
   }
 
   @keyframes quest-march {
@@ -570,6 +544,57 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
     font-size: var(--step--1);
   }
 
+  /* Standout roles (the capstones), each its own tile. */
+  .highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 8px;
+    margin-top: var(--space-s);
+    padding: 0;
+    list-style: none;
+  }
+
+  .highlights li {
+    display: grid;
+    gap: 2px;
+    padding: 0.6rem 0.75rem;
+    background: color-mix(in srgb, var(--gold) 9%, var(--bg));
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gold) 60%, transparent);
+  }
+
+  .highlights .role {
+    color: var(--gold);
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .highlights .org {
+    font-weight: 700;
+  }
+
+  .highlights .hl-when {
+    color: var(--teal);
+    font-size: 0.75rem;
+  }
+
+  .highlights .hl-what {
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .animate .stop:not(.seen) .highlights li {
+    opacity: 0;
+  }
+
+  .animate .stop.seen .highlights li {
+    animation: quest-pop 0.35s steps(3) 0.5s both;
+  }
+
+  .animate .stop.seen .highlights li + li {
+    animation-delay: 0.7s;
+  }
+
   /* Life moments: a short dated timeline that lights up left to right. */
   .moments {
     display: flex;
@@ -699,38 +724,10 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
   }
 
   /* Level ups: each chip says what grew and where it paid off later */
-  .ups {
-    margin-top: var(--space-s);
-  }
 
-  .ups ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
-  }
 
-  .ups li {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 0.4rem;
-    max-width: 100%;
-    padding: 0.2rem 0.55rem 0.25rem;
-    background: color-mix(in srgb, var(--c) 9%, var(--bg));
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent);
-    font-size: 0.8125rem;
-  }
 
-  .delta {
-    color: var(--c);
-    font-size: var(--label);
-  }
 
-  .carries {
-    color: var(--ink-soft);
-    font-size: 0.75rem;
-  }
 
   /* College side quests */
   .extras {
@@ -774,44 +771,12 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
     border-top: 2px dashed var(--line);
   }
 
-  .levels {
-    display: grid;
-    grid-template-columns: repeat(2, auto);
-    gap: 0.35rem var(--space-m);
-  }
 
-  .levels div {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
 
-  .levels dt {
-    min-width: 5.4rem;
-    color: var(--ink-soft);
-    font-size: var(--label);
-  }
 
-  .levels dd {
-    display: flex;
-    gap: 2px;
-  }
 
-  .levels i {
-    width: 8px;
-    height: 10px;
-    background: var(--bg);
-    box-shadow: inset 0 0 0 2px var(--line);
-  }
 
-  .levels i.on {
-    background: var(--c);
-    box-shadow: none;
-  }
 
-  .levels i.new {
-    outline: 2px solid color-mix(in srgb, var(--c) 45%, transparent);
-  }
 
   .paper-link {
     flex-basis: 100%;
@@ -847,9 +812,7 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
   }
 
   .animate .tree.seen .meet {
-    animation:
-      quest-fade 0.4s steps(2) 1.6s forwards,
-      quest-glow 1.6s steps(2) 2.2s infinite;
+    animation: quest-fade 0.4s steps(2) 1.6s forwards;
   }
 
   .animate .stop:not(.seen) .quest,
@@ -869,31 +832,17 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
     animation: quest-pan 0.9s steps(6) both;
   }
 
-  .animate .stop.seen .ups li {
-    animation: quest-pop 0.3s steps(3) calc(0.4s + var(--d)) both;
-  }
 
   .animate .stop.seen .extras li {
     animation: quest-fade 0.3s steps(2) calc(0.5s + var(--d)) both;
   }
 
-  .animate .stop.seen .levels i.on {
-    animation: quest-fade 0.2s steps(2) calc(0.5s + var(--d)) both;
-  }
 
-  .animate .stop.seen .levels i.new {
-    animation:
-      quest-fade 0.2s steps(2) calc(0.5s + var(--d)) both,
-      quest-glow 1.4s steps(2) 1.4s infinite;
-  }
 
   .animate .stop.seen .emblems :global(.emblem) {
     animation: quest-hop 0.6s steps(3) 0.35s both;
   }
 
-  .animate .stop.seen.active .node {
-    animation: quest-glow 1s steps(2) infinite;
-  }
 
   @keyframes quest-draw {
     to {
@@ -972,8 +921,5 @@ const ahead = (key: Track, k: number) => `M ${x(NEXT - 1)} ${y(final[key]) + off
       height: 12px;
     }
 
-    .levels {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
 </style>
