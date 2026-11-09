@@ -1,0 +1,251 @@
+---
+// The frame every chart sits in: number, title, units, legend, the chart itself, a
+// source line, and a collapsible data table so no value depends on reading a mark.
+import { cite } from './lib';
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  legend?: { name: string; color: string; hollow?: boolean; line?: boolean }[];
+  /** Data table: header row then body rows, plain text. */
+  data?: { head: string[]; rows: (string | number)[][] };
+}
+
+const { id, n, title, subtitle, source, note, legend = [], data } = Astro.props;
+---
+
+<figure class="chart" id={id} aria-labelledby={`${id}-t`}>
+  <figcaption class="chart-head">
+    <p class="chart-title" id={`${id}-t`}>
+      {n !== undefined && <span class="chart-n">Figure {n}.</span>}
+      {title}
+    </p>
+    {subtitle && <p class="chart-sub">{subtitle}</p>}
+  </figcaption>
+  {
+    legend.length > 1 && (
+      <ul class="chart-legend" aria-hidden="true">
+        {legend.map((l) => (
+          <li>
+            <span class:list={['key', { hollow: l.hollow, line: l.line }]} style={`--c:${l.color}`} />
+            {l.name}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  <div class="chart-body">
+    <slot />
+  </div>
+  {note && <p class="chart-note" set:html={cite(note)} />}
+  <p class="chart-source" set:html={cite(`Source: ${source}`)} />
+  {
+    data && (
+      <details class="chart-data">
+        <summary>Data table</summary>
+        <div class="table-scroll" tabindex="0" role="region" aria-label={`${title}: data`}>
+          <table>
+            <thead>
+              <tr>
+                {data.head.map((h) => (
+                  <th scope="col">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((r) => (
+                <tr>
+                  {r.map((c, i) => (i === 0 ? <th scope="row">{c}</th> : <td>{c}</td>))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    )
+  }
+</figure>
+
+<style is:global>
+  .chart {
+    margin: 2rem 0;
+    padding: 1rem 0 0.75rem;
+    border-top: 2px solid var(--ink, #1b1533);
+    border-bottom: 1px solid var(--rule, #e2dccd);
+    font-family: var(--font-sans);
+    break-inside: avoid;
+  }
+
+  .chart-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+
+  .chart-n {
+    margin-right: 0.35em;
+    color: var(--accent, #7a3460);
+  }
+
+  .chart-sub {
+    margin-top: 2px;
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.8125rem;
+  }
+
+  .chart-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .chart-legend .key {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: var(--c);
+  }
+
+  .chart-legend .key.line {
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .chart-legend .key.hollow {
+    border: 2px solid var(--c);
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  .chart-body {
+    margin-top: 0.5rem;
+  }
+
+  .chart-body svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .chart-body svg text {
+    font-family: var(--font-sans);
+  }
+
+  .chart .narrow {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .chart .wide {
+      display: none;
+    }
+
+    .chart .narrow {
+      display: block;
+    }
+  }
+
+  .chart-note,
+  .chart-source {
+    margin-top: 0.5rem;
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .chart-note + .chart-source {
+    margin-top: 0.25rem;
+  }
+
+  .chart-data {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .chart-data summary {
+    width: max-content;
+    color: var(--accent, #7a3460);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-scroll:focus-visible {
+    outline: 2px solid var(--accent, #7a3460);
+    outline-offset: 2px;
+  }
+
+  .chart-data table {
+    margin-top: 0.4rem;
+    border-collapse: collapse;
+    font-variant-numeric: lining-nums;
+    white-space: nowrap;
+  }
+
+  .chart-data th,
+  .chart-data td {
+    padding: 0.25rem 0.75rem 0.25rem 0;
+    border-bottom: 1px solid var(--rule, #e2dccd);
+    text-align: right;
+  }
+
+  .chart-data th:first-child,
+  .chart-data thead th:first-child {
+    text-align: left;
+  }
+
+  .chart-data thead th {
+    color: var(--ink-soft, #4f4868);
+    font-weight: 600;
+  }
+
+  .cite {
+    font-family: var(--font-sans);
+    font-size: 0.78em;
+    white-space: nowrap;
+  }
+
+  .cite a {
+    text-decoration: none;
+  }
+
+  @media print {
+    .chart .wide {
+      display: block !important;
+    }
+
+    .chart .narrow,
+    .chart-data {
+      display: none !important;
+    }
+
+    .chart {
+      margin: 1rem 0;
+    }
+  }
+</style>

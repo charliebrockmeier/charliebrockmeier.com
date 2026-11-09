@@ -1,0 +1,114 @@
+---
+// Column chart, single or grouped, with negative values allowed. Bars grow from one
+// baseline with a rounded data end; values sit at the tips when they fit.
+import Figure from './Figure.astro';
+import { SERIES, INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, textWidth, barPath, wrap2, type Fmt, type Layout } from './lib';
+
+interface Series {
+  name: string;
+  values: (number | null)[];
+  color?: number;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  /** One-sentence summary for screen readers. */
+  desc: string;
+  categories: string[];
+  series: Series[];
+  yLabel: string;
+  xLabel?: string;
+  yMin?: number;
+  yMax?: number;
+  format?: Fmt;
+  labels?: boolean;
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, categories, series, yLabel, xLabel, format = {}, labels = true, height } = Astro.props;
+
+const color = (s: Series, i: number) => SERIES[s.color ?? i];
+const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
+const t = ticks(Math.min(0, Astro.props.yMin ?? Math.min(...all)), Math.max(0, Astro.props.yMax ?? Math.max(...all)), 5);
+const d0 = Astro.props.yMin ?? t[0];
+const d1 = Astro.props.yMax ?? t[t.length - 1];
+const tickVals = t.filter((v) => v >= d0 - 1e-9 && v <= d1 + 1e-9);
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height - 10 : height) : L.H;
+  const f = L.f;
+  const tickFmt = { ...format, decimals: tickVals.some((v) => !Number.isInteger(v)) ? 1 : 0 };
+  const left = Math.max(...tickVals.map((v) => textWidth(fmt(v, tickFmt), f))) + 14;
+  const top = 26;
+  const band0 = (L.W - left - 8) / categories.length;
+  const maxChars = Math.max(6, Math.floor(band0 / (f * 0.56)));
+  const catLines = categories.map((c) => wrap2(c, maxChars));
+  const lines = Math.max(...catLines.map((l) => l.length));
+  const bottom = 10 + lines * (f + 3) + (xLabel ? f + 10 : 0);
+  const x0 = left;
+  const x1 = L.W - 8;
+  const y = scale(d0, d1, H - bottom, top);
+  const band = (x1 - x0) / categories.length;
+  const k = series.length;
+  const gap = 2;
+  const barW = Math.min(24, (band * 0.72 - gap * (k - 1)) / k);
+  const groupW = barW * k + gap * (k - 1);
+  const valueFmt = format;
+  const longest = Math.max(...all.map((v) => textWidth(fmt(v, valueFmt), f - 1)));
+  const showLabels = labels && longest <= band / k - 2;
+
+  let s = '';
+  for (const v of tickVals) {
+    const yy = y(v);
+    s += `<line x1="${x0}" x2="${x1}" y1="${yy}" y2="${yy}" stroke="${v === 0 ? AXIS : GRID}" stroke-width="1"/>`;
+    s += `<text x="${x0 - 8}" y="${yy + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, tickFmt))}</text>`;
+  }
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" text-anchor="start" style="font-weight:600">${esc(yLabel)}</text>`;
+  categories.forEach((c, ci) => {
+    const cx = x0 + band * ci + band / 2;
+    catLines[ci].forEach((line, li) => {
+      s += `<text x="${cx}" y="${H - bottom + 6 + f + li * (f + 3)}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(line)}</text>`;
+    });
+    series.forEach((se, si) => {
+      const v = se.values[ci];
+      if (v === null || v === undefined) return;
+      const bx = cx - groupW / 2 + si * (barW + gap);
+      const yb = y(0);
+      const ye = y(v);
+      s += `<path d="${barPath(bx, barW, yb, ye)}" fill="${color(se, si)}"><title>${esc(`${c} · ${se.name}: ${fmt(v, valueFmt)}`)}</title></path>`;
+      if (showLabels) {
+        const ly = v >= 0 ? ye - 5 : ye + f + 3;
+        s += `<text x="${bx + barW / 2}" y="${ly}" text-anchor="middle" font-size="${f - 1}" fill="${INK}">${esc(fmt(v, valueFmt))}</text>`;
+      }
+    });
+  });
+  if (xLabel) s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(xLabel)}</text>`;
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend = series.map((s, i) => ({ name: s.name, color: color(s, i) }));
+const data = {
+  head: ['', ...series.map((s) => s.name)],
+  rows: categories.map((c, ci) => [c, ...series.map((s) => (s.values[ci] === null ? '–' : fmt(s.values[ci] as number, format)))]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

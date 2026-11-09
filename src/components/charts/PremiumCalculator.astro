@@ -1,0 +1,201 @@
+---
+// The required-premium calculator: Longstaff's (1995) upper bound on the value of
+// being able to sell, scaled by how much of that option the investor would use,
+// spread over the lockup, plus the fee drag a fund has to clear on top.
+interface Props {
+  id: string;
+  n?: number | string;
+}
+const { id, n } = Astro.props;
+
+const erf = (x: number) => {
+  // Abramowitz and Stegun 7.1.26
+  const s = Math.sign(x);
+  const a = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * a);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a);
+  return s * y;
+};
+const N = (x: number) => 0.5 * (1 + erf(x / Math.SQRT2));
+const longstaff = (T: number, s: number) => {
+  const v = s * s * T;
+  return (2 + v / 2) * N(Math.sqrt(v) / 2) + Math.sqrt(v / (2 * Math.PI)) * Math.exp(-v / 8) - 1;
+};
+const d = { T: 10, sigma: 22, need: 35, fees: 4.5 };
+const F = longstaff(d.T, d.sigma / 100);
+const net = ((1 + (d.need / 100) * F) ** (1 / d.T) - 1) * 100;
+const out = { disc: (F / (1 + F)) * 100, net, gross: net + d.fees };
+const pct = (v: number) => `${v.toFixed(1)}%`;
+---
+
+<figure class="chart calc" id={id} aria-labelledby={`${id}-t`}>
+  <figcaption class="chart-head">
+    <p class="chart-title" id={`${id}-t`}>
+      {n !== undefined && <span class="chart-n">Calculator {n}.</span>}
+      What hurdle should an illiquid fund clear?
+    </p>
+    <p class="chart-sub">Move the inputs. The output is the extra return per year, over a public portfolio with the same risk, that pays you for the lockup.</p>
+  </figcaption>
+  <form class="calc-form" data-calc>
+    <label>
+      <span>Lockup <output name="T-v">{d.T} years</output></span>
+      <input type="range" name="T" min="1" max="15" step="1" value={d.T} />
+    </label>
+    <label>
+      <span>Volatility of the underlying asset <output name="sigma-v">{d.sigma}%</output></span>
+      <input type="range" name="sigma" min="5" max="60" step="1" value={d.sigma} />
+    </label>
+    <label>
+      <span>Your liquidity need <output name="need-v">{d.need}%</output></span>
+      <input type="range" name="need" min="0" max="100" step="5" value={d.need} />
+    </label>
+    <label>
+      <span>Fee drag, gross to net <output name="fees-v">{d.fees.toFixed(1)}% a year</output></span>
+      <input type="range" name="fees" min="0" max="8" step="0.5" value={d.fees} />
+    </label>
+  </form>
+  <dl class="calc-out" aria-live="polite">
+    <div>
+      <dt>Most a perfectly timed seller could lose</dt>
+      <dd data-out="disc">{pct(out.disc)}</dd>
+      <dd class="hint">of value, Longstaff upper bound</dd>
+    </div>
+    <div>
+      <dt>Net premium you need</dt>
+      <dd data-out="net">{pct(out.net)}</dd>
+      <dd class="hint">a year over the public equivalent, after fees</dd>
+    </div>
+    <div class="key">
+      <dt>Gross hurdle the manager must clear</dt>
+      <dd data-out="gross">{pct(out.gross)}</dd>
+      <dd class="hint">a year over the public equivalent, before fees</dd>
+    </div>
+  </dl>
+  <p class="chart-note">
+    Method: F = (2 + σ²T/2)·N(√(σ²T)/2) + √(σ²T/2π)·e<sup>−σ²T/8</sup> − 1 is Longstaff's bound on the value of being free to sell, as a share of value
+    [<a href="#src-4">4</a>]. Liquidity need λ is the share of that option you would realistically use: near 0 for a perpetual endowment that never
+    sells, near 100% for an investor who may be a forced seller. Net premium = (1 + λF)<sup>1/T</sup> − 1. Gross hurdle adds the fee drag. Use true
+    (desmoothed) volatility, not reported volatility. An illustration, not advice.
+  </p>
+</figure>
+
+<script>
+  const erf = (x: number) => {
+    const s = Math.sign(x);
+    const a = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * a);
+    return s * (1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a));
+  };
+  const N = (x: number) => 0.5 * (1 + erf(x / Math.SQRT2));
+  const longstaff = (T: number, s: number) => {
+    const v = s * s * T;
+    return (2 + v / 2) * N(Math.sqrt(v) / 2) + Math.sqrt(v / (2 * Math.PI)) * Math.exp(-v / 8) - 1;
+  };
+  for (const form of document.querySelectorAll<HTMLFormElement>('[data-calc]')) {
+    const root = form.closest('figure')!;
+    const val = (name: string) => Number((form.elements.namedItem(name) as HTMLInputElement).value);
+    const show = (name: string, text: string) => ((form.elements.namedItem(`${name}-v`) as HTMLOutputElement).value = text);
+    const put = (key: string, v: number) => (root.querySelector(`[data-out="${key}"]`)!.textContent = `${v.toFixed(1)}%`);
+    const update = () => {
+      const T = val('T');
+      const sigma = val('sigma') / 100;
+      const need = val('need') / 100;
+      const fees = val('fees');
+      const F = longstaff(T, sigma);
+      const net = ((1 + need * F) ** (1 / T) - 1) * 100;
+      show('T', `${T} year${T === 1 ? '' : 's'}`);
+      show('sigma', `${Math.round(sigma * 100)}%`);
+      show('need', `${Math.round(need * 100)}%`);
+      show('fees', `${fees.toFixed(1)}% a year`);
+      put('disc', (F / (1 + F)) * 100);
+      put('net', net);
+      put('gross', net + fees);
+    };
+    form.addEventListener('input', update);
+    update();
+  }
+</script>
+
+<style>
+  .calc-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 0.75rem 1.5rem;
+    margin-top: 0.9rem;
+  }
+
+  .calc-form label {
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.8125rem;
+  }
+
+  .calc-form label span {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--ink-soft, #4f4868);
+  }
+
+  .calc-form output {
+    color: var(--ink, #1b1533);
+    font-weight: 700;
+    font-variant-numeric: lining-nums;
+    white-space: nowrap;
+  }
+
+  .calc-form input[type='range'] {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--accent, #7a3460);
+  }
+
+  .calc-out {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .calc-out div {
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--rule, #e2dccd);
+    border-radius: 6px;
+    background: #fbf8f1;
+  }
+
+  .calc-out div.key {
+    border-color: var(--accent, #7a3460);
+    background: #f7eef3;
+  }
+
+  .calc-out dt {
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .calc-out dd {
+    margin: 0;
+  }
+
+  .calc-out dd[data-out] {
+    margin-top: 0.2rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .calc-out .hint {
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.6875rem;
+    line-height: 1.3;
+  }
+
+  @media print {
+    .calc-form input[type='range'] {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,111 @@
+---
+// A numbered data table in the same frame as the charts. Wide tables scroll inside
+// their own container, so the page never scrolls sideways on a phone.
+import { cite } from './lib';
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  columns: { label: string; align?: 'left' | 'right' }[];
+  /** Cells may hold simple inline HTML and [n] citations. */
+  rows: string[][];
+  minWidth?: number;
+}
+
+const { id, n, title, subtitle, source, note, columns, rows, minWidth = 560 } = Astro.props;
+---
+
+<figure class="chart data-table" id={id} aria-labelledby={`${id}-t`}>
+  <figcaption class="chart-head">
+    <p class="chart-title" id={`${id}-t`}>
+      {n !== undefined && <span class="chart-n">Table {n}.</span>}
+      {title}
+    </p>
+    {subtitle && <p class="chart-sub">{subtitle}</p>}
+  </figcaption>
+  <div class="table-scroll" tabindex="0" role="region" aria-label={title}>
+    <table style={`min-width:${minWidth}px`}>
+      <thead>
+        <tr>
+          {columns.map((c) => (
+            <th scope="col" class={c.align === 'right' ? 'num' : undefined}>
+              {c.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((r) => (
+            <tr>
+              {r.map((cell, i) =>
+                i === 0 ? (
+                  <th scope="row" set:html={cite(cell)} />
+                ) : (
+                  <td class={columns[i]?.align === 'right' ? 'num' : undefined} set:html={cite(cell)} />
+                ),
+              )}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {note && <p class="chart-note" set:html={cite(note)} />}
+  <p class="chart-source" set:html={cite(`Source: ${source}`)} />
+</figure>
+
+<style>
+  table {
+    width: 100%;
+    margin-top: 0.75rem;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  th,
+  td {
+    padding: 0.45rem 0.6rem 0.45rem 0;
+    border-bottom: 1px solid var(--rule, #e2dccd);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    border-bottom: 1px solid var(--ink, #1b1533);
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: bottom;
+  }
+
+  tbody th {
+    font-weight: 600;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: lining-nums;
+  }
+
+  td.num {
+    white-space: nowrap;
+  }
+
+  @media print {
+    .table-scroll {
+      overflow: visible;
+    }
+
+    table {
+      min-width: 0 !important;
+      font-size: 8pt;
+    }
+  }
+</style>

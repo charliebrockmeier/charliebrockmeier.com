@@ -1,0 +1,107 @@
+---
+// Scatter plot with direct point labels and an optional reference curve, used for
+// redemption requests against the share of requested cash investors got back.
+import Figure from './Figure.astro';
+import { SERIES, INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, textWidth, type Fmt, type Layout } from './lib';
+
+interface Point {
+  x: number;
+  y: number;
+  label: string;
+  /** Where the label sits relative to the point. */
+  pos?: 'left' | 'right' | 'above' | 'below';
+  /** Label position on the narrow layout, if different. */
+  posN?: 'left' | 'right' | 'above' | 'below';
+  group?: number;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  points: Point[];
+  groups?: string[];
+  /** Reference curve; its label goes in the legend. */
+  curve?: { pts: [number, number][]; label: string };
+  xLabel: string;
+  yLabel: string;
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+  xFormat?: Fmt;
+  yFormat?: Fmt;
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, points, groups = [], curve, xLabel, yLabel, xMin, xMax, yMin, yMax, xFormat = {}, yFormat = {}, height } = Astro.props;
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const xt = ticks(xMin, xMax, 6).filter((v) => v >= xMin && v <= xMax);
+const yt = ticks(yMin, yMax, 5).filter((v) => v >= yMin && v <= yMax);
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height + 20 : height) : L.H + (L.narrow ? 40 : 0);
+  const f = L.f;
+  const left = Math.max(...yt.map((v) => textWidth(fmt(v, yFormat), f))) + 14;
+  const top = 26;
+  const bottom = f + 16 + f + 10;
+  const x0 = left;
+  const x1 = L.W - 12;
+  const sx = scale(xMin, xMax, x0, x1);
+  const sy = scale(yMin, yMax, H - bottom, top);
+  let s = '';
+  for (const v of yt) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(v)}" y2="${sy(v)}" stroke="${GRID}"/>`;
+    s += `<text x="${x0 - 8}" y="${sy(v) + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, yFormat))}</text>`;
+  }
+  for (const v of xt) {
+    s += `<line x1="${sx(v)}" x2="${sx(v)}" y1="${top}" y2="${H - bottom}" stroke="${GRID}"/>`;
+    s += `<text x="${sx(v)}" y="${H - bottom + f + 6}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(fmt(v, xFormat))}</text>`;
+  }
+  s += `<line x1="${x0}" x2="${x1}" y1="${H - bottom}" y2="${H - bottom}" stroke="${AXIS}"/>`;
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(yLabel)}</text>`;
+  s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(xLabel)}</text>`;
+  if (curve) {
+    const d = curve.pts.map(([cx, cy], i) => `${i ? 'L' : 'M'}${sx(cx).toFixed(1)},${sy(cy).toFixed(1)}`).join('');
+    s += `<path d="${d}" fill="none" stroke="${AXIS}" stroke-width="1.5"/>`;
+  }
+  for (const p of points) {
+    const c = SERIES[p.group ?? 0];
+    const px = sx(p.x);
+    const py = sy(p.y);
+    const tip = `${p.label}: requests ${fmt(p.x, xFormat)}, paid ${fmt(p.y, yFormat)}`;
+    s += `<circle cx="${px}" cy="${py}" r="5" fill="${c}" stroke="#fff" stroke-width="2"><title>${esc(tip)}</title></circle>`;
+    const pos = (L.narrow ? (p.posN ?? p.pos) : p.pos) ?? 'right';
+    const fs = f - 1;
+    const tx = pos === 'left' ? px - 9 : pos === 'right' ? px + 9 : px;
+    const ty = pos === 'above' ? py - 9 : pos === 'below' ? py + fs + 7 : py + fs * 0.35;
+    const anchor = pos === 'left' ? 'end' : pos === 'right' ? 'start' : 'middle';
+    s += `<text x="${tx}" y="${ty}" text-anchor="${anchor}" font-size="${fs}" fill="${INK}">${esc(p.label)}</text>`;
+  }
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend: { name: string; color: string; line?: boolean }[] = groups.map((g, i) => ({ name: g, color: SERIES[i] }));
+if (curve) legend.push({ name: curve.label, color: AXIS, line: true });
+const data = {
+  head: ['Fund and quarter', xLabel, yLabel],
+  rows: points.map((p) => [p.label, fmt(p.x, xFormat), fmt(p.y, yFormat)]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>
