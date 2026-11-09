@@ -169,7 +169,10 @@ const pairs = Array.from({ length: Math.ceil(caroKann.length / 2) }, (_, i) => [
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const view = new BoardView(board);
 
-    addEventListener('achievement', () => unlockCard(root));
+    addEventListener('achievement', (e) => {
+      const d = (e as CustomEvent).detail;
+      if ((typeof d === 'string' ? d : d?.id) === 'beat-chess-bot') unlockCard(root);
+    });
     try {
       if (localStorage.getItem(ACHIEVEMENT_KEY)) unlockCard(root);
     } catch {}

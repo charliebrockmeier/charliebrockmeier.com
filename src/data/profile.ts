@@ -396,6 +396,7 @@ export const achievements: Achievement[] = [
   { icon: 'lock', color: 'gray', name: 'Speedrunner', note: 'Reach 7 World Trade in play mode in under 60 seconds.', locked: true, id: 'speedrunner' },
   { icon: 'lock', color: 'gray', name: 'Explorer', note: 'Scroll through every section of this page.', locked: true, id: 'explorer' },
   { icon: 'lock', color: 'gray', name: 'Pen pal', note: "Copy Charlie's email from the contact page.", locked: true, id: 'copy-email' },
+  { icon: 'lock', color: 'gray', name: 'Power user', note: 'Open the search with ⌘K or /.', locked: true, id: 'command-palette' },
 ];
 
 

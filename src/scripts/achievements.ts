@@ -26,6 +26,7 @@ const NAMES: Record<string, string> = {
   tourist: 'Tourist',
   explorer: 'Explorer',
   'copy-email': 'Pen pal',
+  'command-palette': 'Power user',
   'beat-chess-bot': 'Bot slayer',
 };
 
@@ -205,7 +206,7 @@ for (const id of got) light(id, false);
 // Explorer: every section of the home page has passed through the middle of the screen
 // (the last one counts once the page is scrolled to the bottom).
 const sections = [...document.querySelectorAll<HTMLElement>('main > section[id]')];
-if (sections.length > 4 && !got.has('explorer') && 'IntersectionObserver' in window) {
+if (document.getElementById('journey') && sections.length > 4 && !got.has('explorer') && 'IntersectionObserver' in window) {
   const seen = new Set<string>(read<string[]>(EXPLORED_KEY, []));
   const check = () => {
     write(EXPLORED_KEY, [...seen]);

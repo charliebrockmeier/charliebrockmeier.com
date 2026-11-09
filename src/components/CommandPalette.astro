@@ -77,6 +77,8 @@ const index = [...sections, ...pages, ...actions, ...story, ...skills, ...paper,
 <script type="application/json" data-palette-index set:html={JSON.stringify(index)} />
 
 <script>
+  import '../scripts/achievements';
+
   type Item = { g: string; t: string; h?: string; href?: string; act?: string; k?: string };
   type Hit = { item: Item; score: number; marks: number[] };
 
@@ -182,7 +184,7 @@ const index = [...sections, ...pages, ...actions, ...story, ...skills, ...paper,
     }
     if (item.act === 'play') {
       // The walk's play mode listens for this; elsewhere, go to the walk first.
-      if (document.getElementById('journey')) document.dispatchEvent(new CustomEvent('game:start'));
+      if (document.getElementById('journey')) dispatchEvent(new CustomEvent('game:start'));
       else location.href = '/#journey';
       return;
     }
