@@ -170,7 +170,7 @@ export const quests: Quest[] = [
       { role: 'Product manager', org: 'Conagra Brands', when: 'Senior capstone, 2024–25', what: 'Led a team using machine learning on $500M of capital-expenditure decisions.' },
     ],
     reward: 'Graduated with High Distinction',
-    link: { label: 'Read The Illiquidity Premium', url: '/writing/illiquidity-premium' },
+    link: { label: 'Read The Illiquidity Premium, Revisited', url: '/writing/illiquidity-premium' },
     unlocked: 'AI',
     levels: { finance: 5, code: 5, ai: 2, lead: 7 },
     levelUps: [
@@ -483,8 +483,8 @@ export const resume = {
     },
   ],
   research: {
-    title: 'The Illiquidity Premium and Its Impact on Asset Pricing and Returns',
-    line: 'Paper for Strategic Finance Management (FINA 475H), May 2025: what sets the premium and how it shows up across public markets, PE/VC, real estate and private credit.',
+    title: 'The Illiquidity Premium, Revisited',
+    line: 'A 2026 rewrite of my May 2025 FINA 475H paper: what investors are actually paid for illiquidity across public markets, buyouts, venture, private credit, real estate and secondaries, with charts and 90 public sources.',
     url: '/writing/illiquidity-premium',
   },
   education: {

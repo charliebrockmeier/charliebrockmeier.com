@@ -1,78 +1,147 @@
 ---
-// Charlie's paper on the illiquidity premium, set for reading on the web, with a
-// summary and the headline numbers up top. The PDF is printed from this page.
+// The Illiquidity Premium, Revisited: Charlie's 2026 rewrite of his 2025 capstone
+// paper, with charts, tables and a required-premium calculator. Text lives in
+// src/data/paper2026.ts, figures in src/data/paper2026-figures.ts. The PDF at
+// /writing/illiquidity-premium-2026.pdf is printed from this page.
 import Base from '../../layouts/Base.astro';
-import { paper } from '../../data/paper';
+import BarChart from '../../components/charts/BarChart.astro';
+import LineChart from '../../components/charts/LineChart.astro';
+import ScatterChart from '../../components/charts/ScatterChart.astro';
+import Table from '../../components/charts/Table.astro';
+import PremiumCalculator from '../../components/charts/PremiumCalculator.astro';
+import { paper2026 as paper, type Block } from '../../data/paper2026';
+import { figures } from '../../data/paper2026-figures';
+import { cite } from '../../components/charts/lib';
 import { site } from '../../data/profile';
 
-const pdf = `/writing/${paper.slug}.pdf`;
-const words = paper.sections.reduce((n, s) => n + s.paragraphs.join(' ').split(/\s+/).length, 0);
+// Number charts and tables separately, in reading order.
+const numbers: Record<string, number> = {};
+let nFig = 0;
+let nTab = 0;
+for (const s of paper.sections)
+  for (const b of s.blocks)
+    if ('fig' in b) numbers[b.fig] = figures[b.fig].kind === 'table' ? ++nTab : ++nFig;
+
+const strip = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/\[[\d,\s–-]+\]/g, ' ');
+const blockText = (b: Block) =>
+  'p' in b ? b.p : 'h3' in b ? b.h3 : 'list' in b ? b.list.join(' ') : 'eq' in b ? `${b.eq} ${b.caption ?? ''}` : '';
+const allText = [...paper.keyPoints, paper.take, ...paper.sections.flatMap((s) => [s.heading, ...s.blocks.map(blockText)])].map(strip).join(' ');
+const words = allText.split(/\s+/).filter(Boolean).length;
 const minutes = Math.round(words / 230);
-const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
 ---
 
-<Base title={`${paper.title} | ${site.name}`} description={paper.summary} theme="paper" serif>
+<Base title={`${paper.title} | ${site.name}`} description={paper.description} theme="paper" serif>
   <div class="toolbar">
     <a href="/" class="back">Back to the game</a>
     <span class="actions">
-      <a class="btn" href={pdf}>PDF</a>
-      <a class="btn ghost" href="/resume">Resume</a>
+      <a class="btn" href={paper.pdf}>PDF</a>
+      <a class="btn ghost" href={paper.original}>2025 version</a>
     </span>
   </div>
 
   <main class="paper">
     <header>
-      <p class="kicker">Paper · {paper.date}</p>
+      <p class="kicker">Paper · Rewritten {paper.rewritten}</p>
       <h1>{paper.title}</h1>
-      <p class="byline">
-        {site.name} · {paper.course} · {minutes} min read
+      <p class="dek">{paper.subtitle}</p>
+      <p class="byline">{site.name} · {minutes} min read · {nFig} charts, {nTab} tables</p>
+      <p class="versions">
+        First version: {paper.firstVersion} · Rewritten: {paper.rewritten} · <a href={paper.original}>Read the original</a>
       </p>
+      <p class="disclaimer">{paper.disclaimer}</p>
     </header>
 
     <section class="abstract" aria-labelledby="summary">
-      <h2 id="summary">In short</h2>
-      <p>{paper.summary}</p>
-      <dl class="numbers">
-        {
-          paper.keyNumbers.map(([n, label]) => (
-            <div>
-              <dt>{n}</dt>
-              <dd>{label}</dd>
-            </div>
-          ))
-        }
-      </dl>
-      <p class="note">Numbers are from the studies the paper cites, listed at the end.</p>
+      <h2 id="summary">Summary</h2>
+      <ul class="keypoints">
+        {paper.keyPoints.map((k) => <li set:html={cite(k)} />)}
+      </ul>
+      <p class="take" set:html={cite(paper.take)} />
     </section>
 
-    <nav class="toc" aria-label="Sections">
+    <nav class="toc" aria-label="Contents">
       <ol>
-        {paper.sections.map((s) => (
-          <li>
-            <a href={`#${slug(s.heading)}`}>{s.heading}</a>
-          </li>
-        ))}
+        {
+          paper.sections.map((s) => (
+            <li>
+              <a href={`#${s.id}`}>{s.heading}</a>
+            </li>
+          ))
+        }
+        <li class="unnumbered">
+          <a href="#sources">Sources</a>
+        </li>
       </ol>
     </nav>
 
     <article class="body">
       {
-        paper.sections.map((s) => (
-          <section>
-            <h2 id={slug(s.heading)}>{s.heading}</h2>
-            {s.paragraphs.map((p) => (
-              <p>{p}</p>
-            ))}
+        paper.sections.map((s, si) => (
+          <section aria-labelledby={s.id}>
+            <h2 id={s.id}>
+              <span class="num">{si + 1}.</span> {s.heading}
+            </h2>
+            {s.blocks.map((b) => {
+              if ('p' in b) return <p set:html={cite(b.p)} />;
+              if ('h3' in b) return <h3>{b.h3}</h3>;
+              if ('eq' in b)
+                return (
+                  <div class="eq">
+                    <p class="eq-line" set:html={b.eq} />
+                    {b.caption && <p class="eq-caption" set:html={b.caption} />}
+                  </div>
+                );
+              if ('list' in b)
+                return b.ordered ? (
+                  <ol class="steps">
+                    {b.list.map((i) => (
+                      <li set:html={cite(i)} />
+                    ))}
+                  </ol>
+                ) : (
+                  <ul class="bullets">
+                    {b.list.map((i) => (
+                      <li set:html={cite(i)} />
+                    ))}
+                  </ul>
+                );
+              if ('calc' in b) return <PremiumCalculator id="calculator" />;
+              const f = figures[b.fig];
+              const p = { id: `fig-${b.fig}`, n: numbers[b.fig], ...f.props } as any;
+              if (f.kind === 'bar') return <BarChart {...p} />;
+              if (f.kind === 'line') return <LineChart {...p} />;
+              if (f.kind === 'scatter') return <ScatterChart {...p} />;
+              return <Table {...p} />;
+            })}
           </section>
         ))
       }
-      <section class="cites">
-        <h2 id="works-cited">Works cited</h2>
-        <ul>
-          {paper.cites.map((c) => (
-            <li>{c}</li>
-          ))}
-        </ul>
+
+      <section class="sources" aria-labelledby="sources">
+        <h2 id="sources">Sources</h2>
+        <p class="sources-note">
+          Public sources only. Where a figure comes from secondary coverage of a report I could not read directly, the entry says so, and the text
+          marks approximate values. Figures labeled as my arithmetic are calculations on the cited numbers.
+        </p>
+        <ol>
+          {
+            paper.sources.map((s) => (
+              <li id={`src-${s.n}`}>
+                <span class="n">{s.n}.</span>
+                <span>
+                  {s.text}
+                  {s.url && (
+                    <>
+                      {' '}
+                      <a href={s.url}>{host(s.url)}</a>
+                    </>
+                  )}
+                </span>
+              </li>
+            ))
+          }
+        </ol>
       </section>
     </article>
   </main>
@@ -92,13 +161,19 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
   body.paper a {
     color: var(--accent);
   }
+
+  body.paper :focus-visible {
+    outline-color: var(--accent);
+  }
 </style>
 
 <style>
   .toolbar {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: var(--space-xs);
     max-width: 760px;
     margin: 0 auto;
     padding: var(--space-m) var(--gutter) 0;
@@ -152,17 +227,42 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
   h1 {
     margin-top: 6px;
     font-family: var(--font-serif, Georgia, serif);
-    font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+    font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.75rem);
     font-weight: 600;
-    line-height: 1.15;
+    line-height: 1.1;
     letter-spacing: -0.015em;
     text-wrap: balance;
   }
 
-  .byline {
+  .dek {
+    margin-top: 0.5rem;
+    color: var(--ink-soft);
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: clamp(1.1rem, 1rem + 0.5vw, 1.3rem);
+    font-style: italic;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .byline,
+  .versions {
     margin-top: var(--space-xs);
     color: var(--ink-soft);
     font-size: var(--label);
+  }
+
+  .versions {
+    margin-top: 2px;
+  }
+
+  .disclaimer {
+    margin-top: var(--space-s);
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    line-height: 1.45;
   }
 
   .abstract {
@@ -181,36 +281,46 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
     text-transform: uppercase;
   }
 
-  .abstract > p {
-    margin-top: 6px;
-    font-size: var(--step-0);
-    line-height: 1.55;
-  }
-
-  .numbers {
+  .keypoints {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-    gap: var(--space-s);
-    margin-top: var(--space-s);
+    gap: 0.7rem;
+    margin-top: 0.6rem;
+    padding: 0;
+    list-style: none;
+    counter-reset: kp;
   }
 
-  .numbers dt {
-    font-family: var(--font-serif, Georgia, serif);
-    font-size: var(--step-2);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
+  .keypoints li {
+    position: relative;
+    padding-left: 1.9rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    counter-increment: kp;
   }
 
-  .numbers dd {
-    color: var(--ink-soft);
-    font-size: 0.8125rem;
-    line-height: 1.35;
-  }
-
-  .note {
-    margin-top: var(--space-s);
-    color: var(--ink-soft);
+  .keypoints li::before {
+    content: counter(kp);
+    position: absolute;
+    top: 0.1em;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
     font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .take {
+    margin-top: var(--space-s);
+    padding-top: var(--space-s);
+    border-top: 1px solid #e4dcc8;
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 1.0625rem;
+    line-height: 1.55;
   }
 
   .toc {
@@ -225,56 +335,152 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
   .toc ol {
     columns: 2 16rem;
     margin-top: 6px;
-    padding-left: 1.2em;
+    padding-left: 1.4em;
+    list-style: decimal;
     font-size: var(--label);
+    line-height: 1.7;
+  }
+
+  .toc li.unnumbered {
+    list-style: none;
   }
 
   .body {
-    margin-top: var(--space-m);
+    margin-top: var(--space-l);
     font-family: var(--font-serif, Georgia, serif);
     font-size: 1.0625rem;
     line-height: 1.65;
   }
 
-  .body section + section {
-    margin-top: var(--space-m);
+  .body > section + section {
+    margin-top: var(--space-xl);
   }
 
   .body h2 {
     font-family: var(--font-sans);
-    font-size: var(--step-1);
+    font-size: var(--step-2);
     font-weight: 700;
+    line-height: 1.2;
     scroll-margin-top: var(--space-m);
   }
 
+  .body h2 .num {
+    color: var(--accent);
+  }
+
+  .body h3 {
+    margin-top: 1.6em;
+    font-family: var(--font-sans);
+    font-size: var(--step-1);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
   .body p {
-    margin-top: 0.7em;
+    margin-top: 0.75em;
     text-wrap: pretty;
   }
 
-  .cites ul {
-    margin-top: 0.5em;
-    padding: 0;
-    list-style: none;
+  .body h3 + p {
+    margin-top: 0.4em;
+  }
+
+  .eq {
+    margin: 1em 0;
+    padding: 0.8rem 1rem;
+    background: #faf7f0;
+    border-radius: 4px;
+  }
+
+  .body .eq-line {
+    margin: 0;
+    font-size: 1.05rem;
+    font-style: italic;
+    line-height: 1.6;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .body .eq-caption {
+    margin-top: 0.5rem;
+    color: var(--ink-soft);
     font-family: var(--font-sans);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     line-height: 1.45;
   }
 
-  .cites li {
-    padding-left: 1.5em;
-    text-indent: -1.5em;
-    overflow-wrap: anywhere;
+  .eq sub,
+  .eq sup {
+    font-size: 0.72em;
+    line-height: 0;
   }
 
-  .cites li + li {
-    margin-top: 0.4em;
+  .bullets,
+  .steps {
+    margin-top: 0.75em;
+    padding-left: 1.3em;
+  }
+
+  .bullets {
+    list-style: disc;
+  }
+
+  .steps {
+    list-style: decimal;
+  }
+
+  .bullets li + li,
+  .steps li + li {
+    margin-top: 0.45em;
+  }
+
+  .bullets li::marker,
+  .steps li::marker {
+    color: var(--accent);
+  }
+
+  .sources-note {
+    color: var(--ink-soft);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .sources ol {
+    margin-top: 0.75em;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .sources li {
+    display: grid;
+    grid-template-columns: 2em 1fr;
+    gap: 0.25em;
+    overflow-wrap: anywhere;
+    scroll-margin-top: var(--space-m);
+  }
+
+  .sources li + li {
+    margin-top: 0.45em;
+  }
+
+  .sources li:target {
+    background: #f7eef3;
+  }
+
+  .sources .n {
+    color: var(--ink-soft);
+    font-variant-numeric: lining-nums;
+    text-align: right;
   }
 
   @media print {
     @page {
       size: Letter;
-      margin: 0.7in 0.8in;
+      margin: 0.7in 0.75in;
     }
 
     .toolbar,
@@ -288,7 +494,10 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
       border: 0;
     }
 
-    .abstract {
+    .keypoints li,
+    .take,
+    .eq,
+    .disclaimer {
       break-inside: avoid;
     }
 
@@ -297,8 +506,17 @@ const slug = (h: string) => h.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-
       line-height: 1.5;
     }
 
-    .body h2 {
+    .body h2,
+    .body h3 {
       break-after: avoid;
+    }
+
+    .body > section + section {
+      margin-top: 1.4rem;
+    }
+
+    .sources ol {
+      font-size: 7.5pt;
     }
 
     a {

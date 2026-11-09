@@ -1,0 +1,136 @@
+---
+// Line chart on a numeric x axis. Every observation gets a marker (hollow when the
+// value is implied rather than stated by the source) and each line ends in a label.
+import Figure from './Figure.astro';
+import { SERIES, INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, textWidth, type Fmt, type Layout } from './lib';
+
+interface Series {
+  name: string;
+  /** Short name for the end label on narrow screens. */
+  short?: string;
+  values: (number | null)[];
+  /** True where the value is derived (drawn as a hollow marker). */
+  implied?: boolean[];
+  color?: number;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  x: number[];
+  /** Tick labels on the x axis; defaults to the x values. */
+  xTicks?: { v: number; label: string }[];
+  xLabel?: string;
+  xFormat?: Fmt;
+  series: Series[];
+  yLabel: string;
+  yMin?: number;
+  yMax?: number;
+  format?: Fmt;
+  /** Horizontal reference lines, e.g. par or zero. */
+  refs?: { v: number; label?: string }[];
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, x, xLabel, xFormat = {}, series, yLabel, format = {}, refs = [], height } = Astro.props;
+
+const color = (s: Series, i: number) => SERIES[s.color ?? i];
+const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
+const t = ticks(Astro.props.yMin ?? Math.min(...all), Astro.props.yMax ?? Math.max(...all), 5);
+const d0 = Astro.props.yMin ?? t[0];
+const d1 = Astro.props.yMax ?? t[t.length - 1];
+const tickVals = t.filter((v) => v >= d0 - 1e-9 && v <= d1 + 1e-9);
+const xTicks = Astro.props.xTicks ?? x.map((v) => ({ v, label: fmt(v, xFormat) }));
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height - 10 : height) : L.H;
+  const f = L.f;
+  const tickFmt = { ...format, decimals: tickVals.some((v) => !Number.isInteger(v)) ? 1 : 0 };
+  const left = Math.max(...tickVals.map((v) => textWidth(fmt(v, tickFmt), f))) + 14;
+  const ends = series.map((s) => {
+    const i = s.values.map((v, j) => (v === null ? -1 : j)).filter((j) => j >= 0).pop() ?? 0;
+    const label = `${L.narrow ? (s.short ?? s.name) : s.name}: ${fmt(s.values[i] as number, format)}`;
+    return { i, label };
+  });
+  const right = Math.max(...ends.map((e) => textWidth(e.label, f - 1))) + 14;
+  const top = 26;
+  const bottom = f + 16 + (xLabel ? f + 10 : 0);
+  const x0 = left;
+  const x1 = L.W - right;
+  const sx = scale(Math.min(...x), Math.max(...x), x0 + 6, x1 - 6);
+  const sy = scale(d0, d1, H - bottom, top);
+
+  let s = '';
+  for (const v of tickVals) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(v)}" y2="${sy(v)}" stroke="${GRID}"/>`;
+    s += `<text x="${x0 - 8}" y="${sy(v) + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, tickFmt))}</text>`;
+  }
+  for (const r of refs) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(r.v)}" y2="${sy(r.v)}" stroke="${AXIS}" stroke-width="1.25"/>`;
+    if (r.label) s += `<text x="${x1}" y="${sy(r.v) + f + 3}" text-anchor="end" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
+  }
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(yLabel)}</text>`;
+  const every = L.narrow && xTicks.length > 6 ? 2 : 1;
+  xTicks.forEach((tk, i) => {
+    if (i % every && i !== xTicks.length - 1) return;
+    s += `<line x1="${sx(tk.v)}" x2="${sx(tk.v)}" y1="${H - bottom}" y2="${H - bottom + 4}" stroke="${AXIS}"/>`;
+    s += `<text x="${sx(tk.v)}" y="${H - bottom + f + 6}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(tk.label)}</text>`;
+  });
+  s += `<line x1="${x0}" x2="${x1}" y1="${H - bottom}" y2="${H - bottom}" stroke="${AXIS}"/>`;
+  if (xLabel) s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(xLabel)}</text>`;
+
+  // End labels: keep at least one line of space between neighbours.
+  const placed = ends.map((e, si) => ({ si, y: sy(series[si].values[e.i] as number) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < placed.length; i++) if (placed[i].y - placed[i - 1].y < f + 1) placed[i].y = placed[i - 1].y + f + 1;
+
+  series.forEach((se, si) => {
+    const c = color(se, si);
+    let d = '';
+    let pen = false;
+    se.values.forEach((v, i) => {
+      if (v === null) return (pen = false);
+      d += `${pen ? 'L' : 'M'}${sx(x[i]).toFixed(1)},${sy(v).toFixed(1)}`;
+      pen = true;
+    });
+    s += `<path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    se.values.forEach((v, i) => {
+      if (v === null) return;
+      const hollow = se.implied?.[i];
+      const tip = `${xTicks.find((tk) => tk.v === x[i])?.label ?? x[i]} · ${se.name}: ${fmt(v, format)}${hollow ? ' (implied)' : ''}`;
+      s += `<circle cx="${sx(x[i])}" cy="${sy(v)}" r="4" fill="${hollow ? '#fff' : c}" stroke="${hollow ? c : '#fff'}" stroke-width="2"><title>${esc(tip)}</title></circle>`;
+    });
+    const e = ends[si];
+    const py = placed.find((p) => p.si === si)!.y;
+    s += `<text x="${sx(x[e.i]) + 10}" y="${py + f * 0.35}" font-size="${f - 1}" fill="${INK}" style="font-weight:600">${esc(e.label)}</text>`;
+  });
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend = series.map((s, i) => ({ name: s.name, color: color(s, i) }));
+const data = {
+  head: ['', ...series.map((s) => s.name)],
+  rows: x.map((xv, i) => [
+    xTicks.find((tk) => tk.v === xv)?.label ?? fmt(xv, xFormat),
+    ...series.map((s) => (s.values[i] === null ? '–' : `${fmt(s.values[i] as number, format)}${s.implied?.[i] ? '*' : ''}`)),
+  ]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>
