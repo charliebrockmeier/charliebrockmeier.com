@@ -1,7 +1,7 @@
 // "The road so far" side-scroller art, drawn in code on transparent layers:
 //   journey-near      4400×210  the places themselves, walked past at full speed
 //   journey-far       2460×210  hills, the sea and skylines that drift past at half speed
-//   journey-walker     234×28   Charlie: 8 walk frames, 2 idle, 3 facing out (wave)
+//   journey-walker     234×28   Charlie: 8 walk frames, 2 idle, 3 facing out (wave); see journey-walker.mjs
 //   journey-vehicles   566×28   pickups, a tractor, buses, a convertible, a streetcar, cabs,
 //                               and for life moments Cash-Wa's truck and a car packed for college
 //   journey-clouds     480×240  three cloud bands, in day and dusk colors
@@ -17,6 +17,9 @@ import { CURB, FW, GROUND, H, HORIZON, LANES, LAWN, Layer, NW, STREET, WALK, sea
 import { nebraska, fastTravel } from './journey-west.mjs';
 import { COAST, GG, sanFrancisco } from './journey-coast.mjs';
 import { SUBWAY, newYork } from './journey-city.mjs';
+import { journeyWalker } from './journey-walker.mjs';
+
+export { journeyWalker };
 
 const clamp = (v) => Math.min(1, Math.max(0, v));
 
@@ -259,152 +262,6 @@ export function journeyFar() {
   for (let k = 0; k < 5; k++) cv.rect(ch - (4 - k), 86 - (k + 1) * 3, (4 - k) * 2 + 1, 3, C.steel);
   for (let k = 0; k < 5; k++) for (let i = ch - (3 - k); i <= ch + (3 - k); i += 2) cv.px(i, 85 - k * 3, C.sun);
   cv.rect(ch, 62, 1, 10, C.steel);
-  return cv;
-}
-
-// ---------------------------------------------------------------------------
-// Walker: 18×28 facing right. Frames 0–7 walk, 8–9 idle (breathing),
-// 10 faces out, 11–12 wave.
-
-const HEAD = [
-  '.......KKKKK......',
-  '.....KKHHHHHKK....',
-  '....KHHHHHHHHHK...',
-  '...KHHHhhhhhHHHK..',
-  '...KHHHHHHHHHHHK..',
-  '...KHHHHHHHHHSSK..',
-  '...KHHHHHHHSSSSSK.',
-  '...KHHHHHsSSSKSSK.',
-  '...KHHHHsSSSSSSSSK',
-  '....KHHHsSSSSSSSK.',
-  '.....KHHSSSSSMMK..',
-  '......KKsSSSSSK...',
-  '.......KsSSKK.....',
-];
-const TORSO = [
-  '......KJJJWWWK....',
-  '.....KJJJJWWWJK...',
-  '.....KJJJJJWJJK...',
-  '.....KJJJJJWJJK...',
-  '.....KJJJJJJJJK...',
-  '.....KJJJJJJJJK...',
-  '.....KjjjjjjjjK...',
-];
-const FRONT = [
-  '......KKKKKK......',
-  '....KKHHHHHHKK....',
-  '...KHHHHHHHHHHK...',
-  '...KHHhhhhHHHHK...',
-  '..KHHHHHHHHHHHHK..',
-  '..KHHSSSSSSSSHHK..',
-  '..KHSSSSSSSSSSHK..',
-  '..KSSKKSSSSKKSSK..',
-  '..KSSSSSSSSSSSSK..',
-  '..KsSSSSSSSSSSsK..',
-  '...KSSSMMMMSSSK...',
-  '....KSSSSSSSSK....',
-  '.....KKsSSsKK.....',
-  '......KsSSsK......',
-  '....KJJJWWJJJK....',
-  '...KJJJJWWJJJJK...',
-  '...KJJJJWWJJJJK...',
-  '..KjJJJJWWJJJJjK..',
-  '..KjJJJJJJJJJJjK..',
-  '..KjJJJJJJJJJJjK..',
-  '..KSJJJJJJJJJJSK..',
-  '...KjjjjjjjjjjK...',
-  '...KLLLlKKlLLLK...',
-  '...KLLLlKKlLLLK...',
-  '...KLLLlKKlLLLK...',
-  '...KLLLlKKlLLLK...',
-  '..KBBBBBKKBBBBBK..',
-  '..KKKKKKKKKKKKKK..',
-];
-// [near foot dx, near lift, far foot dx, far lift, bob, near hand dx]
-const WALK_FRAMES = [
-  [4, 0, -4, 0, 0, -5],
-  [2, 0, -3, 1, 1, -3],
-  [0, 0, 1, 2, 0, 0],
-  [-3, 0, 4, 1, -1, 3],
-  [-4, 0, 4, 0, 0, 5],
-  [-3, 1, 2, 0, 1, 3],
-  [1, 2, 0, 0, 0, 0],
-  [4, 1, -3, 0, -1, -3],
-  [1, 0, -1, 0, 0, 0],
-  [1, 0, -1, 0, -1, 0],
-];
-const PAL = {
-  K: '#0c0a18',
-  H: '#5c3a2e',
-  h: '#8a5a3c',
-  S: '#f2c4a2',
-  s: '#d39a78',
-  M: '#a8504a',
-  W: '#fdf6e3',
-  J: '#2b3a6e',
-  j: '#1b2448',
-  a: '#141a36',
-  L: '#24305a',
-  l: '#161e3c',
-  k: '#10152c',
-  B: '#3a2430',
-  b: '#241820',
-};
-
-export function journeyWalker() {
-  const { w: WW, h: WH, frames } = journeyArt.walker;
-  const cv = new Layer(WW * frames, WH);
-  const cx = 9;
-  WALK_FRAMES.forEach(([nd, nl, fd, fl, bob, swing], i) => {
-    const ox = i * WW;
-    const hip = 20 + bob;
-    // A trouser leg four pixels wide, hip to knee to ankle, with a darker back edge;
-    // `edge` outlines the front edge too (the near leg, so it reads over the far one).
-    // The shoe is six wide: an upper over a dark sole.
-    const leg = (dx, lift, [main, back, edge], [shoe, sole]) => {
-      const fx = cx + dx;
-      const fy = WH - 1 - lift;
-      const kx = (cx + fx) / 2 + (lift > 0 ? 1.5 : 0);
-      const ky = (hip + fy) / 2;
-      const ankle = fy - 2;
-      for (let y = hip; y <= ankle; y++) {
-        const t = y <= ky ? (y - hip) / Math.max(1, ky - hip) : (y - ky) / Math.max(1, ankle - ky);
-        const c = Math.round(y <= ky ? cx + (kx - cx) * t : kx + (fx - kx) * t);
-        cv.rect(ox + c - 2, y, 4, 1, main);
-        cv.px(ox + c - 2, y, back);
-        if (edge && y > hip) cv.px(ox + c + 2, y, edge);
-      }
-      cv.rect(ox + fx - 2, fy - 1, 5, 1, shoe);
-      cv.rect(ox + fx - 2, fy, 6, 1, sole);
-      cv.px(ox + fx + 3, fy - 1, edge ?? sole);
-    };
-    // Far arm and leg behind the body, then the body, then the near leg and arm.
-    const limb = (dx, color, hand) => {
-      cv.line(ox + cx, 14 + bob, ox + cx + Math.round(dx / 2), 16 + bob, color);
-      cv.line(ox + cx + Math.round(dx / 2), 16 + bob, ox + cx + dx, 18 + bob, color);
-      cv.line(ox + cx + 1, 14 + bob, ox + cx + 1 + Math.round(dx / 2), 16 + bob, color);
-      cv.rect(ox + cx + dx, 19 + bob, 2, 2, hand);
-    };
-    limb(-swing, PAL.a, PAL.s);
-    leg(fd, fl, [PAL.l, PAL.k, null], [PAL.b, PAL.K]);
-    cv.sprite(ox, bob, HEAD, PAL);
-    cv.sprite(ox, 13 + bob, TORSO, PAL);
-    leg(nd, nl, [PAL.L, PAL.l, PAL.K], [PAL.B, PAL.K]);
-    limb(swing, PAL.j, PAL.S);
-  });
-  // Facing out, then waving with the raised arm in two positions.
-  cv.sprite(10 * WW, 0, FRONT, PAL);
-  for (const [i, hand] of [
-    [11, [0, 6]],
-    [12, [1, 2]],
-  ]) {
-    const ox = i * WW;
-    cv.sprite(ox, 0, FRONT.map((r, y) => (y >= 17 && y <= 20 ? r.slice(0, 2) + '.' + r.slice(3) : r)), PAL);
-    cv.rect(ox + 2, 17, 2, 4, PAL.J);
-    cv.line(ox + 3, 15, ox + hand[0] + 1, hand[1] + 2, PAL.J);
-    cv.line(ox + 4, 15, ox + hand[0] + 2, hand[1] + 2, PAL.j);
-    cv.rect(ox + hand[0], hand[1] - 1, 3, 3, PAL.S);
-  }
   return cv;
 }
 

@@ -1,39 +1,137 @@
 ---
 import Icon from './Icon.astro';
+import PixelArt from './PixelArt.astro';
 import { achievements } from '../data/profile';
+import type { IconName } from '../data/pixels';
 
 const unlocked = achievements.filter((a) => !a.locked).length;
+
+// Badge colors, as in Icon.astro: main, shade, highlight.
+const colors: Record<string, [string, string, string]> = {
+  gold: ['#ffcd75', '#e0884a', '#fff3c4'],
+  coral: ['#ff8e5e', '#b8405e', '#ffd0b0'],
+  red: ['#ff6b7f', '#a8304e', '#ffc2cb'],
+  teal: ['#73eff7', '#2fa8b5', '#d8fdff'],
+  violet: ['#b99cff', '#6b4f96', '#ece2ff'],
+};
+// Icons only these badges use: a star, a map pin, a compass.
+const own: Record<string, string[]> = {
+  star: ['.....KK.....', '....K33K....', '....K31K....', 'KKKKK11KKKKK', 'K3311111112K', '.K31111112K.', '..K111112K..', '..K111112K..', '.K112KK112K.', '.K12K..K12K.', '.KKK....KKK.', '............'],
+  pin: ['...KKKKKK...', '..K331111K..', '.K33111112K.', '.K311KK112K.', '.K311KK112K.', '.K31111112K.', '..K111112K..', '..K111122K..', '...K1122K...', '....K12K....', '.....KK.....', '............'],
+  compass: Array.from({ length: 12 }, (_, y) =>
+    Array.from({ length: 12 }, (_, x) => {
+      const [dx, dy] = [x - 5.5, y - 5.5];
+      const r = Math.hypot(dx, dy);
+      if (r > 6) return '.';
+      if (r > 4.9) return 'K';
+      if (Math.abs(dx) * 2.4 + Math.abs(dy) * 0.6 <= 2.2) return dy < 0 ? '3' : 'K';
+      return r > 4 && (x === 5 || x === 6 || y === 5 || y === 6) ? '2' : '1';
+    }).join(''),
+  ),
+};
+
+// What a locked card becomes once it's unlocked (src/scripts/achievements.ts swaps it in).
+const reveal: Record<string, { name: string; icon: string; color: string }> = {
+  'beat-chess-bot': { name: 'Bot slayer', icon: 'trophy', color: 'gold' },
+  tourist: { name: 'Tourist', icon: 'pin', color: 'red' },
+  completionist: { name: 'Completionist', icon: 'star', color: 'gold' },
+  speedrunner: { name: 'Speedrunner', icon: 'bolt', color: 'teal' },
+  explorer: { name: 'Explorer', icon: 'compass', color: 'violet' },
+  'copy-email': { name: 'Pen pal', icon: 'mail', color: 'coral' },
+};
+const art = (icon: string, color: string) => {
+  const [main, shade, light] = colors[color] ?? colors.gold;
+  return { rows: own[icon], palette: { '1': main, '2': shade, '3': light, K: '#0c0a18' } };
+};
 ---
 
 <section id="achievements" class="section wrap" aria-labelledby="achievements-title">
   <header class="section-head">
     <span class="num">07</span>
     <h2 id="achievements-title">Achievements</h2>
-    <p class="pixel count">{unlocked} / {achievements.length} unlocked</p>
+    <div class="progress">
+      <p class="pixel count" data-ach-count aria-live="polite">{unlocked} / {achievements.length} unlocked</p>
+      <span class="meter" aria-hidden="true">
+        <i data-ach-fill style={`--p:${(unlocked / achievements.length).toFixed(3)};--n:${achievements.length}`}></i>
+      </span>
+    </div>
   </header>
   <ul class="grid" role="list">
     {
-      achievements.map((a) => (
-        <li class:list={['badge panel', { locked: a.locked }]} data-achievement={a.id} data-rise>
-          <Icon name={a.icon} color={a.color} scale={5} class="icon" />
-          <div>
-            <h3 class="pixel">{a.name}</h3>
-            <p>{a.note}</p>
-          </div>
-        </li>
-      ))
+      achievements.map((a) => {
+        const r = a.id ? reveal[a.id] : undefined;
+        return (
+          <li class:list={['badge panel', { locked: a.locked }]} data-ach-card data-achievement={a.id} data-rise>
+            <Icon name={a.icon} color={a.color} scale={5} class="icon" />
+            <div>
+              <h3 class="pixel">{a.name}</h3>
+              <p>{a.note}</p>
+            </div>
+            {a.locked && r && (
+              <template data-unlocked>
+                {own[r.icon] ? <PixelArt art={art(r.icon, r.color)} scale={5} class="icon" /> : <Icon name={r.icon as IconName} color={r.color} scale={5} class="icon" />}
+                <h3 class="pixel">{r.name}</h3>
+              </template>
+            )}
+          </li>
+        );
+      })
     }
   </ul>
 </section>
 
+<script>
+  // Progress updates live as achievements unlock anywhere on the page.
+  import { progress } from '../scripts/achievements';
+
+  const count = document.querySelector<HTMLElement>('[data-ach-count]');
+  const fill = document.querySelector<HTMLElement>('[data-ach-fill]');
+  const update = () => {
+    const p = progress();
+    if (!count || !fill || !p.total) return;
+    count.textContent = `${p.done} / ${p.total} unlocked`;
+    fill.style.setProperty('--p', (p.done / p.total).toFixed(3));
+  };
+  update();
+  addEventListener('game:progress', update);
+  // The chess bot updates its own card; catch up after it does.
+  addEventListener('achievement', () => requestAnimationFrame(update));
+</script>
+
 <style>
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+    flex-wrap: wrap;
+  }
+
   .count {
+    flex-basis: auto;
     color: var(--gold);
+    font-size: var(--step-1);
+  }
+
+  /* A pixel progress bar, one cell per achievement. */
+  .meter {
+    position: relative;
+    width: min(260px, 60vw);
+    height: 16px;
+    background: var(--shadow);
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+
+  .meter i {
+    position: absolute;
+    inset: 3px;
+    background: repeating-linear-gradient(90deg, var(--gold) 0 calc(100% / var(--n) - 2px), transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)));
+    clip-path: inset(0 calc((1 - var(--p, 0)) * 100%) 0 0);
+    transition: clip-path 0.5s steps(5);
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
     gap: var(--space-s);
   }
 
@@ -67,24 +165,33 @@ const unlocked = achievements.filter((a) => !a.locked).length;
     opacity: 0.6;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .badge:not(.locked):hover :global(.icon) {
-      animation: achievements-hop 0.4s steps(2);
-    }
+  /* Just unlocked: a gold frame. */
+  .badge:global(.fresh) {
+    box-shadow:
+      inset 0 0 0 var(--px) var(--gold),
+      var(--px) var(--px) 0 0 var(--shadow);
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    .badge:not(.locked):hover :global(.icon) {
+      animation: ach-hop 0.4s steps(2);
+    }
+
     .badge:not(.locked) :global(.icon) {
-      animation: achievements-idle 6s steps(2) infinite;
+      animation: ach-idle 6s steps(2) infinite;
       animation-delay: calc(var(--rise-i, 0) * -0.7s);
     }
 
     .locked :global(.icon) {
-      animation: achievements-locked 2.4s steps(2) infinite;
+      animation: ach-locked 2.4s steps(2) infinite;
+    }
+
+    .badge:global(.fresh) :global(.icon) {
+      animation: ach-unlock 0.9s steps(6) both;
     }
   }
 
-  @keyframes achievements-idle {
+  @keyframes ach-idle {
     0%,
     92%,
     100% {
@@ -95,15 +202,29 @@ const unlocked = achievements.filter((a) => !a.locked).length;
     }
   }
 
-  @keyframes achievements-locked {
+  @keyframes ach-locked {
     50% {
       opacity: 0.55;
     }
   }
 
-  @keyframes achievements-hop {
+  @keyframes ach-hop {
     50% {
       transform: translateY(-4px);
+    }
+  }
+
+  @keyframes ach-unlock {
+    0% {
+      transform: scale(0.4) rotate(-12deg);
+      filter: brightness(2.2);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: none;
+      filter: none;
     }
   }
 </style>

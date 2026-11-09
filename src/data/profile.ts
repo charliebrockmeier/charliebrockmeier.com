@@ -390,6 +390,12 @@ export const achievements: Achievement[] = [
   { icon: 'crown', color: 'gray', name: 'Silver crown', note: 'UNL Homecoming Royalty nominee, 2024. Call it second place.' },
   { icon: 'lock', color: 'gray', name: '???', note: "Beat Charlie's chess bot.", locked: true, id: 'beat-chess-bot' },
   { icon: 'lock', color: 'gray', name: '???', note: 'Huskers win the Big Ten.', locked: true },
+  // Unlocked by you, on this site (src/scripts/achievements.ts).
+  { icon: 'lock', color: 'gray', name: 'Tourist', note: 'Walk the road all the way to 7 World Trade.', locked: true, id: 'tourist' },
+  { icon: 'lock', color: 'gray', name: 'Completionist', note: 'Collect every star on the walk in play mode.', locked: true, id: 'completionist' },
+  { icon: 'lock', color: 'gray', name: 'Speedrunner', note: 'Reach 7 World Trade in play mode in under 60 seconds.', locked: true, id: 'speedrunner' },
+  { icon: 'lock', color: 'gray', name: 'Explorer', note: 'Scroll through every section of this page.', locked: true, id: 'explorer' },
+  { icon: 'lock', color: 'gray', name: 'Pen pal', note: "Copy Charlie's email from the contact page.", locked: true, id: 'copy-email' },
 ];
 
 

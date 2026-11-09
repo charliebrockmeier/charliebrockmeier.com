@@ -20,8 +20,8 @@ const nav = [
   { href: at('#stats'), label: 'Stats' },
   { href: at('#builds'), label: 'Builds' },
   { href: at('#achievements'), label: 'Achievements' },
-  { href: '/contact', label: 'Contact' },
 ];
+const onContact = Astro.url.pathname.replace(/\/$/, '') === '/contact';
 ---
 
 <header class="hud">
@@ -56,6 +56,7 @@ const nav = [
         }
       </ul>
       <a class="btn ghost talk-link" href={at('#talk')} data-talk>Talk <kbd>E</kbd></a>
+      <a class="btn ghost contact" href="/contact" aria-current={onContact ? 'page' : undefined}>Contact</a>
       <a class="btn" href="/resume">Resume <kbd>R</kbd></a>
     </div>
   </div>
@@ -133,6 +134,19 @@ const nav = [
   .actions .btn {
     padding: 0.45rem 0.75rem;
     font-size: var(--label);
+  }
+
+  /* Contact stands out next to Resume: a gold outline. */
+  .actions .contact {
+    color: var(--gold);
+    box-shadow:
+      inset 0 0 0 2px var(--gold),
+      var(--px) var(--px) 0 0 var(--shadow);
+  }
+
+  .actions .contact:hover,
+  .actions .contact[aria-current='page'] {
+    background: color-mix(in srgb, var(--gold) 16%, var(--panel-2));
   }
 
   @media (max-width: 999px) {

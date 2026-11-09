@@ -9,10 +9,17 @@
 // to wear or carry. 7 WTC is where he is now, not the end: a YOU ARE HERE pin,
 // fireworks, and a sign pointing on down the road. Without JS, or with reduced
 // motion, it's a static strip, with the moments listed on each stop's card.
+//
+// Play mode (PRESS START in the hero fires `game:start`): the arrow keys or A/D walk,
+// Space jumps, Esc quits, and on touch screens there are buttons. Each life moment has
+// a star to collect (some only with a jump), a HUD counts stars and time, and reaching
+// 7 WTC clears the course. With reduced motion, starting play turns the strip into the
+// walk, minus the ambient motion. Stars and achievements: src/scripts/achievements.ts.
 import Icon from './Icon.astro';
 import { FONT, LAWN, textWidth } from '../../scripts/art/journey-kit.mjs';
 import { BUCKLE, COVISUM, FAST_TRAVEL_SF, STAGE } from '../../scripts/art/journey-west.mjs';
 import { MOVING, OFFICE, OFFICE_SIGN } from '../../scripts/art/journey-city.mjs';
+import { WALK_BOB, walkerGear as gearArt } from '../../scripts/art/journey-walker.mjs';
 import { camera, journeyArt, moments, regions, stops, timeKeys, vantagerMark, vehicles, vehicleSheet, walkerProps } from '../data/journey';
 
 const { nearWidth: NW, farWidth: FW, height: H, ground: G, feet, farSpeed, farAlignView, walker: WK, lanes } = journeyArt;
@@ -31,7 +38,26 @@ const config = {
   props: walkerProps,
   // Cash-Wa's truck waits at the dock (32 rows above its lane) until the walker reaches `at`.
   truck: { x: 728, y: LAWN - lanes.far, at: moments.find((m) => m.id === 'cashwa')!.x },
+  bob: WALK_BOB,
+  feet,
+  wh: WK.h,
+  stars: [] as { id: string; x: number; y: number }[],
 };
+
+// Play mode's stars: one per life moment. Most float at chest height and are collected
+// by walking through; a few hang higher and need a jump (Space).
+const high = new Set(['khs', 'unl', 'sf', 'msci']);
+config.stars = moments.filter((m) => !m.finale).map((m) => ({ id: m.id, x: m.x, y: feet - (high.has(m.id) ? 44 : 15) }));
+/** A 7×7 star with its outline added around it (9×9). */
+const starFill = ['...Y...', '..YYY..', 'YYYWYYY', '.YYYYY.', '..YYY..', '.YY.YY.', '.Y...Y.'];
+const starRows = Array.from({ length: 9 }, (_, y) =>
+  Array.from({ length: 9 }, (_, x) => {
+    const at = (i: number, j: number) => starFill[j - 1]?.[i - 1] ?? '.';
+    const k = at(x, y);
+    if (k !== '.') return y > 5 && k === 'Y' ? 'y' : k;
+    return [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)].some((n) => n !== '.') ? 'K' : '.';
+  }).join(''),
+);
 
 // Pixel discs for the sun and moon, one rect per run.
 const disc = (r: number, bite = false) =>
@@ -332,13 +358,8 @@ const still = (type: string, x: number, bottom: number) => {
 };
 const stills = [still('cashwa', config.truck.x, LAWN), still('packed', 846, lanes.far)];
 
-// What the walker wears or carries, in walker pixels (18×28, facing right; y < 0 is above the head).
-const walkerGear = {
-  cap: px(['...TTTTTTTTTTTTT..', '..KKKKKKKKKKKKKKK.', '...Y.KCCCCCCCK....', '...Y.KCCCCCCCCK...', '...Y.KKKKKKKKKK...', '..YYY.............'], { T: '#3d3858', K: '#0c0a18', C: '#1b1533', Y: '#ffcd75' }, 0, -2),
-  shades: px(['..KKKK', 'KKKGKK', '..KKKK'], { K: '#0c0a18', G: '#73eff7' }, 10, 6),
-  box: px(['.KKKKKKKK.', '.KTTTPTTK.', '.KCCCPCCK.', 'SKCCCCCCKS', 'SKCCCCCDKS', '.KCCCCCDK.', '.KKKKKKKK.'], { K: '#5c3a2e', T: '#e9d0a8', P: '#f4e0b0', C: '#c9a26b', D: '#a8865e', S: '#f2c4a2' }, 8, 14),
-  laptop: px(['.KKKKKKKK.', '.KBBBBBBK.', '.KBWWBBBK.', '.KBBWWWBK.', 'SKBBBBBBKS', '.KKKKKKKK.', 'GGGGGGGGGG'], { K: '#3d3858', B: '#73eff7', W: '#c6fff5', S: '#f2c4a2', G: '#94a0c2' }, 8, 13),
-};
+// What the walker wears or carries, drawn over the sprite (in walker pixels; see journey-walker.mjs).
+const walkerGear = Object.fromEntries(Object.entries(gearArt).map(([k, g]) => [k, px(g.rows, g.pal, g.x, g.y)]));
 
 // Toast icons, one per moment.
 const icon = (rows: string[], pal: Record<string, string>) => ({ w: rows[0].length, h: rows.length, runs: px(rows, pal) });
@@ -375,13 +396,21 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       data-stage
       style={`--nw:${NW};--fw:${FW};--h:${H};--feet:${feet};--ww:${WK.w};--wh:${WK.h};--wf:${WK.frames};--vw:${vehicleSheet.w};--vh:${vehicleSheet.h};--lane-far:${lanes.far};--lane-near:${lanes.near}`}
     >
-      <div class="sky" aria-hidden="true">
+      <div class="sky" data-skybox aria-hidden="true">
         <div class="sky-layer morning"></div>
         <div class="sky-layer day" data-sky></div>
         <div class="sky-layer golden" data-sky></div>
         <div class="sky-layer night" data-sky></div>
         <div class="stars">
-          {stars.map((s) => <i class:list={{ big: s.big, tw: s.tw }} style={`left:${s.x.toFixed(1)}%;top:${s.y.toFixed(1)}%;animation-delay:${-s.d.toFixed(2)}s`} />)}
+          {stars.filter((s) => !s.tw).map((s) => <i class:list={{ big: s.big }} style={`left:${s.x.toFixed(1)}%;top:${s.y.toFixed(1)}%`} />)}
+          {
+            /* The twinkling ones in three groups, so three animations make the whole sky twinkle. */
+            [0, 1, 2].map((g) => (
+              <div class="tw" style={`animation-delay:${-g * 0.8}s`}>
+                {stars.filter((s, i) => s.tw && i % 3 === g).map((s) => <i class:list={{ big: s.big }} style={`left:${s.x.toFixed(1)}%;top:${s.y.toFixed(1)}%`} />)}
+              </div>
+            ))
+          }
         </div>
         <div class="rays" data-rays></div>
         <svg class="sun" data-sun viewBox="0 0 18 18" shape-rendering="crispEdges">
@@ -625,26 +654,8 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
               {Array.from({ length: 13 }, (_, i) => <rect class="runway" x={2910 + i * 10} y="150" width="2" height="2" fill="#c6fff5" style={`animation-delay:${i * 0.08}s`} />)}
             </g>
 
-            <!-- New York: people, pigeons, market lights, office windows, the subway, steam, neon. -->
-            <g class="zone" data-from="3000" data-to="4400">
-              {
-                people.map((p, i) => (
-                  <g class="stroll" style={`--a:${p.from}px;--b:${p.to}px;--t:${p.t}s;animation-delay:-${i * 4}s`}>
-                    <g transform="translate(-3 141)">
-                      {p.top.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
-                      <g class="frame-a">{p.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
-                      <g class="frame-b">{p.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
-                      {i === 3 && (
-                        <>
-                          <rect x="6" y="9" width="5" height="1" fill="#e43b44" />
-                          <g class="frame-a">{dog.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
-                          <g class="frame-b">{dog.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
-                        </>
-                      )}
-                    </g>
-                  </g>
-                ))
-              }
+            <!-- New York, west: pigeons, market lights, office windows, steam, and the moments there. -->
+            <g class="zone" data-from="3000" data-to="3720">
               {[3160, 3167, 3175].map((x, i) => (
                 <>
                   <g class="peck" style={`animation-delay:-${i * 0.7}s`}>{pigeonUp.map((r) => <rect x={r.x + x} y={r.y + 149} width={r.w} height="1" fill={r.fill} />)}</g>
@@ -653,11 +664,6 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
               ))}
               {Array.from({ length: 22 }, (_, i) => <rect class="bulb" x={3186 + i * 4} y="127" width="1" height="1" fill="#ffe9a8" style={`animation-delay:${-(i % 5) * 0.3}s`} />)}
               {officeLights.map((o) => <rect class="glass" x={o.x} y={o.y} width="7" height="7" fill="#1b1a33" style={`animation-delay:-${o.d}s`} />)}
-              <g clip-path="url(#road-tunnel)">
-                <g class="train">{train.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
-              </g>
-              <rect x="3060" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
-              <rect x="4364" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
               {
                 steam.map((i) => (
                   <>
@@ -666,12 +672,6 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
                   </>
                 ))
               }
-              <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
-              {walkupWindows.map(([x, y], i) => <rect class="win" x={x} y={y} width="7" height="8" fill="#1b1533" style={`animation-delay:${-i * 1.3}s`} />)}
-              <g class="floors">{floors.map((f) => <rect x="3990" y={f.y} width="100" height="2" fill="#c6fff5" style={`transition-delay:${f.i * 45}ms`} />)}</g>
-              <rect class="lobby" x="3990" y="136" width="100" height="16" fill="#ffffff" />
-              <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
-              <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
               <rect class="beacon" x="3520" y="0" width="1" height="1" fill="#ff3b4f" style="animation-delay:-0.8s" />
               <!-- Moments: moving day; joining Vantager; the acquisition, with a banner off the roof. -->
               <g class="scene" data-scene="nyc">
@@ -693,6 +693,39 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
                 </g>
                 {acqBurst.map((c) => <rect class="confetti" x={c.x} y={c.y} width={c.w} height="1" fill={c.c} style={`--dx:${c.dx}px;--dy:${c.dy}px;animation-delay:${c.d}s`} />)}
               </g>
+            </g>
+            <!-- New York: people, the subway, the walk-up, 7 WTC and the road on. Split from the west so the finale
+                 doesn't animate what's far off screen. -->
+            <g class="zone" data-from="3000" data-to="4400">
+              {
+                people.map((p, i) => (
+                  <g class="stroll" style={`--a:${p.from}px;--b:${p.to}px;--t:${p.t}s;animation-delay:-${i * 4}s`}>
+                    <g transform="translate(-3 141)">
+                      {p.top.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}
+                      <g class="frame-a">{p.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      <g class="frame-b">{p.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                      {i === 3 && (
+                        <>
+                          <rect x="6" y="9" width="5" height="1" fill="#e43b44" />
+                          <g class="frame-a">{dog.a.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                          <g class="frame-b">{dog.b.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+                        </>
+                      )}
+                    </g>
+                  </g>
+                ))
+              }
+              <g clip-path="url(#road-tunnel)">
+                <g class="train">{train.map((r) => <rect x={r.x} y={r.y} width={r.w} height="1" fill={r.fill} />)}</g>
+              </g>
+              <rect x="3060" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
+              <rect x="4364" y={G + 2} width="16" height={H - G - 2} fill="#0c0a18" />
+              <g class="neon">{neon.map((p) => <rect x={p.x} y={p.y} width="1" height="1" fill="#ff6b9d" />)}</g>
+              {walkupWindows.map(([x, y], i) => <rect class="win" x={x} y={y} width="7" height="8" fill="#1b1533" style={`animation-delay:${-i * 1.3}s`} />)}
+              <g class="floors">{floors.map((f) => <rect x="3990" y={f.y} width="100" height="2" fill="#c6fff5" style={`transition-delay:${f.i * 45}ms`} />)}</g>
+              <rect class="lobby" x="3990" y="136" width="100" height="16" fill="#ffffff" />
+              <rect class="lobby" x="4202" y="140" width="60" height="8" fill="#ffffff" />
+              <rect class="beacon" x="4142" y="0" width="1" height="1" fill="#ff3b4f" />
               <!-- Now: a YOU ARE HERE pin over MSCI's sign, and a ping where the walker stands. -->
               <g class="ping">
                 {
@@ -729,11 +762,24 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
             </g>
           </svg>
           <div class="cars" data-cars></div>
+          <div class="pickups" aria-hidden="true">
+            {
+              config.stars.map((p) => (
+                <i class="pickup" data-pickup={p.id} style={`--sx:${p.x};--sy:${p.y}`}>
+                  <svg viewBox="0 0 9 9" shape-rendering="crispEdges">
+                    {starRows.flatMap((r, y) =>
+                      [...r].map((k, x) => (k === '.' ? null : <rect x={x} y={y} width="1" height="1" fill={({ K: '#0c0a18', Y: '#ffcd75', y: '#e0884a', W: '#fff3c4' } as Record<string, string>)[k]} />)),
+                    )}
+                  </svg>
+                </i>
+              ))
+            }
+          </div>
         </div>
       </div>
 
       <div class="walker-box" data-walker aria-hidden="true">
-        <i class="shadow"></i>
+        <i class="shadow" data-shadow></i>
         <div class="walker" data-body>
           <svg class="props" data-props viewBox="0 -6 18 34" shape-rendering="crispEdges">
             {
@@ -752,6 +798,41 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
         {stops.map((s, i) => <button type="button" class="mark" tabindex="-1" style={`left:${pct(s.x)}%`} data-goto={i} title={s.place} />)}
       </div>
       <button type="button" class="skip" data-skip>Skip the walk ↓</button>
+
+      <!-- Play mode: the HUD, a hint to start, buttons for touch screens, and the course-clear screen. -->
+      <div class="ghud" data-hud>
+        <p class="pixel hud-stars" aria-live="polite">
+          <svg viewBox="0 0 9 9" width="18" height="18" shape-rendering="crispEdges" aria-hidden="true">
+            {starRows.flatMap((r, y) => [...r].map((k, x) => (k === '.' ? null : <rect x={x} y={y} width="1" height="1" fill={({ K: '#0c0a18', Y: '#ffcd75', y: '#e0884a', W: '#fff3c4' } as Record<string, string>)[k]} />)))}
+          </svg>
+          <span><span class="visually-hidden">Stars </span><span data-hud-stars>0</span>/{config.stars.length}</span>
+        </p>
+        <p class="pixel hud-time"><span class="visually-hidden">Time</span><span data-hud-time>0:00.0</span></p>
+        <button type="button" class="hud-exit pixel" data-exit aria-label="Quit play mode">✕ <kbd>Esc</kbd></button>
+      </div>
+      <p class="ready pixel" data-ready aria-hidden="true">
+        <span class="go">Play mode</span>
+        <span class="keys"><kbd>←</kbd><kbd>→</kbd> walk · <kbd>Space</kbd> jump · <kbd>Esc</kbd> quit</span>
+        <span class="taps">Hold ◀ ▶ to walk · tap ▲ to jump</span>
+      </p>
+      <div class="pad" data-pad>
+        <button type="button" class="pad-btn" data-move="-1" aria-label="Walk left">◀</button>
+        <button type="button" class="pad-btn" data-move="1" aria-label="Walk right">▶</button>
+        <button type="button" class="pad-btn jump" data-jump aria-label="Jump">▲</button>
+      </div>
+      <div class="clear" data-clear role="dialog" aria-labelledby="clear-title" hidden>
+        <p id="clear-title" class="pixel clear-title">Course clear!</p>
+        <dl class="clear-stats">
+          <div><dt class="pixel">Stars</dt><dd class="pixel" data-clear-stars></dd></div>
+          <div><dt class="pixel">Time</dt><dd class="pixel" data-clear-time></dd></div>
+          <div><dt class="pixel">Best</dt><dd class="pixel" data-clear-best></dd></div>
+        </dl>
+        <p class="clear-note" data-clear-note></p>
+        <div class="clear-actions">
+          <button type="button" class="btn" data-replay>Replay</button>
+          <button type="button" class="btn ghost" data-keep>Keep scrolling ↓</button>
+        </div>
+      </div>
 
       <ol class="stops" role="list">
         {
@@ -814,13 +895,29 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
   // the scroll with a little easing, the layers pan, the walker steps, the sky moves
   // through the day, clouds drift, and vehicles drive in world space, entering and
   // leaving only off-screen. Only the overlay zone on screen animates. Reaching
-  // 7 WTC plays the checkpoint.
+  // 7 WTC plays the checkpoint. In play mode the keys (or the touch buttons) drive
+  // the scroll, so the walk and the page never disagree about where you are.
+  import { collectStar, starCount, unlock, bestRun, recordRun } from '../scripts/achievements';
+  import { wipe } from '../scripts/game/wipe';
+
+  type Walk = { start: (from: 'hero' | 'replay') => void };
   const root = document.querySelector<HTMLElement>('[data-journey]');
-  if (root && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let walk: Walk | null = null;
+  if (root) {
+    if (!reduced) walk = live(root, false);
+    // PRESS START (Hero.astro). With reduced motion the strip becomes the walk now, for play.
+    addEventListener('game:start', () => (walk ??= live(root, true)).start('hero'));
+  }
+
+  /** Bring the walk to life. `calm` (reduced motion): no ambient traffic or wind, no wipes. */
+  function live(root: HTMLElement, calm: boolean): Walk {
     const cfg = JSON.parse(root.dataset.config!);
     const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
     const all = (s: string) => [...root.querySelectorAll<HTMLElement>(s)];
-    const [track, stage, near, far, walker, body, fill, sun, rays, moon, cars, props] = ['track', 'stage', 'near', 'far', 'walker', 'body', 'fill', 'sun', 'rays', 'moon', 'cars', 'props'].map((n) => q(`[data-${n}]`));
+    const [track, stage, near, far, walker, body, fill, sun, rays, moon, cars, props, shadow, sky] = ['track', 'stage', 'near', 'far', 'walker', 'body', 'fill', 'sun', 'rays', 'moon', 'cars', 'props', 'shadow', 'skybox'].map((n) =>
+      q(`[data-${n}]`),
+    );
     const skies = all('[data-sky]');
     const clouds = all('[data-cloud]');
     const cards = all('[data-stop]');
@@ -834,8 +931,9 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     }));
     const gear = cfg.props as { prop: string; from: number; to: number }[];
     const worn: Record<string, boolean> = {};
-    const bob = [0, 1, 0, -1, 0, 1, 0, -1];
+    const bob = cfg.bob as number[];
     let shown: HTMLElement | null = null;
+    let shownAt = 0;
     const span = cfg.end - cfg.start;
     const clamp = (v: number) => Math.min(1, Math.max(0, v));
     const timeAt = (x: number) => {
@@ -862,10 +960,16 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     let active = -1;
     let running = false;
     let snap = true;
+    let frame = -1;
+    let arrived = false;
+    let night = false;
+    let skyTod = '';
+    // Moments passed at walking pace (not skipped past), for the Tourist achievement.
+    const walked = new Set<string>();
 
     // `y` lifts a car out of its lane (onto the curb); `hold` parks it until the walker reaches that x.
     type Car = { el: HTMLElement; x: number; y: number; dir: number; w: number; v: number; type: string; wait: number; hold: number };
-    const fleet: Car[] = Array.from({ length: 7 }, (_, i) => {
+    const fleet: Car[] = Array.from({ length: calm ? 0 : 7 }, (_, i) => {
       const el = document.createElement('i');
       el.className = 'car';
       cars.append(el);
@@ -898,45 +1002,232 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       return c;
     };
 
+    // --- Play mode ----------------------------------------------------------------
+    const WALK_SPEED = 96; // art px per second
+    const CAM_MAX = 124; // in play the camera never outruns a brisk walk, whatever the scroll does
+    const JUMP = { h: 30, t: 0.62 };
+    const hud = { box: q('.hud-stars'), stars: q('[data-hud-stars]'), time: q('[data-hud-time]') };
+    const ready = q('[data-ready]');
+    const pad = q('[data-pad]');
+    const clear = q('[data-clear]');
+    const pickups = (cfg.stars as { id: string; x: number; y: number }[]).map((p) => ({ ...p, el: q(`[data-pickup="${p.id}"]`), got: false, near: false }));
+    const play = { on: false, ready: false, keys: new Set<string>(), x: 0, moving: false, t0: 0, end: 0, jumpAt: 0, got: 0, shown: '' };
+    const fmt = (ms: number) => {
+      const t = Math.max(0, ms) / 1000;
+      return `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+    };
+    const baseY = () => track.getBoundingClientRect().top + scrollY - top;
+    /** The page scroll that puts the camera at x (past the end: into the finale's dwell). */
+    const scrollFor = (x: number) => baseY() + (x >= cfg.end ? total * (1 - cfg.dwell * 0.5) : unease(clamp((x - cfg.start) / span)) * (1 - cfg.dwell) * total);
+    const camAt = (y: number) => cfg.start + span * ease(clamp(clamp((y - baseY()) / total) / (1 - cfg.dwell)));
+    const jump = (now: number) => {
+      if (play.on && !play.jumpAt) play.jumpAt = now;
+    };
+    // Keys (or held buttons) walk by moving the page; a smooth walk speed whatever the frame rate.
+    const steer = (dt: number) => {
+      const dir = (play.keys.has('r') ? 1 : 0) - (play.keys.has('l') ? 1 : 0);
+      if (!dir) return void (play.moving = false);
+      if (!play.moving) play.x = camAt(scrollY);
+      play.moving = true;
+      play.x = Math.min(cfg.end, Math.max(cfg.start, play.x + dir * WALK_SPEED * dt));
+      scrollTo({ top: scrollFor(play.x), behavior: 'instant' });
+    };
+    const resetRun = () => {
+      for (const p of pickups) {
+        p.got = false;
+        p.el.classList.remove('got');
+      }
+      Object.assign(play, { t0: 0, end: 0, got: 0, jumpAt: 0, moving: false, shown: '' });
+      hud.stars.textContent = '0';
+      hud.time.textContent = fmt(0);
+    };
+    const enter = () => {
+      resetRun();
+      play.on = play.ready = true;
+      root.classList.add('play');
+      document.documentElement.classList.add('playing');
+      ready.classList.remove('show');
+      void ready.offsetWidth;
+      ready.classList.add('show');
+      setTimeout(() => ready.classList.remove('show'), 4200);
+    };
+    const exit = () => {
+      play.on = play.ready = false;
+      play.keys.clear();
+      play.jumpAt = 0;
+      root.classList.remove('play');
+      document.documentElement.classList.remove('playing');
+      for (const b of pad.querySelectorAll('.down')) b.classList.remove('down');
+    };
+    const closeClear = () => {
+      clear.hidden = true;
+      root.classList.remove('cleared');
+    };
+    const finish = (now: number) => {
+      play.end = now;
+      const secs = (now - (play.t0 || now)) / 1000;
+      const best = bestRun();
+      const isBest = play.t0 > 0 && recordRun(secs);
+      exit();
+      unlock('tourist');
+      if (play.t0 && secs < 60) unlock('speedrunner');
+      q('[data-clear-stars]').textContent = `★ ${play.got}/${pickups.length}`;
+      q('[data-clear-time]').textContent = fmt(now - (play.t0 || now));
+      q('[data-clear-best]').textContent = isBest ? 'New best!' : best ? fmt(best * 1000) : '—';
+      const missed = pickups.length - play.got;
+      q('[data-clear-note]').textContent = missed
+        ? `${missed} star${missed > 1 ? 's' : ''} got away. Some hang high: jump for them.`
+        : secs < 60
+          ? 'Every star, under a minute. Nice.'
+          : 'Every star on the road. Now try it under a minute.';
+      setTimeout(
+        () => {
+          if (!arrived) return;
+          clear.hidden = false;
+          root.classList.add('cleared');
+          q('[data-replay]').focus({ preventScroll: true });
+        },
+        calm ? 200 : 1300,
+      );
+    };
+    /** Start (or restart) a run: a wipe to the start of the walk, then play mode. */
+    const start = async (from: 'hero' | 'replay') => {
+      closeClear();
+      exit();
+      const midway = () => {
+        scrollTo({ top: scrollFor(cfg.start) - (from === 'hero' && !calm ? innerHeight * 0.45 : 0), behavior: 'instant' });
+        snap = true;
+      };
+      if (calm) {
+        midway();
+        return enter();
+      }
+      await wipe(midway);
+      if (from === 'hero') {
+        // Settle into the walk: the stage slides up into place.
+        await new Promise<void>((done) => {
+          const t = setTimeout(done, 1400);
+          addEventListener('scrollend', () => (clearTimeout(t), done()), { once: true });
+          scrollTo({ top: scrollFor(cfg.start), behavior: 'smooth' });
+        });
+      }
+      enter();
+    };
+
+    // Keyboard: only while playing, and never while typing. Game keys don't reach the page's shortcuts.
+    addEventListener(
+      'keydown',
+      (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]')) return;
+        if (!clear.hidden && e.key === 'Escape') return closeClear();
+        if (!play.on) return;
+        const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+        if (k === 'ArrowRight' || k === 'd') play.keys.add('r');
+        else if (k === 'ArrowLeft' || k === 'a') play.keys.add('l');
+        else if (k === ' ' || k === 'ArrowUp' || k === 'w') jump(performance.now());
+        else if (k === 'Escape') exit();
+        else return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      },
+      true,
+    );
+    addEventListener(
+      'keyup',
+      (e) => {
+        const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+        if (k === 'ArrowRight' || k === 'd') play.keys.delete('r');
+        if (k === 'ArrowLeft' || k === 'a') play.keys.delete('l');
+      },
+      true,
+    );
+    addEventListener('blur', () => play.keys.clear());
+    // Touch: hold ◀ or ▶ to walk, tap ▲ to jump.
+    for (const b of pad.querySelectorAll<HTMLElement>('[data-move]')) {
+      const k = b.dataset.move === '1' ? 'r' : 'l';
+      const up = () => (play.keys.delete(k), b.classList.remove('down'));
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        b.setPointerCapture(e.pointerId);
+        play.keys.add(k);
+        b.classList.add('down');
+      });
+      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, up);
+    }
+    q('[data-jump]').addEventListener('pointerdown', (e) => (e.preventDefault(), jump(performance.now())));
+    pad.addEventListener('contextmenu', (e) => e.preventDefault());
+    q('[data-exit]').addEventListener('click', exit);
+    q('[data-replay]').addEventListener('click', () => start('replay'));
+    q('[data-keep]').addEventListener('click', () => {
+      closeClear();
+      document.querySelector<HTMLElement>('#journey ~ section')?.scrollIntoView({ behavior: calm ? 'instant' : 'smooth' });
+    });
+
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - (then || now)) / 1000);
       then = now;
       const first = snap;
+      if (play.on) steer(dt);
       const p = clamp((top - track.getBoundingClientRect().top) / total);
       const target = cfg.start + span * ease(clamp(p / (1 - cfg.dwell)));
       const prev = cam;
       cam = snap ? target : cam + (target - cam) * Math.min(1, dt * 8);
       if (Math.abs(target - cam) < 0.05) cam = target;
+      if (play.on && !snap) cam = prev + Math.max(-CAM_MAX * dt, Math.min(CAM_MAX * dt, cam - prev));
       const d = cam - prev;
       if (dt) vel += (d / dt - vel) * Math.min(1, dt * 4);
       // The view stops at the left edge of the art; the walker steps off center there.
       const L = Math.max(0, cam - vw / 2);
       near.style.transform = `translate3d(${-Math.round(L * s)}px,0,0)`;
       far.style.transform = `translate3d(${-Math.round(((L + vw / 2) * cfg.farSpeed + cfg.farOffset - vw / 2) * s)}px,0,0)`;
-      walker.style.transform = `translate3d(${Math.round((cam - L - vw / 2) * s)}px,0,0)`;
+
+      // A jump: an arc, the shadow staying on the ground, the stride pose held in the air.
+      let jy = 0;
+      if (play.jumpAt) {
+        const u = (now - play.jumpAt) / 1000 / JUMP.t;
+        if (u >= 1 || u < 0) play.jumpAt = 0;
+        else jy = 4 * JUMP.h * u * (1 - u);
+      }
+      walker.style.transform = `translate3d(${Math.round((cam - L - vw / 2) * s)}px,${-Math.round(jy * s)}px,0)`;
+      shadow.style.transform = jy ? `translate3d(0,${Math.round(jy * s)}px,0) scaleX(${(1 - jy / 70).toFixed(2)})` : '';
 
       // A step per 3 art px walked; breathing when still; facing the way it walks.
       if (Math.abs(d) > 0.02) {
         dist += Math.abs(d);
         still = now;
-        const f = Math.floor(dist / 3) % 8;
         body.classList.toggle('back', d < 0);
+        if (play.on && !play.t0 && !first) play.t0 = now;
+      }
+      const f = jy ? 6 : Math.floor(dist / 3) % 8;
+      if (f !== frame) {
+        frame = f;
         body.style.backgroundPosition = `${-f * cfg.ww * s}px 0`;
         props.style.transform = `translateY(${bob[f] * s}px)`;
       }
-      body.classList.toggle('idle', now - still > 220);
+      body.classList.toggle('idle', !jy && now - still > 220);
 
       // Sky: layered crossfades, the sun's arc and rays, moon, stars, clouds.
       const t = timeAt(cam);
       skies.forEach((el, i) => (el.style.opacity = String(clamp(t - i))));
-      root.style.setProperty('--night', clamp(t - 2).toFixed(3));
-      root.style.setProperty('--dusk', clamp(1 - Math.abs(t - 2.05) / 0.7).toFixed(3));
+      // Set on the sky (all that uses them), and only when they change: a custom property
+      // changed on the section would restyle every pixel of the overlay below.
+      const tod = `${clamp(t - 2).toFixed(3)} ${clamp(1 - Math.abs(t - 2.05) / 0.7).toFixed(3)}`;
+      if (tod !== skyTod) {
+        skyTod = tod;
+        const [n, k] = tod.split(' ');
+        sky.style.setProperty('--night', n);
+        sky.style.setProperty('--dusk', k);
+      }
+      // Stars only twinkle once they're out.
+      if (t > 2.3 !== night) root.classList.toggle('night', (night = t > 2.3));
       const arc = clamp(t / 2.6);
       sun.style.transform = rays.style.transform = `translate(${(0.1 + arc * 0.75) * W}px,${(0.62 - Math.sin(arc * Math.PI) * 0.5) * Hs}px)`;
       sun.style.opacity = String(clamp((2.8 - t) * 3));
       rays.style.opacity = String(clamp(1 - Math.abs(t - 2.05) / 0.45) * 0.5);
       moon.style.opacity = String(clamp((t - 2.5) * 2));
-      clouds.forEach((el) => (el.style.backgroundPositionX = `${-((cam * +el.dataset.speed! + (now / 1000) * +el.dataset.wind!) * s) % (480 * s)}px`));
+      const wind = calm ? 0 : now / 1000;
+      clouds.forEach((el) => (el.style.backgroundPositionX = `${-((cam * +el.dataset.speed! + wind * +el.dataset.wind!) * s) % (480 * s)}px`));
 
       // Vehicles drive in world space, follow the car ahead, and wait off-screen to re-enter.
       for (const c of fleet) {
@@ -957,7 +1248,7 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       }
       // Cash-Wa's truck waits at the dock for the walker, parked while the dock is out of view.
       const T = cfg.truck;
-      if (cam < T.at && (snap || L + vw + 40 < T.x) && !fleet.some((c) => c.hold)) Object.assign(recast(L, 'cashwa', T.x), { x: T.x, v: 0, y: T.y, hold: T.at });
+      if (fleet.length && cam < T.at && (snap || L + vw + 40 < T.x) && !fleet.some((c) => c.hold)) Object.assign(recast(L, 'cashwa', T.x), { x: T.x, v: 0, y: T.y, hold: T.at });
       snap = false;
 
       // Overlay zones animate only while on screen.
@@ -975,19 +1266,50 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
         m.scene?.classList.toggle('go', on);
         if (!on || first || Math.abs(vel) > 700) continue;
         // Off to college: a packed car comes up from behind and overtakes the walker.
-        if (m.id === 'college') recast(L, 'packed', undefined, Math.max(cfg.vehicles.packed.speed, vel + 40));
+        if (m.id === 'college' && fleet.length) recast(L, 'packed', undefined, Math.max(cfg.vehicles.packed.speed, vel + 40));
         shown?.classList.remove('show');
         void m.toast.offsetWidth;
         (shown = m.toast).classList.add('show');
+        shownAt = now;
+        walked.add(m.id);
       }
+      if (shown && now - shownAt > 3900) shown = (shown.classList.remove('show'), null);
       for (const g of gear) worn[g.prop] = false;
       for (const g of gear) worn[g.prop] ||= cam >= g.from && cam < g.to;
       for (const k in worn) props.classList.toggle(k, worn[k]);
 
+      // Stars: only those near the view bob; in play, walking (or jumping) into one collects it.
+      for (const pk of pickups) {
+        const close = pk.x > L - 20 && pk.x < L + vw + 20;
+        if (close !== pk.near) pk.el.classList.toggle('near', (pk.near = close));
+        if (!play.on || pk.got || Math.abs(cam - pk.x) > 6) continue;
+        const head = cfg.feet - cfg.wh - jy;
+        if (pk.y + 4 < head || pk.y - 4 > cfg.feet - jy) continue;
+        pk.got = true;
+        pk.el.classList.add('got');
+        hud.stars.textContent = String(++play.got);
+        hud.box.classList.remove('bump');
+        void hud.box.offsetWidth;
+        hud.box.classList.add('bump');
+        collectStar(pk.id);
+        if (starCount() >= pickups.length) unlock('completionist');
+      }
+      if (play.on) {
+        const txt = fmt(play.t0 ? now - play.t0 : 0);
+        if (txt !== play.shown) hud.time.textContent = play.shown = txt;
+      }
+
       // Game day, flyovers, captions, progress, and the checkpoint.
       root.classList.toggle('game-on', cam > 1180 && cam < 1560);
       root.classList.toggle('fly', Math.abs(cam - 1812) < 170 || Math.abs(cam - 2960) < 170);
-      root.classList.toggle('arrived', p > 1 - cfg.dwell * 0.9 && cfg.end - cam < 3);
+      const here = p > 1 - cfg.dwell * 0.9 && cfg.end - cam < 3;
+      if (here !== arrived) {
+        root.classList.toggle('arrived', (arrived = here));
+        if (!here) closeClear();
+        else if (play.on) finish(now);
+        // Walked all the way, not skipped: most of the moments played along the way.
+        else if (walked.size >= marks.length - 2) unlock('tourist');
+      }
       let best = Infinity;
       let next = 0;
       cards.forEach((el, i) => {
@@ -1013,12 +1335,10 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       total = (span * s * cfg.pace) / (1 - cfg.dwell);
       track.style.height = `${Hs + total}px`;
       fleet.forEach((c) => c.type && style(c));
+      frame = -1;
     };
 
-    const scrollToX = (x: number, end = false) => {
-      const base = track.getBoundingClientRect().top + scrollY - top;
-      scrollTo({ top: base + (end ? total + 2 : unease(clamp((x - cfg.start) / span)) * (1 - cfg.dwell) * total), behavior: 'smooth' });
-    };
+    const scrollToX = (x: number, end = false) => scrollTo({ top: end ? baseY() + total + 2 : scrollFor(x), behavior: calm ? 'instant' : 'smooth' });
     q('.progress').addEventListener('click', (e) => {
       const i = (e.target as HTMLElement).dataset.goto;
       if (i) scrollToX(+cards[+i].dataset.x!);
@@ -1028,11 +1348,16 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     root.classList.add('live');
     addEventListener('resize', layout);
     layout();
+    // Only while the walk is on screen: the loop stops, and play mode ends if you scroll away.
     new IntersectionObserver(
       ([e]) => {
         const was = running;
         running = e.isIntersecting;
-        if (!running) for (const z of zones) z.el.classList.remove('on'), (z.on = false);
+        if (!running) {
+          for (const z of zones) z.el.classList.remove('on'), (z.on = false);
+          if (play.ready) exit();
+          closeClear();
+        }
         if (running && !was) {
           then = 0;
           snap = true;
@@ -1041,6 +1366,8 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       },
       { rootMargin: '200px 0px' },
     ).observe(track);
+
+    return { start };
   }
 </script>
 
@@ -1064,7 +1391,12 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
   .banner,
   .toast,
   .moments,
-  .cars {
+  .cars,
+  .pickups,
+  .ghud,
+  .ready,
+  .pad,
+  .clear {
     display: none;
   }
 
@@ -1235,6 +1567,11 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     position: absolute;
     inset: 0;
     opacity: var(--night);
+  }
+
+  .stars .tw {
+    position: absolute;
+    inset: 0;
   }
 
   .stars i {
@@ -1547,11 +1884,17 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       6px 6px 0 3px var(--shadow);
     text-align: center;
     transform: translate(-50%, -160%);
-    transition: transform 0.5s steps(5);
+    /* Hidden once it has slid up, so no edge of it peeks in under the progress bar. */
+    visibility: hidden;
+    transition:
+      transform 0.5s steps(5),
+      visibility 0s 0.5s;
   }
 
   .journey:global(.arrived) .banner {
     transform: translate(-50%, 0);
+    visibility: visible;
+    transition: transform 0.5s steps(5);
   }
 
   .save {
@@ -1646,6 +1989,292 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
   .journey:global(.arrived) .toast {
     transform: none;
     transition-delay: 1.2s;
+  }
+
+  /* Play mode ------------------------------------------------------------------ */
+
+  .journey:global(.play) :is(.pickups, .ready) {
+    display: block;
+  }
+
+  .journey:global(.play) .ghud {
+    display: flex;
+  }
+
+  .journey:global(.play) .skip {
+    display: none;
+  }
+
+  .journey:global(.play) .progress {
+    right: calc(var(--gutter) + 16.5rem);
+  }
+
+  .journey:global(.cleared) :is(.banner, .toast, .skip) {
+    visibility: hidden;
+  }
+
+  /* Stars to collect, in world space on the near layer. */
+  .pickups {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .pickup {
+    position: absolute;
+    left: calc((var(--sx) - 4.5) * var(--s) * 1px);
+    top: calc((var(--sy) - 4.5) * var(--s) * 1px);
+    width: calc(var(--s) * 9px);
+    height: calc(var(--s) * 9px);
+  }
+
+  .pickup svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* The sparkle when a star is collected: eight pixels flung out from the middle. */
+  .pickup::after {
+    --d: calc(var(--s) * 4px);
+    content: '';
+    position: absolute;
+    left: calc(50% - var(--s) * 0.5px);
+    top: calc(50% - var(--s) * 0.5px);
+    width: calc(var(--s) * 1px);
+    height: calc(var(--s) * 1px);
+    background: #fff3c4;
+    box-shadow:
+      0 calc(var(--d) * -1) #ffcd75,
+      0 var(--d) #ffcd75,
+      calc(var(--d) * -1) 0 #ffcd75,
+      var(--d) 0 #ffcd75,
+      calc(var(--d) * 0.7) calc(var(--d) * 0.7) #fff3c4,
+      calc(var(--d) * -0.7) calc(var(--d) * 0.7) #fff3c4,
+      calc(var(--d) * 0.7) calc(var(--d) * -0.7) #fff3c4,
+      calc(var(--d) * -0.7) calc(var(--d) * -0.7) #fff3c4;
+    opacity: 0;
+  }
+
+  .pickup:global(.got) {
+    visibility: hidden;
+  }
+
+  .ghud {
+    position: absolute;
+    top: calc(var(--space-s) - 7px);
+    right: var(--gutter);
+    z-index: 3;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ghud > * {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 0.6rem;
+    background: color-mix(in srgb, var(--shadow) 82%, transparent);
+    box-shadow: inset 0 0 0 2px var(--line);
+    color: var(--ink);
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .hud-stars {
+    color: var(--gold);
+  }
+
+  .hud-time {
+    min-width: 4.6em;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hud-exit {
+    border: 0;
+    font: inherit;
+    font-family: var(--font-pixel);
+    cursor: pointer;
+  }
+
+  .hud-exit kbd {
+    font-size: 0.7em;
+  }
+
+  /* "Play mode": how to play, centered over the scene for a few seconds. */
+  .ready {
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    z-index: 3;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--gutter));
+    padding: 0.7rem 1.1rem 0.8rem;
+    background: color-mix(in srgb, var(--shadow) 85%, transparent);
+    box-shadow:
+      inset 0 0 0 3px var(--gold),
+      5px 5px 0 0 var(--shadow);
+    text-align: center;
+    transform: translateX(-50%);
+    visibility: hidden;
+  }
+
+  .ready:global(.show) {
+    visibility: visible;
+  }
+
+  .ready span {
+    display: block;
+  }
+
+  .ready .go {
+    color: var(--gold);
+    font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .ready .keys,
+  .ready .taps {
+    margin-top: 4px;
+    color: var(--ink);
+    font-size: var(--step-1);
+  }
+
+  .ready .taps {
+    display: none;
+  }
+
+  /* On-screen buttons for touch screens: walk left and right, and jump. */
+  .pad {
+    position: absolute;
+    inset: auto var(--gutter) 12px;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .pad-btn {
+    position: absolute;
+    bottom: 0;
+    width: 60px;
+    height: 60px;
+    border: 0;
+    background: color-mix(in srgb, var(--panel-2) 88%, transparent);
+    box-shadow:
+      inset 0 0 0 3px var(--line),
+      4px 4px 0 0 var(--shadow);
+    color: var(--ink);
+    font-size: 1.5rem;
+    line-height: 1;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .pad-btn[data-move='-1'] {
+    left: 0;
+  }
+
+  .pad-btn[data-move='1'] {
+    left: 72px;
+  }
+
+  .pad-btn.jump {
+    right: 0;
+    color: var(--gold);
+    box-shadow:
+      inset 0 0 0 3px var(--gold),
+      4px 4px 0 0 var(--shadow);
+  }
+
+  .pad-btn:global(.down),
+  .pad-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: inset 0 0 0 3px var(--gold);
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .journey:global(.play) .pad {
+      display: block;
+    }
+
+    .ready .keys,
+    .hud-exit kbd {
+      display: none;
+    }
+
+    .ready .taps {
+      display: block;
+    }
+  }
+
+  /* COURSE CLEAR: the run's stars and time, and what next. */
+  .journey:global(.live) .clear:not([hidden]) {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--space-s) + 30px);
+    z-index: 4;
+    display: block;
+    width: min(calc(100% - 2 * var(--gutter)), 400px);
+    padding: 1rem 1.1rem 1.1rem;
+    background: var(--panel);
+    box-shadow:
+      inset 0 0 0 3px var(--gold),
+      0 0 0 3px var(--shadow),
+      6px 6px 0 3px var(--shadow);
+    text-align: center;
+    transform: translateX(-50%);
+  }
+
+  .clear-title {
+    color: var(--gold);
+    font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    text-shadow: 3px 3px 0 var(--shadow);
+  }
+
+  .clear-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-m);
+    margin-top: var(--space-xs);
+  }
+
+  .clear-stats dt {
+    color: var(--ink-soft);
+    font-size: var(--label);
+    text-transform: uppercase;
+  }
+
+  .clear-stats dd {
+    color: var(--ink);
+    font-size: var(--step-2);
+    line-height: 1.1;
+  }
+
+  .clear-note {
+    margin-top: var(--space-xs);
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+
+  .clear-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-s);
+  }
+
+  .clear-actions .btn {
+    padding: 0.6rem 0.9rem;
   }
 
   /* World-space details. Static by default; they move only with motion allowed,
@@ -1767,7 +2396,7 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       animation-play-state: paused !important;
     }
 
-    .stars i.tw,
+    .journey:global(.night) .stars .tw,
     .beacon,
     .bulb,
     .fan {
@@ -1795,12 +2424,14 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
       animation-delay: -20s;
     }
 
-    .plane {
+    /* The plane only flies over the two fast-travel runways. */
+    .journey:global(.fly) .plane {
       animation: road-plane 9s linear infinite;
     }
 
+    /* A few rounds of fireworks on arrival, then the sky is quiet again. */
     .burst i {
-      animation: road-burst 1.6s steps(8) infinite;
+      animation: road-burst 1.6s steps(8) 3 both;
     }
 
     .walker:global(.idle) {
@@ -1944,6 +2575,35 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     /* Life moments: toasts, the walker's gear, and each scene once it's `go`. */
     .moment:global(.show) {
       animation: road-toast 3.8s steps(4) both;
+    }
+
+    /* Play mode: stars bob while they're near, burst when collected; the HUD count hops. */
+    .pickup:global(.near) svg {
+      animation: road-star 0.8s steps(1) infinite;
+    }
+
+    .pickup:global(.got) {
+      visibility: visible;
+    }
+
+    .pickup:global(.got) svg {
+      animation: road-get 0.45s steps(5) forwards;
+    }
+
+    .pickup:global(.got)::after {
+      animation: road-sparkle 0.5s steps(5) forwards;
+    }
+
+    .hud-stars:global(.bump) {
+      animation: road-bump 0.3s steps(2);
+    }
+
+    .ready:global(.show) {
+      animation: road-ready 4.2s steps(4) both;
+    }
+
+    .journey:global(.live) .clear:not([hidden]) {
+      animation: road-clear 0.4s steps(4) both;
     }
 
     .walker:global(.idle) .props {
@@ -2597,11 +3257,94 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
     }
   }
 
+  @keyframes road-star {
+    50% {
+      transform: translateY(calc(var(--s) * -1px));
+    }
+  }
+
+  /* Collected: the star pops, spins to a sparkle and is gone. */
+  @keyframes road-get {
+    0% {
+      transform: none;
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(calc(var(--s) * -6px)) scale(1.5);
+      opacity: 1;
+      filter: brightness(1.8);
+    }
+    100% {
+      transform: translateY(calc(var(--s) * -12px)) scale(0.2) rotate(90deg);
+      opacity: 0;
+      filter: brightness(2.5);
+    }
+  }
+
+  @keyframes road-sparkle {
+    0% {
+      opacity: 1;
+      transform: scale(0.4);
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(2.4);
+    }
+  }
+
+  @keyframes road-bump {
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes road-ready {
+    0% {
+      transform: translate(-50%, -30px);
+      opacity: 0;
+    }
+    8%,
+    90% {
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-50%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes road-clear {
+    from {
+      transform: translateX(-50%) scale(0.5);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+  }
+
+  /* Reduced motion: toasts appear in place instead of sliding in. */
+  @media (prefers-reduced-motion: reduce) {
+    .moment:global(.show) {
+      transform: none;
+    }
+  }
+
   /* Narrower: the stop's card fills the top, so a moment comes in along the bottom, over the street. */
   @media (max-width: 799px) {
     .moment {
       top: auto;
       bottom: 10px;
+    }
+
+    /* In play, the touch buttons have the bottom; the moment comes in above the walker. */
+    .journey:global(.play) .moment {
+      bottom: calc((var(--h) - var(--feet) + var(--wh) + 6) * var(--s) * 1px);
     }
   }
 
@@ -2630,6 +3373,17 @@ const momentsAt = (stop: string) => moments.filter((m) => m.stop === stop);
 
     .journey:global(.arrived) :is(.progress, .skip) {
       visibility: hidden;
+    }
+
+    /* Playing on a phone: the HUD takes the progress bar's row. */
+    .journey:global(.play) .progress {
+      visibility: hidden;
+    }
+
+    .ghud > * {
+      height: 28px;
+      padding: 0 0.45rem;
+      font-size: var(--step-0);
     }
   }
 </style>
