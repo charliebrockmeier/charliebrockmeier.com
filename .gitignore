@@ -22,3 +22,9 @@ Thumbs.db
 npm-debug.log*
 *.tmp
 *.zip
+
+# Local screenshots and data exports (never commit a Spotify or other personal export)
+shots*/
+screenshots/
+Spotify Account Data/
+my_spotify_data/
