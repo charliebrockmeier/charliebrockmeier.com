@@ -28,3 +28,6 @@ shots*/
 screenshots/
 Spotify Account Data/
 my_spotify_data/
+
+# Claude Code agent worktrees (scratch checkouts, never part of the site)
+.claude/worktrees/
