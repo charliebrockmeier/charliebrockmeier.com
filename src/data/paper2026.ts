@@ -202,7 +202,7 @@ export const paper2026 = {
         },
         { h3: 'Private credit' },
         {
-          p: 'Private credit gives the most measurable premium because loans pay contractual coupons. The Cliffwater Direct Lending Index returned 9.3% in 2025, 10.4% of it from interest income [32]. The Morningstar LSTA U.S. Leveraged Loan Index, which holds broadly syndicated loans to larger companies, returned 5.90% [34]. Over twenty years the direct lending index has averaged roughly 9.5% a year, with realized credit losses of about 1% a year [32, 33].',
+          p: 'Private credit gives the most measurable premium because loans pay contractual coupons. The Cliffwater Direct Lending Index returned 9.3% in 2025: 10.4% of interest income, less about 1.1 points of losses and markdowns (my arithmetic) [32]. The Morningstar LSTA U.S. Leveraged Loan Index, which holds broadly syndicated loans to larger companies, returned 5.90% [34]. Over twenty years the direct lending index has averaged roughly 9.5% a year, with realized credit losses of about 1% a year [32, 33].',
         },
         {
           p: 'Not all of the 3.4-point gap in 2025 is an illiquidity premium. Direct loans go to smaller companies, often with more leverage, and the spread pays for both. On comparable buyout loans, Morgan Stanley Investment Management cites an average spread of 153 basis points over the syndicated market [35]. That is my best estimate of the pure illiquidity premium in senior corporate lending: about 1.5 points a year before fees, which is attractive precisely because loan funds charge less than equity funds.',
@@ -379,7 +379,7 @@ export const paper2026 = {
           p: 'It is not worth it in large-cap buyouts priced off public comparables, in semi-liquid vehicles that charge private fees for a liquidity promise they cannot keep, or in any strategy whose case rests on low reported volatility.',
         },
         { h3: 'How to underwrite it' },
-        { p: 'I now underwrite every illiquid commitment against an explicit hurdle, built in four steps.' },
+        { p: 'If I were deciding on an illiquid commitment today, I would underwrite it against an explicit hurdle, built in four steps.' },
         {
           ordered: true,
           list: [
