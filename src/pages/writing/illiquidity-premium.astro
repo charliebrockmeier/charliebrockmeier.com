@@ -1,5 +1,5 @@
 ---
-// The Illiquidity Premium, Revisited: Charlie's 2026 rewrite of his 2025 capstone
+// The Illiquidity Premium Changed Hands: Charlie's 2026 rewrite of his 2025 capstone
 // paper, with charts, tables and a required-premium calculator. Text lives in
 // src/data/paper2026.ts, figures in src/data/paper2026-figures.ts. The PDF at
 // /writing/illiquidity-premium-2026.pdf is printed from this page.
@@ -8,6 +8,9 @@ import BarChart from '../../components/charts/BarChart.astro';
 import LineChart from '../../components/charts/LineChart.astro';
 import ScatterChart from '../../components/charts/ScatterChart.astro';
 import Table from '../../components/charts/Table.astro';
+import Heatmap from '../../components/charts/Heatmap.astro';
+import RowChart from '../../components/charts/RowChart.astro';
+import SeriesChart from '../../components/charts/SeriesChart.astro';
 import PremiumCalculator from '../../components/charts/PremiumCalculator.astro';
 import { paper2026 as paper, type Block } from '../../data/paper2026';
 import { figures } from '../../data/paper2026-figures';
@@ -21,6 +24,19 @@ let nTab = 0;
 for (const s of paper.sections)
   for (const b of s.blocks)
     if ('fig' in b) numbers[b.fig] = figures[b.fig].kind === 'table' ? ++nTab : ++nFig;
+
+// "{fig:id}" in any text becomes "Figure n" or "Table n", so inserting a chart never
+// leaves a stale number behind.
+const ref = (t: string) => t.replace(/\{fig:([A-Za-z0-9]+)\}/g, (_m, id: string) => `${figures[id].kind === 'table' ? 'Table' : 'Figure'} ${numbers[id]}`);
+const deepRef = (v: unknown): unknown =>
+  typeof v === 'string'
+    ? ref(v)
+    : Array.isArray(v)
+      ? v.map(deepRef)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deepRef(x)]))
+        : v;
+const html = (t: string) => cite(ref(t));
 
 const strip = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/\[[\d,\s–-]+\]/g, ' ');
 const blockText = (b: Block) =>
@@ -55,9 +71,9 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
     <section class="abstract" aria-labelledby="summary">
       <h2 id="summary">Summary</h2>
       <ul class="keypoints">
-        {paper.keyPoints.map((k) => <li set:html={cite(k)} />)}
+        {paper.keyPoints.map((k) => <li set:html={html(k)} />)}
       </ul>
-      <p class="take" set:html={cite(paper.take)} />
+      <p class="take" set:html={html(paper.take)} />
     </section>
 
     <nav class="toc" aria-label="Contents">
@@ -83,35 +99,38 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
               <span class="num">{si + 1}.</span> {s.heading}
             </h2>
             {s.blocks.map((b) => {
-              if ('p' in b) return <p set:html={cite(b.p)} />;
+              if ('p' in b) return <p set:html={html(b.p)} />;
               if ('h3' in b) return <h3>{b.h3}</h3>;
               if ('eq' in b)
                 return (
                   <div class="eq">
                     <p class="eq-line" set:html={b.eq} />
-                    {b.caption && <p class="eq-caption" set:html={b.caption} />}
+                    {b.caption && <p class="eq-caption" set:html={html(b.caption)} />}
                   </div>
                 );
               if ('list' in b)
                 return b.ordered ? (
                   <ol class="steps">
                     {b.list.map((i) => (
-                      <li set:html={cite(i)} />
+                      <li set:html={html(i)} />
                     ))}
                   </ol>
                 ) : (
                   <ul class="bullets">
                     {b.list.map((i) => (
-                      <li set:html={cite(i)} />
+                      <li set:html={html(i)} />
                     ))}
                   </ul>
                 );
               if ('calc' in b) return <PremiumCalculator id="calculator" />;
               const f = figures[b.fig];
-              const p = { id: `fig-${b.fig}`, n: numbers[b.fig], ...f.props } as any;
+              const p = { id: `fig-${b.fig}`, n: numbers[b.fig], ...(deepRef(f.props) as object) } as any;
               if (f.kind === 'bar') return <BarChart {...p} />;
               if (f.kind === 'line') return <LineChart {...p} />;
               if (f.kind === 'scatter') return <ScatterChart {...p} />;
+              if (f.kind === 'heat') return <Heatmap {...p} />;
+              if (f.kind === 'rows') return <RowChart {...p} />;
+              if (f.kind === 'series') return <SeriesChart {...p} />;
               return <Table {...p} />;
             })}
           </section>

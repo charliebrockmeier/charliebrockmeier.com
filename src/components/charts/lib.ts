@@ -3,7 +3,7 @@
 // labels stay readable on a phone without shrinking on a laptop; CSS shows one.
 
 /** Categorical slots, validated for the white paper surface (dataviz validate_palette.js). */
-export const SERIES = ['#7a3460', '#2a78d6', '#c27a00', '#1b9e77'] as const;
+export const SERIES = ['#7a3460', '#2a78d6', '#c27a00', '#1b9e77', '#5a6472'] as const;
 
 export const INK = '#1b1533';
 export const INK_SOFT = '#4f4868';

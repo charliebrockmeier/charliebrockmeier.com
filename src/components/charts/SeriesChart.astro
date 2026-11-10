@@ -1,0 +1,126 @@
+---
+// Dense time series: many observations per line, so no markers. Optional log scale,
+// shaded episodes, and a label at the end of each line. The data table keeps every
+// `tableEvery`-th row so it stays readable.
+import Figure from './Figure.astro';
+import { SERIES, INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, textWidth, type Fmt, type Layout } from './lib';
+
+interface Series {
+  name: string;
+  short?: string;
+  values: number[];
+  color?: number;
+  /** Draw as a dashed line. */
+  dashed?: boolean;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  /** One label per observation, e.g. "2008Q4". */
+  labels: string[];
+  /** Which observations get an x tick, with the text to show. */
+  xTicks: { i: number; label: string }[];
+  series: Series[];
+  yLabel: string;
+  log?: boolean;
+  /** Tick values for a log axis. */
+  yTicks?: number[];
+  yMin?: number;
+  yMax?: number;
+  format?: Fmt;
+  /** Shaded spans, by observation label. */
+  bands?: { from: string; to: string; label: string }[];
+  tableEvery?: number;
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, labels, xTicks, series, yLabel, log = false, format = {}, bands = [], tableEvery = 4, height } = Astro.props;
+const color = (s: Series, i: number) => SERIES[s.color ?? i];
+const all = series.flatMap((s) => s.values);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const lin = ticks(Astro.props.yMin ?? Math.min(...all), Astro.props.yMax ?? Math.max(...all), 5);
+const tickVals = log ? (Astro.props.yTicks ?? [50, 100, 200, 400, 800, 1600]) : lin;
+const d0 = Astro.props.yMin ?? tickVals[0];
+const d1 = Astro.props.yMax ?? tickVals[tickVals.length - 1];
+const tr = (v: number) => (log ? Math.log(v) : v);
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height - 20 : height) : L.H + 20;
+  const f = L.f;
+  const tickFmt = { ...format, decimals: tickVals.some((v) => !Number.isInteger(v)) ? 1 : 0 };
+  const left = Math.max(...tickVals.map((v) => textWidth(fmt(v, tickFmt), f))) + 14;
+  const ends = series.map((s) => `${L.narrow ? (s.short ?? s.name) : s.name}: ${fmt(s.values[s.values.length - 1], format)}`);
+  const right = Math.max(...ends.map((e) => textWidth(e, f - 1))) + 12;
+  const top = 26;
+  const bottom = f + 14;
+  const x0 = left;
+  const x1 = L.W - right;
+  const sx = scale(0, labels.length - 1, x0 + 2, x1 - 2);
+  const sy = (v: number) => scale(tr(d0), tr(d1), H - bottom, top)(tr(v));
+
+  let s = '';
+  // Band labels drop to a second line when they would run into the one before.
+  let lastEnd = -Infinity;
+  let lastRow = 0;
+  for (const b of bands) {
+    const a = sx(labels.indexOf(b.from));
+    const z = sx(labels.indexOf(b.to));
+    const mid = (a + z) / 2;
+    const half = textWidth(b.label, f - 1) / 2;
+    const row = mid - half < lastEnd + 4 ? 1 - lastRow : 0;
+    lastEnd = mid + half;
+    lastRow = row;
+    s += `<rect x="${a}" y="${top}" width="${z - a}" height="${H - bottom - top}" fill="${GRID}" opacity="0.7"/>`;
+    s += `<text x="${mid}" y="${top + f + 2 + row * (f + 2)}" text-anchor="middle" font-size="${f - 1}" fill="${INK_SOFT}">${esc(b.label)}</text>`;
+  }
+  for (const v of tickVals) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(v)}" y2="${sy(v)}" stroke="${GRID}"/>`;
+    s += `<text x="${x0 - 8}" y="${sy(v) + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, tickFmt))}</text>`;
+  }
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(yLabel)}</text>`;
+  const every = L.narrow && xTicks.length > 6 ? 2 : 1;
+  xTicks.forEach((tk, k) => {
+    if (k % every) return;
+    s += `<line x1="${sx(tk.i)}" x2="${sx(tk.i)}" y1="${H - bottom}" y2="${H - bottom + 4}" stroke="${AXIS}"/>`;
+    s += `<text x="${sx(tk.i)}" y="${H - bottom + f + 6}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(tk.label)}</text>`;
+  });
+  s += `<line x1="${x0}" x2="${x1}" y1="${H - bottom}" y2="${H - bottom}" stroke="${AXIS}"/>`;
+
+  const placed = series.map((se, si) => ({ si, y: sy(se.values[se.values.length - 1]) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < placed.length; i++) if (placed[i].y - placed[i - 1].y < f + 1) placed[i].y = placed[i - 1].y + f + 1;
+  series.forEach((se, si) => {
+    const c = color(se, si);
+    const d = se.values.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join('');
+    s += `<path d="${d}" fill="none" stroke="${c}" stroke-width="${se.dashed ? 1.75 : 2}" stroke-linejoin="round" stroke-linecap="round"${se.dashed ? ' stroke-dasharray="5 3"' : ''}/>`;
+    const py = placed.find((p) => p.si === si)!.y;
+    s += `<text x="${x1 + 6}" y="${py + f * 0.35}" font-size="${f - 1}" fill="${INK}" style="font-weight:600">${esc(ends[si])}</text>`;
+  });
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend = series.map((s, i) => ({ name: s.name, color: color(s, i), line: true }));
+const keep = labels.map((_, i) => i).filter((i) => i % tableEvery === 0 || i === labels.length - 1);
+const data = {
+  head: ['', ...series.map((s) => s.name)],
+  rows: keep.map((i) => [labels[i], ...series.map((s) => fmt(s.values[i], format))]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

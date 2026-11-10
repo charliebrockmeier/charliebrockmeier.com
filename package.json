@@ -14,7 +14,8 @@
     "check": "node scripts/check.mjs",
     "pdf": "node scripts/pdf.mjs",
     "spotify": "python3 -I scripts/spotify-stats.py",
-    "check:paper": "node scripts/check-paper.mjs"
+    "check:paper": "node scripts/check-paper.mjs",
+    "paper:data": "python3 -I scripts/paper-data.py"
   },
   "dependencies": {
     "@fontsource-variable/schibsted-grotesk": "^5.3.0",

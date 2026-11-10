@@ -1,7 +1,8 @@
 // The 2026 rewrite of Charlie's illiquidity premium paper. Prose lives here as small
 // blocks; charts and tables live in paper2026-figures.ts. Inline [n] marks cite the
-// numbered sources at the end. Every number in the text comes from a cited public
-// source or is labeled as Charlie's own arithmetic.
+// numbered sources at the end, and {fig:id} becomes "Figure n" or "Table n" on the
+// page. Every number in the text comes from a cited public source or is labeled as
+// Charlie's own arithmetic.
 
 export type Block =
   | { p: string }
@@ -14,38 +15,79 @@ export type Block =
 export type Section = { id: string; heading: string; blocks: Block[] };
 
 export const paper2026 = {
-  title: 'The Illiquidity Premium, Revisited',
-  subtitle: 'What working in private markets taught me about getting paid to wait',
+  title: 'The Illiquidity Premium Changed Hands',
+  subtitle: 'Buyers of private funds now pay to wait. The premium goes to whoever supplies the liquidity.',
   slug: 'illiquidity-premium',
   firstVersion: 'May 2025',
   rewritten: 'November 2026',
   original: '/writing/illiquidity-premium-2025',
   pdf: '/writing/illiquidity-premium-2026.pdf',
   description:
-    'A numbers-first rewrite of my 2025 capstone paper on the illiquidity premium: what theory says it should be, what public and private markets actually pay, what the secondary market charges for liquidity, what happened when liquidity disappeared in 2009, 2022 and 2026, and how I would underwrite it now.',
+    'My 2025 capstone paper on the illiquidity premium, rewritten to take a side. Measured against a public portfolio with the same leverage and after fees, the average private fund has paid nothing for its lockup for at least a decade. Investors accept that because smooth marks are worth something to them. The premium that remains goes to whoever sells liquidity to people who are locked in. Every number comes from a public source or my own arithmetic.',
   disclaimer:
     'Views are my own and not those of my employer. Nothing here is investment advice. Every figure comes from a public source cited at the end, or is labeled as my own arithmetic; none comes from my employer’s data or products, or from any client.',
 
   keyPoints: [
-    '<strong>In public markets the premium is small and mostly a crisis premium.</strong> Equally safe Treasury bonds differ in yield by only 10 to 16 basis points for liquidity in normal times [8], and the premium for holding illiquid U.S. stocks fell from about 1.8% a year in the 1960s to roughly zero outside the smallest stocks [7]. What still pays is liquidity <em>risk</em>: owning assets that crash when liquidity dries up, worth 7.5% a year in the original estimate [5, 6].',
-    '<strong>Buyouts beat the S&amp;P 500 by 2.4 points a year over 25 years, and by 0.1 point over the last 10.</strong> Cambridge Associates’ U.S. private equity index returned 12.4% a year against 10.0% for the same cash flows invested in the S&amp;P 500, but 15.2% against 15.1% over the decade to 2025 [24]. Adjust for leverage, size and value and most of the long-run gap goes too [20, 21].',
-    '<strong>The secondary market quotes the price of liquidity, and for buyouts it is cheap.</strong> LP stakes in buyout funds sold for 92% of NAV in 2025, venture for 78% and real estate for 70% [54]. In 2009 buyout stakes traded near 54% [59]. Secondary volume reached a record $240 billion in 2025 [54].',
-    '<strong>Liquidity disappears when you need it.</strong> Buyout distributions have run below 15% of NAV for four straight years, against 29% in 2014–2017 [62, 63]. In 2026, redemption requests at large semi-liquid credit and private equity funds ran at up to three times their 5% quarterly caps [68–72].',
-    '<strong>Private credit has the most visible premium, and the easiest one to overpay for.</strong> The Cliffwater Direct Lending Index earned 9.3% in 2025 against 5.9% for leveraged loans [32, 34], with realized losses near 1% a year over two decades [32, 33]. Like-for-like, the spread over syndicated loans is closer to 1.5 points [35], and defaults among Fitch’s privately rated borrowers hit a record 9.2% in 2025 [36].',
+    '<strong>A ten-year lockup should pay about 2 to 4 points a year. Buyouts have paid 0.1.</strong> Longstaff’s bound caps the cost of a ten-year lockup on a buyout-like asset at 5.4% a year, and a realistic investor needs 1.6 to 4.2 points (my arithmetic) [4, 17]. Cambridge Associates’ U.S. private equity index beat the same cash flows in the S&amp;P 500 by 2.4 points a year over 25 years and by 0.1 over the last ten [24].',
+    '<strong>Adjust for leverage and the premium is negative.</strong> Buyout investments carry a market beta of about 1.3 on cash-flow evidence [91] and 1.79 when priced off secondary trades [92]. At 1.3 the 25-year premium becomes −0.1 points a year and the ten-year premium −3.8 (my arithmetic). The index built from secondary prices has an alpha of −2% a year [92].',
+    '<strong>Investors accept this because smooth marks are worth paying for.</strong> I levered the U.S. stock market 1.3 times and marked it the way an appraiser would, as a four-quarter average. Volatility fell from 22.2% to 11.7%, beta from 1.30 to 0.32 and the 2020 drawdown from 25.9% to 3.2%, with the same assets and the same cash (my arithmetic on public data [93]). AQR now assumes that fees and “investors’ preference for smooth returns fully offset any illiquidity premium” in private credit [26].',
+    '<strong>The same kind of asset clears at five prices.</strong> In 2025–26 a non-traded fund or a continuation vehicle transacted at 100% of NAV [58, 94], an LP buyout stake at 91% [55], public BDCs at about 80% [94], London-listed private equity trusts at 64% to 77% [95, 96], and tender offers for non-traded BDC shares at 70% to 87% [74]. The buyer who pays par is the individual.',
+    '<strong>The premium still exists. It is paid to the supplier of liquidity.</strong> Buyout stakes changed hands near 54% of NAV in 2009 [59], worth roughly 17% a year to the buyer (my arithmetic). The University of California was guaranteed 11.25% a year for handing a gated fund cash [67]. In 2026, redemption requests at semi-liquid credit funds ran from two to eight times their 5% caps [68–72, 97], and lenders writing new loans that fall got modestly wider spreads and larger equity cushions [100].',
   ],
 
   take:
-    'My take: the illiquidity premium is real, but for most investors in most recent vintages it has been smaller than the fees charged to deliver it, and it is not the main reason private markets did well. What investors get paid for is bearing liquidity risk at the worst moment, plus whatever skill their managers have. The investors who earn it are the ones who can supply liquidity when others can’t: they commit steadily, keep a liquidity budget they never raid, buy in the secondary market when sellers are forced, and refuse to pay extra for smoothed marks that hide risk. A semi-liquid fund that promises both a premium and liquidity can deliver one of the two.',
+    'My take: the illiquidity premium did not disappear. It changed hands. For the average buyer of a private fund it has been zero or negative for at least a decade once fees and leverage are counted, because enough investors value smooth marks to bid it away, and the semi-liquid money arriving now makes that worse. It is still paid in full to the other side of the trade: whoever holds cash when others are locked, and buys their stakes at a discount or lends when no one else will. So my default allocation to private funds is zero. The exceptions are a discount from a forced seller, a senior loan whose spread over the liquid alternative is contractual and whose fees are low, and a manager whose record beats a levered public benchmark. Section 1 lists what would change my mind.',
 
   sections: [
     {
+      id: 'claim',
+      heading: 'The claim',
+      blocks: [
+        {
+          p: 'The first two versions of this paper asked how big the illiquidity premium is. This one takes a side. For the average buyer of a private fund the premium is gone, and has been for at least a decade. It did not vanish. It moved to the other side of the trade.',
+        },
+        { p: 'The argument has three steps, and each is a number that can be checked.' },
+        {
+          ordered: true,
+          list: [
+            '<strong>What a lockup should pay.</strong> Theory caps the cost of a ten-year lockup on a buyout-like asset at 5.4% a year for a seller with perfect timing, and puts it at 1.6% to 4.2% for realistic investors (Section 2; my arithmetic from Longstaff’s bound [4, 17]). In the standard portfolio model with illiquid assets, an investor who would put 59% of a portfolio in an asset that trades freely should hold 5% of it when it trades about once a decade [99].',
+            '<strong>What it has paid.</strong> Net of fees, the Cambridge Associates U.S. private equity index beat the same cash flows in the S&amp;P 500 by 2.4 points a year over 25 years and by 0.1 over ten [24]. Buyouts are levered, so the fair comparison is a levered index. At the market beta of 1.3 estimated from buyout cash flows [91], the 25-year premium is −0.1 points and the ten-year premium −3.8 (my arithmetic, Section 4). An index built from the prices actually paid for fund stakes has a beta of 1.79 and an alpha of −2% a year [92].',
+            '<strong>Who collects it now.</strong> A buyer of buyout fund stakes at 54% of NAV in 2009 earned roughly 17 points a year on top of the funds’ own return [59]. A university that gave a gated real estate fund $4 billion in 2023 was guaranteed 11.25% a year [67]. Lenders writing new direct loans in the fall of 2026, after a year of redemptions, were getting modestly wider spreads and larger equity cushions than at the end of 2025 [100]. The premium is paid to whoever has cash when others are locked.',
+          ],
+        },
+        { fig: 'ledger' },
+        {
+          p: 'Read {fig:ledger} from the top. Buyout managers did produce something: about 6 points a year over the S&amp;P 500 before fees, over the best 25-year window on record. Fees took 3.5 of it, on AQR’s estimate of the all-in cost [26]. Leverage accounts for the 2.4 that was left. Nothing remains to pay for the lockup, which is worth 1.6 points a year even to a patient investor. Over the last ten years the same ledger ends at −5.4: 0.1 of net premium, less 3.9 for leverage, less 1.6 for the lockup (my arithmetic).',
+        },
+        { h3: 'Why anyone accepts that' },
+        {
+          p: 'Because illiquidity is no longer only a cost. An asset appraised four times a year instead of priced every second reports about half the volatility and a quarter of the beta of the same asset in public form. Section 3 shows this on real market data. For a pension board, an endowment committee or an adviser with nervous clients, that is worth paying for. Cliff Asness has argued that investors may now accept a lower return in exchange for not seeing the losses [18]. AQR’s 2026 return assumptions say it outright for private credit: “higher fees and investors’ preference for smooth returns fully offset any illiquidity premium on average” [26]. I think that is right, and that it holds for buyouts and core real estate too.',
+        },
+        {
+          p: 'Then there is the money. Buyout funds have raised $1.8 trillion since 2022, the industry holds $1.3 trillion of unspent commitments, and about 32,000 unsold companies worth $3.8 trillion are waiting for an exit [63]. Evergreen funds built for individuals held about $607 billion in March 2026 [82]. A premium is a price. This much capital bidding for the same assets is how a price goes to zero.',
+        },
+        { h3: 'What would prove me wrong' },
+        { p: 'A hard claim should come with its tests. Any of these would change my mind.' },
+        {
+          list: [
+            'The Cambridge index beats the S&amp;P 500 by 4 points a year or more over ten years. That is what it takes to cover leverage at a beta of 1.3, about 2.5 points at the 25-year equity premium, plus the 1.6 points a patient investor needs for the lockup.',
+            'Buyout stakes sell below 80% of NAV outside a crisis. At that price the discount alone is worth about 5.7% a year over four years (my arithmetic), and I would be a buyer.',
+            'All-in fees fall from about 3.5 points a year [26] to 2. That alone would move the 25-year ledger from −1.7 to about −0.2.',
+            'Listed private equity trusts and public BDCs trade back at NAV. That would mean the marks are believed by people who are free to sell.',
+            'An index built from transaction prices, not appraisals, shows positive alpha over a full cycle [92].',
+          ],
+        },
+        { p: 'None of the five is true in November 2026.' },
+      ],
+    },
+    {
       id: 'theory',
-      heading: 'What the premium is',
+      heading: 'What a lockup should pay',
       blocks: [
         {
           p: 'The 2025 version of this paper defined the illiquidity premium as the extra return an investor should demand for holding an asset that cannot be sold quickly at fair value. That definition holds, but it hides two different things. The first is the cost of illiquidity in normal times: trading costs, the time it takes to sell, the lockup itself. The second is liquidity risk, the chance that an asset becomes hard to sell exactly when its owner most needs cash. Theory says both should be priced. The evidence says the second matters more.',
         },
-        { p: 'Four models carry most of the weight. Each answers a different question, and private funds sit in the space between them.' },
+        { p: 'Five models carry most of the weight. Each answers a different question, and private funds sit in the space between them.' },
         { h3: 'Trading costs and clienteles (Amihud and Mendelson, 1986)' },
         {
           p: 'If an asset costs S to trade round trip and its holder trades it every 1/μ years, the holder loses about μ·S a year to trading. In equilibrium the asset’s expected return has to cover that loss for its marginal holder [1]:',
@@ -79,11 +121,15 @@ export const paper2026 = {
           caption: 'F: upper bound on the cost of a T-year lockup, as a fraction of the asset’s value. σ: annual volatility of the asset. N: the standard normal distribution function.',
         },
         {
-          p: 'Two things make this formula useful in diligence. It needs only two inputs, and it is an upper bound, so it tells you where a claimed premium stops being plausible. Figure 1 plots it as a discount to value. A two-year lockup on an asset with 22% volatility, about what a leveraged buyout shows once smoothing is stripped out [17], is worth at most a 21% discount. Ten years is worth at most 41%. Volatility matters as much as time: ten years on a loan book with 10% volatility caps out at 22%.',
+          p: 'Two things make this formula useful in diligence. It needs only two inputs, and it is an upper bound, so it tells you where a claimed premium stops being plausible. {fig:longstaff} plots it as a discount to value. A two-year lockup on an asset with 22% volatility, about what a leveraged buyout shows once smoothing is stripped out [17], is worth at most a 21% discount. Ten years is worth at most 41%. Volatility matters as much as time: ten years on a loan book with 10% volatility caps out at 22%.',
         },
         { fig: 'longstaff' },
         {
-          p: 'Spread over the lockup, the bound falls per year as the lockup gets longer, because it grows roughly with the square root of time. For a ten-year fund at 22% volatility it works out to 5.4% a year. That is close to the 3% to 5% that LPs have traditionally asked of private equity over public equity, which makes a useful check: the traditional hurdle is roughly what a perfectly timed seller would need. No one is perfectly timed, so a rational investor needs less. Section 7 turns this into an underwriting rule.',
+          p: 'Spread over the lockup, the bound falls per year as the lockup gets longer, because it grows roughly with the square root of time. For a ten-year fund at 22% volatility it works out to 5.4% a year. That is close to the 3% to 5% that LPs have traditionally asked of private equity over public equity, which makes a useful check: the traditional hurdle is roughly what a perfectly timed seller would need. No one is perfectly timed, so a rational investor needs less. Section 8 turns this into an underwriting rule.',
+        },
+        { fig: 'bound' },
+        {
+          p: '{fig:bound} gives the same bound per year for every combination. Two things stand out. Short lockups are the expensive ones: at 22% volatility a one-year lockup costs up to 18.8% a year and a ten-year lockup 5.4%, which is why a quarterly gate on a volatile asset is a bigger concession than it looks. And volatility matters as much as time. Ten years on a loan book at 10% volatility costs at most 2.5% a year, which is why private credit is where a premium is easiest to earn.',
         },
         { h3: 'Liquidity risk as a factor (Pástor and Stambaugh, 2003)' },
         {
@@ -97,8 +143,19 @@ export const paper2026 = {
         {
           p: 'Stocks with high liquidity betas earned 7.5% a year more than stocks with low ones from 1966 to 1999, after adjusting for market, size, value and momentum [5]. Twenty years later two independent replications reproduced the measure, and both found the premium larger after 1999 than before [6]. Few anomalies have held up that well out of sample.',
         },
+        { h3: 'How little to hold (Ang, Papanikolaou and Westerfield, 2014)' },
         {
-          p: 'Put together, the four models say one thing. The level of illiquidity earns a modest premium that shrinks as markets get cheaper to trade. Exposure to liquidity crashes earns a larger and more durable one. Private funds carry both, plus a feature none of these models covers: the investor cannot see the price.',
+          p: 'The models above price the lockup. This one sizes the position. Ang, Papanikolaou and Westerfield solve the portfolio problem for an investor who can trade one risky asset freely and the other only at random moments, on average once every 1/λ years [99]. Their baseline gives the two assets the same expected return and risk, so the illiquid one carries no premium at all, and asks how much of it to own.',
+        },
+        { fig: 'apw' },
+        {
+          p: 'If the second asset traded freely the investor would put 59.3% of the portfolio in it. If it trades once a year on average, 37.3%. Once every two years, 25.1%. Once every ten years, 4.8%. The investor would give up 22.2% of total wealth to make a once-a-decade asset tradable [99]. The cost comes from spending, not from rebalancing: consumption has to be paid out of liquid wealth, so an investor who is rich on paper and short of cash is poor in the only way that matters. Uncertainty about when the next exit comes does most of the damage [99].',
+        },
+        {
+          p: 'That result is the benchmark for everything after it. An asset with no premium that trades once a decade deserves about a twelfth of the weight it would get if it were liquid. To hold more, the investor has to be paid.',
+        },
+        {
+          p: 'Put together, the five models say one thing. The level of illiquidity earns a modest premium that shrinks as markets get cheaper to trade. Exposure to liquidity crashes earns a larger and more durable one. Private funds carry both, plus a feature none of these models covers: the investor cannot see the price. Section 3 shows why that feature has become something investors pay for.',
         },
       ],
     },
@@ -136,7 +193,7 @@ export const paper2026 = {
           caption: 'R°: reported return. R: true economic return. Because Σθ<sub>j</sub>² is below one whenever the weights are spread over several quarters, reported volatility understates true volatility and reported Sharpe ratios overstate risk-adjusted performance.',
         },
         {
-          p: 'Desmoothing inverts the filter. Regressing private returns on several lags of public returns, rather than only the current quarter, recovers most of the hidden beta. Anson did this for private capital from 1998 to 2022. Unsmoothed volatility doubled for small buyouts and tripled for early-stage venture, while private credit barely moved [17]. Figure 2 shows the gap.',
+          p: 'Desmoothing inverts the filter. Regressing private returns on several lags of public returns, rather than only the current quarter, recovers most of the hidden beta. Anson did this for private capital from 1998 to 2022. Unsmoothed volatility doubled for small buyouts and tripled for early-stage venture, while private credit barely moved [17]. {fig:vol} shows the gap.',
         },
         { fig: 'vol' },
         {
@@ -144,6 +201,25 @@ export const paper2026 = {
         },
         {
           p: 'I think he is right about the mechanism and that its size depends on the investor. A pension whose board reads quarterly marks gets real value from smoothing. An individual who will need the cash in year four gets none, and is the one most likely to sell at a stale price that someone else profits from.',
+        },
+        { h3: 'An experiment: mark the stock market like a private fund' },
+        {
+          p: 'The claim that smoothing manufactures low risk can be tested without any private data. I took the U.S. stock market from January 2000 to September 2026, levered it 1.3 times with Treasury bills to match the market beta of buyout investments [91, 93], and valued the result two ways at each quarter-end. The first is the market price. The second is an appraisal that averages the last four quarter-end values, which is the Getmansky–Lo–Makarov filter with equal weights [16]. Four quarters is not an arbitrary choice. Equal weights over four quarters halve measured volatility, and half is the ratio Anson finds between reported and unsmoothed returns for small buyouts [17]. Both versions hold the same stocks and pay the same cash.',
+        },
+        { fig: 'marking' },
+        {
+          p: '{fig:marking} shows the two lines. They start and end in nearly the same place, because an average of past values has to catch up in the end. In between they tell different stories. In the first quarter of 2020 the portfolio lost 25.9% of its value and the appraised version lost 3.2%. In 2007–09 the true fall was 54.9% and the appraised fall 44.1%, spread over more quarters. In 2022 it was 31.7% against 21.1%.',
+        },
+        { fig: 'markstats' },
+        {
+          p: '{fig:markstats} has the statistics an allocator would be shown. Volatility falls from 22.2% to 11.7%. Beta falls from 1.30 to 0.32, so a levered stock portfolio looks like a diversifier. The Sharpe ratio rises from 0.46 to 0.74, the difference between an ordinary asset and an excellent one. None of it is real. The one statistic that gives it away is serial correlation: appraised returns predict themselves, at 0.73, and market returns do not, at 0.01. (The 0.2-point gap in annual return comes from where the two lines start and stop.)',
+        },
+        { fig: 'window' },
+        {
+          p: '{fig:window} repeats the exercise for appraisal windows of one to eight quarters. Every extra quarter of averaging lowers measured beta and raises the measured Sharpe ratio. With two years of averaging, a 1.3-times levered stock portfolio reports a beta of 0.12 and a Sharpe ratio above 1. An optimizer given those inputs holds as much of the asset as its constraints allow. The allocation is produced by the calendar on which the asset is priced.',
+        },
+        {
+          p: 'Real private equity looks the same when it is priced. Boyer, Nadauld, Vorkink and Weisbach built an index from the prices paid for fund stakes in the secondary market from 2006 to 2018. Its volatility is about 34%, against 14% to 20% for indexes built from NAVs [92].',
         },
         { h3: 'Leverage, size and value' },
         {
@@ -155,13 +231,16 @@ export const paper2026 = {
         {
           p: 'Stafford’s replication is the most striking result [21]. A passive portfolio of small, low-EBITDA-multiple public stocks with modest leverage, valued at hold-to-maturity accounting instead of market prices, produced a return distribution very close to the pre-fee private equity index. The accounting alone changes the risk numbers: the same portfolio that shows a beta near 2 when marked to market shows a beta statistically indistinguishable from zero when marked like a private fund. The low risk lives in the bookkeeping.',
         },
+        {
+          p: 'Two studies put numbers on the risk. Franzoni, Nowak and Phalippou used the cash flows of 4,403 private equity investments and found a market beta of 1.3, a loading of 1.0 on the value factor and a liquidity beta of 0.64, higher than 86% of traded stocks. The liquidity risk premium alone was about 3% a year, and once it was counted the alpha before fees was zero [91]. Boyer and coauthors, pricing funds off secondary trades instead of cash flows, found a beta of 1.79 and an alpha of −2% a year, not statistically different from zero [92]. Private equity is paid for liquidity risk in the Pástor–Stambaugh sense, the same premium a public investor can collect. After that there is no return left over to attribute to the lockup.',
+        },
       ],
     },
     {
       id: 'evidence',
       heading: 'The evidence, market by market',
       blocks: [
-        { p: 'Table 1 summarizes what each market appears to pay for illiquidity, on the best public evidence I could find. The subsections show the work.' },
+        { p: '{fig:scoreboard} summarizes what each market appears to pay for illiquidity, on the best public evidence I could find. The subsections show the work.' },
         { fig: 'scoreboard' },
         { h3: 'Public bonds and equities' },
         {
@@ -181,14 +260,33 @@ export const paper2026 = {
           p: 'The best academic evidence on buyouts is more favorable than the replication work above, which is why the debate has lasted. Harris, Jenkinson and Kaplan, using cash flows reported by institutional investors, found that buyout funds beat the S&amp;P 500 by 20% to 27% over a fund’s life, or more than 3% a year [22]. A later study by the same authors with Stucke put the average buyout PME at 1.20, falling to 1.11 for vintages after 2005 [23]. Kaplan and Schoar’s earlier sample found average net returns about equal to the S&amp;P 500 [13].',
         },
         {
-          p: 'The most current public benchmark tells the same story through time. Cambridge Associates’ U.S. private equity index, which covers 1,769 buyout and growth equity funds, returned 12.4% a year over the 25 years to December 2025, against 10.0% for the same cash flows invested in the S&amp;P 500. Over the last ten years the gap was 0.1 points, and public markets won most horizons shorter than ten years [24]. Figure 3 shows each horizon.',
+          p: 'The most current public benchmark tells the same story through time. Cambridge Associates’ U.S. private equity index, which covers 1,769 buyout and growth equity funds, returned 12.4% a year over the 25 years to December 2025, against 10.0% for the same cash flows invested in the S&amp;P 500. Over the last ten years the gap was 0.1 points, and public markets won most horizons shorter than ten years [24]. {fig:ca} shows each horizon.',
         },
         { fig: 'ca' },
         {
           p: 'Three forces explain the shrinking gap. Purchase prices rose as capital crowded into the strategy. Debt got more expensive after 2022, which removed the cheapest source of buyout returns. And exits slowed, which leaves more of recent performance as unrealized marks [62, 63]. Cambridge also notes that private equity beat the Russell 2000 more often than it beat the S&amp;P 500 [24], which is what you would expect if much of the historical edge came from owning smaller companies with debt.',
         },
         {
-          p: 'Forward-looking estimates point the same way. AQR’s 2026 capital market assumptions, as summarized in public coverage, put expected real returns on U.S. buyouts at roughly 4.2% a year against roughly 3.9% for U.S. large-cap stocks [26]: a gap of about 0.3 points before accounting for the extra leverage in buyouts. Ilmanen, Chandra and McQuinn concluded that private equity no longer offers the net-of-fee edge it did 15 to 20 years ago, looking either backward or forward [25].',
+          p: 'The Cambridge comparison holds the benchmark at a beta of one. Buyouts are not a beta-one asset: AQR puts debt at 69% of equity in the average deal [26], and the studies in Section 3 put the market beta between 1.3 and 1.79 [91, 92]. If a fund has a beta of β, the public portfolio with the same market risk holds β in the index, financed at the Treasury bill rate, and the fund’s excess over that portfolio is:',
+        },
+        {
+          eq: 'α ≈ (R<sub>PE</sub> − R<sub>m</sub>) − (β − 1)(R<sub>m</sub> − r<sub>f</sub>)',
+          caption:
+            'R<sub>PE</sub>: the Cambridge index. R<sub>m</sub>: the S&amp;P 500 on the same cash flows. r<sub>f</sub>: the average Treasury bill return over the horizon, which was 2.11% a year for the ten years to December 2025, 1.41% for 15, 1.61% for 20 and 1.72% for 25 [93]. An approximation, because it applies a one-period formula to annualized returns.',
+        },
+        { fig: 'betaadj' },
+        {
+          p: 'At a beta of 1.3 the premium is −0.1 points a year over 25 years, −1.0 over 20, −3.2 over 15 and −3.8 over ten. At 1.79 it runs from −4.1 to −10.2. The published 2.4 points is almost exactly what 30% more market exposure earned over that quarter century (my arithmetic).',
+        },
+        {
+          p: 'The usual reply is that buyouts should be compared with small companies. That was a fair benchmark for the buyouts of the 1990s. It is not what the funds own now: information technology is 36% of the Cambridge index by value, and managers put 37% of the capital they invested in 2025 into it [24]. A portfolio that is a third software, with leverage, is not a small-cap value portfolio.',
+        },
+        {
+          p: 'Forward-looking estimates point the same way. AQR’s 2026 capital market assumptions put the expected real return on U.S. buyouts at 4.2% a year after fees, against 3.9% for U.S. large-cap stocks [26]. That is 0.3 points for more leverage and a ten-year lockup. The same document expects 2.6% from private credit and 3.1% from unlevered private real estate [26]. A ten-year Treasury inflation-protected bond, which can be sold in seconds, yielded 1.93% real when AQR made those estimates and 2.66% on November 9, 2026 [98].',
+        },
+        { fig: 'forward' },
+        {
+          p: 'Ilmanen, Chandra and McQuinn concluded that private equity no longer offers the net-of-fee edge it did 15 to 20 years ago, looking either backward or forward [25]. Six years later their firm’s own numbers have the edge at a third of a point.',
         },
         { h3: 'Venture capital' },
         {
@@ -211,11 +309,14 @@ export const paper2026 = {
           p: 'The credit cycle is now testing it. Fitch’s default rate for the private credit borrowers it rates privately reached a record 9.2% in 2025, up from 8.1% in 2024 [36]. The IMF had already flagged a market of about $2 trillion for fragile borrowers, layered leverage, semi-liquid vehicles and stale valuations [37]. The BIS has examined how much of BDC lending goes to software companies exposed to AI disruption [38], and J.P. Morgan Asset Management puts that exposure at about 20% of BDC portfolios [39]. After the failures of Tricolor and First Brands in the fall of 2025, Jamie Dimon warned that “when you see one cockroach, there are probably more” [40].',
         },
         {
-          p: 'None of this says the premium is gone. It says that private credit’s low reported volatility, 8% reported and 9% desmoothed in Anson’s data [17], describes the last cycle and says nothing about a default cycle.',
+          p: 'The public market has an opinion on these loans. About 50 publicly traded BDCs hold the same kind of loans as the non-traded funds, often at the same managers, and in February 2026 they traded at an average discount of more than 20% to NAV [94]. Octus puts the discount near 20%, with some large funds near 50%, and finds average recoveries in private credit restructurings of about 50 cents on the dollar, where managers have cited 70 [101]. A non-traded fund sells and redeems its shares at NAV [94]. Either the public price is wrong or the NAV is.',
+        },
+        {
+          p: 'The contractual spread is real. What the evidence does not support is the idea that it comes with low risk. Private credit’s reported volatility, 8% reported and 9% desmoothed in Anson’s data [17], describes the last cycle and says nothing about a default cycle. AQR’s estimate assumes that fees and the value investors place on smooth marks use up whatever premium there is [26].',
         },
         { h3: 'Private real estate' },
         {
-          p: 'Real estate is the best natural experiment on smoothing, because similar buildings trade in two wrappers. REITs trade every second. Private core funds and the NCREIF Property Index (NPI) are appraised. Figure 4 shows calendar-year returns for both from 2021 to 2025.',
+          p: 'Real estate is the best natural experiment on smoothing, because similar buildings trade in two wrappers. REITs trade every second. Private core funds and the NCREIF Property Index (NPI) are appraised. {fig:reits} shows calendar-year returns for both from 2021 to 2025.',
         },
         { fig: 'reits' },
         {
@@ -242,10 +343,14 @@ export const paper2026 = {
         },
         { fig: 'secpricing' },
         {
-          p: 'Figure 5 shows Jefferies’ average prices for LP portfolios. Buyout stakes have sold within a few points of NAV in every year since 2023: 91% in 2023, 94% in 2024, 92% in 2025 and 91% in the first half of 2026 [52–55]. Venture has been far cheaper, at 68% in 2023, 75% in 2024 and 78% in 2025 [52–54]. Real estate fell to 70% in 2025 [54]. The 2022 line shows how fast pricing moves when public markets fall: the average across strategies dropped 11 points in a year [51].',
+          p: '{fig:secpricing} shows Jefferies’ average prices for LP portfolios. Buyout stakes have sold within a few points of NAV in every year since 2023: 91% in 2023, 94% in 2024, 92% in 2025 and 91% in the first half of 2026 [52–55]. Venture has been far cheaper, at 68% in 2023, 75% in 2024 and 78% in 2025 [52–54]. Real estate fell to 70% in 2025 [54]. The 2022 line shows how fast pricing moves when public markets fall: the average across strategies dropped 11 points in a year [51].',
         },
         {
           p: 'These discounts convert into an implied premium. If a buyout stake with about four years of remaining life sells at 92% of a fair NAV, the buyer earns (1/0.92)<sup>1/4</sup> − 1, about 2.1% a year, on top of the fund’s own return. The same arithmetic gives about 5.1% a year for venture at 78% over five years. These are rough, because they assume the NAV is right and the remaining life is what I guessed. But they land close to the theory. The market charges about 2 points a year to take buyout illiquidity off a seller’s hands, and more than twice that for venture, where NAVs are trusted less and remaining lives are longer.',
+        },
+        { fig: 'implied' },
+        {
+          p: '{fig:implied} does the conversion for every price and remaining life in this section. The numbers in the top row are what a liquidity supplier earns in a crisis. The numbers in the bottom rows are what the market charges in a calm year, and they are the closest thing there is to a live quote for the illiquidity premium on a seasoned buyout fund: about 2.4% a year at 91% of NAV with four years left, and 1.6% with six.',
         },
         {
           p: 'In a crisis the quote collapses. Nadauld, Sensoy, Vorkink and Weisbach studied secondary transactions from 2006 to 2014 and found an average discount of 13.8% of NAV, closer to 9% for the typical four- to nine-year-old fund, and larger discounts when the economy was weak [59]. In their data buyout stakes changed hands at about 54% of NAV in 2009. Over four years that discount is worth roughly 17% a year to the buyer on top of the fund’s return. That is the liquidity premium in its purest form, paid by forced sellers to whoever has cash.',
@@ -263,6 +368,17 @@ export const paper2026 = {
         {
           p: 'Even the most patient investors now use this market. In 2025 Yale was reported to be close to selling about $2.5 billion of private equity and venture stakes at a discount of less than 10% to NAV [60]. A decade ago a sale like that would have read as distress. Today it is portfolio management, and the price shows how little buyers ask for taking quality buyout exposure off a seller’s hands in a calm market.',
         },
+        { h3: 'One asset, five prices' },
+        {
+          p: 'Put the quotes side by side and the argument gets simpler. {fig:prices} lists what a dollar of reported NAV in a private fund sold for in 2025 and 2026, by the door it left through.',
+        },
+        { fig: 'prices' },
+        {
+          p: 'The assets behind these prices are not identical, but they are the same kind: diversified private companies and private loans, valued by the same appraisal process. The spread from top to bottom is 36 points. The investors who transact at 100 are the ones entering non-traded funds and rolling into continuation vehicles. The investors who transact at 64 to 91 are buying from someone who needs out, in a negotiated sale or on an exchange. That gap is the illiquidity premium, and the chart shows who pays it and who receives it.',
+        },
+        {
+          p: 'One version of this trade is visible in fund accounting. A fund that buys a stake at, say, 85% of NAV can carry it at NAV at the next valuation date and book the difference as a gain. The gain is real only if the NAV is, and a fund that depends on it needs a steady supply of new discounted purchases, which means a steady supply of new money.',
+        },
       ],
     },
     {
@@ -279,9 +395,13 @@ export const paper2026 = {
         {
           p: 'The mechanism is arithmetic. Take a portfolio that is 70% public and 30% private. Public equities fall 25%. Private marks, which lag, fall 5%. The private share rises from 30% to 35% without the investor doing anything, and with capital calls still arriving it keeps rising. The investor is now overweight the asset it cannot sell and has to sell what it can, near the bottom. (This example is mine.)',
         },
+        { fig: 'denominator' },
+        {
+          p: '{fig:denominator} runs the same shock from other starting points. An investor at 20% private ends at 24%, one at 40% ends at 46%, and one at 50% ends at 56%, before a single capital call. The overshoot grows with the allocation, so the investors most exposed to a freeze are the ones the freeze pushes furthest past their limits.',
+        },
         { h3: '2022–25: distributions dry up' },
         {
-          p: '2022 repeated the denominator effect on a smaller scale, and the aftermath has lasted longer. Exits slowed as rates rose, and buyout funds stopped returning cash. Bain reports that distributions averaged 29% of NAV from 2014 to 2017 and fell to 11% in 2024, the lowest in more than a decade [62]. They recovered only to about 14% in 2025, the fourth straight year below 15%, an industry record [63]. Bain’s mid-2026 update puts the implied capital cycle at about seven years [64].',
+          p: '2022 repeated the denominator effect on a smaller scale, and the aftermath has lasted longer. Exits slowed as rates rose, and buyout funds stopped returning cash. Bain reports that distributions averaged 29% of NAV from 2014 to 2017 and fell to 11% in 2024, the lowest in more than a decade [62]. They recovered only to about 14% in 2025, the fourth straight year below 15%, an industry record [63]. Bain’s mid-2026 update puts the implied capital cycle at about seven years [64]. About 32,000 companies worth $3.8 trillion are unsold, and almost 40% of them have been held for more than five years, up from 29% in 2019 [63].',
         },
         { fig: 'dist' },
         {
@@ -295,14 +415,14 @@ export const paper2026 = {
           p: 'The first test was BREIT. In November 2022 redemption requests exceeded its limits of 2% of NAV a month and 5% a quarter, and it paid 43% of each request [65]. Requests peaked at $5.3 billion in January 2023 [66]. The fund prorated for 15 months, returned more than $15 billion over that stretch, and paid all requests again in February 2024 [66]. In between, the University of California invested $4 billion, with Blackstone pledging $1 billion of its own BREIT shares to backstop an 11.25% annualized net return for UC over six years [67]. An investor willing to supply liquidity to a gated fund was paid well for it, on terms only an institution could negotiate.',
         },
         {
-          p: 'The second test is this year, and it is in private credit. Figure 6 plots quarterly redemption requests at large semi-liquid funds in 2026 against the share of requested money investors actually received.',
+          p: 'The second test is this year, and it is in private credit. {fig:gates} plots quarterly redemption requests at large semi-liquid funds in 2026 against the share of requested money investors actually received.',
         },
         { fig: 'gates' },
         {
-          p: 'Requests at Apollo Debt Solutions reached 11.2% of shares in the first quarter, 16.8% in the second and 14.7% in the third, and the fund paid 5% each time [68, 69]. Ares Strategic Income Fund paid 5% of shares in the first quarter, which was 43.1% of what holders asked for [70]. Blackstone’s BCRED met all of a 7.9% request in the first quarter by raising its cap to 7% while Blackstone and its employees bought shares, then paid 5% against requests of about 10% in the second [71]. Partners Group capped its Luxembourg evergreen fund at 5% when requests approached 10% of NAV, and its U.S. private equity master fund when they reached about 6% [72]. Fitch expects requests to stay above 5% through 2026, and judges that its rated BDCs can keep paying 5% a quarter for a year without new money coming in [73].',
+          p: 'Requests at Apollo Debt Solutions reached 11.2% of shares in the first quarter, 16.8% in the second and 14.7% in the third, and the fund paid 5% each time [68, 69]. Ares Strategic Income Fund paid 5% of shares in the first quarter, which was 43.1% of what holders asked for [70]. Blackstone’s BCRED met all of a 7.9% request in the first quarter by raising its cap to 7% while Blackstone and its employees bought shares, then paid 5% against requests of about 10% in the second [71]. Partners Group capped its Luxembourg evergreen fund at 5% when requests approached 10% of NAV, and its U.S. private equity master fund when they reached about 6% [72]. Blue Owl’s largest credit fund received requests for 21.9% of shares in the first quarter and 18.8% in the second and paid 5% each time. At its technology lending fund the requests were 40.7% and 38.1% [97]. Fitch expects requests to stay above 5% through 2026, and judges that its rated BDCs can keep paying 5% a quarter for a year without new money coming in [73].',
         },
         {
-          p: 'Every point in Figure 6 sits on or near the curve 5% divided by requests. That curve is the whole product. A quarterly liquidity promise is a promise of 5% of NAV, shared among everyone who asks. When one shareholder in eight asks, each gets about 40 cents on the dollar, and the rest waits in a queue that lengthens as unfilled requests are resubmitted.',
+          p: 'Every point in {fig:gates} sits on or near the curve 5% divided by requests. That curve is the whole product. A quarterly liquidity promise is a promise of 5% of NAV, shared among everyone who asks. When one shareholder in eight asks, each gets about 40 cents on the dollar, and the rest waits in a queue that lengthens as unfilled requests are resubmitted. At Blue Owl’s technology fund, where four in ten asked, each got about 12 cents (my arithmetic).',
         },
         {
           p: 'The price of skipping the queue is now quoted too. Cox Capital has made tender offers for shares of several non-traded BDCs at 13% to 30% below their reported NAVs [74]. Ares told shareholders that none of its Class I holders took an earlier offer [74]. Both facts are informative. Most holders would rather wait than pay 15% for cash today, and the ones who can’t wait now have a price.',
@@ -323,6 +443,9 @@ export const paper2026 = {
         {
           p: 'Theory is clear about who should hold illiquid assets: investors whose horizon is longer than the lockup and whose need for cash is low and predictable. That describes a perpetual endowment better than a pension, and a pension better than an individual. The industry’s growth is running in the other direction.',
         },
+        {
+          p: 'How much is a separate question from who. The model in Section 2 gives the scale: about a twelfth of the weight an asset would get if it were liquid, for something that trades once a decade and pays no premium [99].',
+        },
         { h3: 'Endowments and pensions' },
         {
           p: 'U.S. college endowments held about 54% of their assets in private and alternative strategies in fiscal 2025, including real assets, and returned 10.9% on average [76, 78]. Allocations scale with size: institutions under $50 million held 12.5% in alternatives, while those over $5 billion held 62.5% [77]. The large endowments are the investors Amihud and Mendelson’s clientele argument describes.',
@@ -342,7 +465,7 @@ export const paper2026 = {
         },
         { h3: 'Pacing and the J-curve' },
         {
-          p: 'Owning illiquid assets is a cash-flow problem before it is a return problem. Figure 7 runs the Takahashi–Alexander model, which Yale built to forecast fund cash flows [85], for $100 committed to a 12-year fund. I assume capital is called at 25%, 33% and then 50% of the remaining commitment each year, assets grow 12% a year, and distributions follow the model’s bow factor of 2.5. These are my assumptions, chosen to look like a typical buyout fund.',
+          p: 'Owning illiquid assets is a cash-flow problem before it is a return problem. {fig:jcurve} runs the Takahashi–Alexander model, which Yale built to forecast fund cash flows [85], for $100 committed to a 12-year fund. I assume capital is called at 25%, 33% and then 50% of the remaining commitment each year, assets grow 12% a year, and distributions follow the model’s bow factor of 2.5. These are my assumptions, chosen to look like a typical buyout fund.',
         },
         { fig: 'jcurve' },
         {
@@ -358,6 +481,7 @@ export const paper2026 = {
         {
           p: 'My own stylized model shows the size of the drag. On the same J-curve cash flows, with a 2% fee on commitments for five years, 1.5% of NAV after that, and 20% carry over an 8% preferred return with full catch-up, a fund that earns 15% gross delivers 10.6% net, a gap of 4.4 points a year. At 12% gross the gap is 4.0 points and at 18% it is 4.8. Put another way, if public equities earn 10%, the fund has to earn about 14.4% gross just to tie them after fees. Fees consume most of a plausible premium before the investor sees any of it.',
         },
+        { fig: 'fees' },
         { h3: 'Manager selection' },
         {
           p: 'Dispersion is the other side of the fee problem. In venture the gap between top- and bottom-quartile funds is close to 20 points of IRR [30]. Picking the top quartile is how most LPs justify their programs, but in buyouts persistence has weakened to the point that past top-quartile results say little about the next fund, while weak past results still predict weak future ones [23]. If you cannot reliably pick the top quartile, the quartile spread is risk, not opportunity.',
@@ -366,17 +490,24 @@ export const paper2026 = {
     },
     {
       id: 'take',
-      heading: 'What it means for investors',
+      heading: 'The verdict',
       blocks: [
-        { h3: 'When the premium is worth it' },
+        { h3: 'Assume zero' },
         {
-          p: 'Working in private markets, I came to think about illiquidity in three questions. First, is there a premium, measured against a public portfolio with the same leverage and factor exposures? Second, is it larger than the fees? Third, am I the right holder, meaning I will not be a forced seller in the state where everyone else is selling too?',
+          p: 'My position, after working in private markets and three versions of this paper: assume the illiquidity premium on a private fund is zero until someone shows otherwise, and insist on being shown it against a levered public benchmark, after fees. The burden of proof sits with whoever is selling the lockup.',
         },
         {
-          p: 'The premium is worth it when the answer to all three is yes. In practice that means senior direct lending to companies you would also lend to in the syndicated market, where one to two points of spread are real and fees are lower. It means secondaries bought from forced sellers, where the discount is the premium. It means small and mid-market buyouts with managers who have a demonstrable operating edge. And it means venture only with access to managers whose persistence you can document.',
+          p: 'Three questions decide it. Is there a premium, measured against a public portfolio with the same leverage and factor exposures? Is it larger than the fees? And am I the right holder, meaning I will not be a forced seller in the state where everyone else is selling too? For the average buyout, core real estate or infrastructure fund, the evidence in Section 4 answers no to the first question, and the other two stop mattering.',
         },
         {
-          p: 'It is not worth it in large-cap buyouts priced off public comparables, in semi-liquid vehicles that charge private fees for a liquidity promise they cannot keep, or in any strategy whose case rests on low reported volatility.',
+          p: 'That leaves a short list. Secondaries bought from forced sellers, where the discount is the premium and the buyer is the one supplying liquidity. Senior direct lending when lenders have pricing power, which is after a year of redemptions and defaults and not before it [100]. Small buyouts with a manager whose record beats a levered small-cap index. Venture only with access to managers whose persistence you can document [23].',
+        },
+        {
+          p: 'It rules out most of what is being sold in 2026: large-cap buyouts priced off public comparables, semi-liquid vehicles that charge private-market fees for a liquidity promise they cannot keep, continuation vehicles priced by the seller, and any strategy whose case rests on low reported volatility.',
+        },
+        { h3: 'Be the liquidity' },
+        {
+          p: 'The practical version is to hold the option instead of selling it. Short inflation-protected Treasuries pay a positive real yield, 2.42% on the five-year on November 9, 2026 [98], so a reserve earns something while it waits. In a stress year that reserve buys fund stakes at 54% to 81% of NAV [51, 59], or lends on terms no one offered a year earlier [100]. The return on that reserve is the illiquidity premium. It is lumpy, it means doing nothing for years at a time, and it is the only version of the premium that the evidence in this paper supports.',
         },
         { h3: 'How to underwrite it' },
         { p: 'If I were deciding on an illiquid commitment today, I would underwrite it against an explicit hurdle, built in four steps.' },
@@ -391,7 +522,7 @@ export const paper2026 = {
         },
         { fig: 'hurdle' },
         {
-          p: 'Table 2 runs the arithmetic. A patient investor, with a liquidity need of 25%, in a ten-year buyout fund needs about 1.6 points a year over a levered small-cap index, net of fees. A stretched investor at 75% needs 4.2 points. Add a 4.4-point fee drag and the gross hurdles become 6.0 and 8.6 points over the public equivalent. Few buyout managers have cleared the second number after adjusting for leverage and size, and the evidence in the earlier sections says the average manager has not cleared the first. The calculator below applies the same method to your own inputs.',
+          p: '{fig:hurdle} runs the arithmetic. A patient investor, with a liquidity need of 25%, in a ten-year buyout fund needs about 1.6 points a year over a levered small-cap index, net of fees. A stretched investor at 75% needs 4.2 points. Add a 4.4-point fee drag and the gross hurdles become 6.0 and 8.6 points over the public equivalent. Few buyout managers have cleared the second number after adjusting for leverage and size, and the evidence in the earlier sections says the average manager has not cleared the first. The calculator below applies the same method to your own inputs.',
         },
         { calc: true },
         { h3: 'Red flags in diligence' },
@@ -439,6 +570,9 @@ export const paper2026 = {
         {
           p: '<strong>What I missed.</strong> I gave the secondary market one clause, and it is now the best data we have on the price of illiquidity. I did not discuss fees at all, and they are the largest single reason the premium fails to reach investors. And I wrote about retail access to private markets as a policy debate. It is now a product category, with gates.',
         },
+        {
+          p: '<strong>What I got wrong in the first rewrite.</strong> The earlier 2026 draft concluded that the premium was “real, but smaller than the fees.” That was a hedge. A premium smaller than the fees is zero to the investor, and after leverage it is negative. I also treated leverage as a caveat to the Cambridge comparison. It accounts for the whole 25-year gap.',
+        },
       ],
     },
   ] satisfies Section[],
@@ -469,7 +603,7 @@ export const paper2026 = {
     { n: 23, text: 'Harris, R. S., Jenkinson, T., Kaplan, S. N., & Stucke, R. (2023). Has persistence persisted in private equity? Evidence from buyout and venture capital funds. Journal of Corporate Finance, 81, 102361. NBER Working Paper 28109.', url: 'https://www.nber.org/papers/w28109' },
     { n: 24, text: 'Cambridge Associates (2026). US PE/VC benchmark commentary: Calendar year 2025.', url: 'https://www.cambridgeassociates.com/insight/us-pe-vc-benchmark-commentary-calendar-year-2025/' },
     { n: 25, text: 'Ilmanen, A., Chandra, S., & McQuinn, N. (2020). Demystifying illiquid assets: Expected returns for private equity. Journal of Alternative Investments, 22(3), 8–30.', url: 'https://www.aqr.com/insights/research/journal-article/demystifying-illiquid-assets-expected-returns-for-private-equity' },
-    { n: 26, text: 'AQR Capital Management (2026, January 14). 2026 capital market assumptions for major asset classes. Approximate buyout and large-cap figures as summarized by P. Dubach, “Is private equity just beta with a lockup?” (2026).', url: 'https://www.aqr.com/Insights/Research/Alternative-Thinking/2026-Capital-Market-Assumptions-for-Major-Asset-Classes' },
+    { n: 26, text: 'AQR Capital Management (2026, January). 2026 capital market assumptions for major asset classes. Alternative Thinking, 2026 Issue 1 (Exhibits 6, A4 and A6).', url: 'https://www.aqr.com/Insights/Research/Alternative-Thinking/2026-Capital-Market-Assumptions-for-Major-Asset-Classes' },
     { n: 27, text: 'Phalippou, L. (2020). An inconvenient fact: Private equity returns and the billionaire factory. SSRN Working Paper 3623820.', url: 'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3623820' },
     { n: 28, text: 'Levine, S. (2014, August). Venture outcomes are even more skewed than you think (Correlation Ventures data).', url: 'https://sethlevine.com/archives/2014/08/venture-outcomes-are-even-more-skewed-than-you-think.html' },
     { n: 29, text: 'Evans, B. (2016). In praise of failure (Horsley Bridge data, 1985–2014). Reproduced at Climateer Investing.', url: 'https://climateerinvest.blogspot.com/2016/08/power-law-return-characteristics-of.html' },
@@ -534,5 +668,16 @@ export const paper2026 = {
     { n: 88, text: 'Barick, G. (2024). Pricing the illiquidity premium for private market assets. International Journal for Multidisciplinary Research, 6(1), 1–12. (Cited in the 2025 version.)', url: 'https://ijfmr.com' },
     { n: 89, text: 'Fink, A. M. (2019). In praise of illiquidity. Fiduciary Insights, State Street Global Advisors. (Cited in the 2025 version.)', url: 'https://www.ssga.com' },
     { n: 90, text: 'Dimitrov, D. (2025). Untangling illiquidity: Optimal asset allocation with private asset classes. DNB Working Paper No. 827, De Nederlandsche Bank. (Cited in the 2025 version.)', url: 'https://www.dnb.nl' },
+    { n: 91, text: 'Franzoni, F., Nowak, E., & Phalippou, L. (2012). Private equity performance and liquidity risk. Journal of Finance, 67(6), 2341–2373. Figures from the working paper version.', url: 'https://www.netspar.nl/wp-content/uploads/024_Nowak_revised.pdf' },
+    { n: 92, text: 'Boyer, B., Nadauld, T. D., Vorkink, K. P., & Weisbach, M. S. (2021). Discount rate risk in private equity: Evidence from secondary market transactions. NBER Working Paper 28691, later published in the Journal of Finance. Figures from the working paper.', url: 'https://www.nber.org/papers/w28691' },
+    { n: 93, text: 'French, K. R. (2026). Data library: Fama/French 3 factors, monthly, CRSP data through September 2026. Used for the U.S. stock market return and the one-month Treasury bill return.', url: 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html' },
+    { n: 94, text: 'Bary, A. (2026, February 25). Private-credit BDC market offers a choice: Cheap public funds or richer private ones. Barron’s (citing Raymond James), via Tiger Brokers news.', url: 'https://www.itiger.com/news/2614723033' },
+    { n: 95, text: 'Scottish Financial News (2026, August 28). CT Private Equity Trust share price falls 9.3% as discount to NAV hits 28.9%.', url: 'https://www.scottishfinancialnews.com/articles/ct-private-equity-trust-share-price-falls-93-as-discount-to-nav-hits-289' },
+    { n: 96, text: 'interactive investor (2026, September 4). Discount Delver: the 10 cheapest trusts on 4 September 2026.', url: 'https://www.ii.co.uk/analysis-commentary/discount-delver-10-cheapest-trusts-4-september-2026-ii540184' },
+    { n: 97, text: 'Reuters via The Standard (2026, July 2). Blue Owl keeps withdrawal limits even as redemption pressure modestly eases.', url: 'https://www.thestandard.com.hk/finance/article/336246/Blue-Owl-keeps-withdrawal-limits-even-as-redemption-pressure-modestly-eases' },
+    { n: 98, text: 'U.S. Department of the Treasury (2026). Daily Treasury par real yield curve rates, December 31, 2025 and November 9, 2026.', url: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_real_yield_curve&field_tdr_date_value=2026' },
+    { n: 99, text: 'Ang, A., Papanikolaou, D., & Westerfield, M. M. (2014). Portfolio choice with illiquid assets. Management Science, 60(11), 2737–2761. NBER Working Paper 19436 (Table 3).', url: 'https://www.nber.org/papers/w19436' },
+    { n: 100, text: 'PIMCO (2026). The credit market lens: Green shoots and legacy risks in direct lending (citing PitchBook, Lincoln International and KBRA DLD; data as of September 10, 2026).', url: 'https://www.pimco.com/us/en/insights/the-credit-market-lens-green-shoots-and-legacy-risks-in-direct-lending' },
+    { n: 101, text: 'Octus (2026). BDCs trading at 50% discount to NAV, but nonaccruals ticking downward.', url: 'https://octus.com/resources/blog/bdcs-trading-at-50-discount-to-nav-but-nonaccruals-ticking-downward/' },
   ],
 };

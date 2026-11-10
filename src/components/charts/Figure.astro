@@ -121,6 +121,9 @@ const { id, n, title, subtitle, source, note, legend = [], data } = Astro.props;
     height: 12px;
     border-radius: 3px;
     background: var(--c);
+    /* The PDF is printed without backgrounds; keep the legend swatches. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .chart-legend .key.line {

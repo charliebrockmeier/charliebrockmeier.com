@@ -1,0 +1,92 @@
+---
+// Heatmap: a grid of values shaded light to dark, with every value printed in its
+// cell so nothing depends on reading the color. Rows run top to bottom, columns left
+// to right. Optional outlined cells mark the cases the text discusses.
+import Figure from './Figure.astro';
+import { INK, INK_SOFT, WIDE, NARROW, fmt, type Fmt, type Layout } from './lib';
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  rows: string[];
+  /** Shorter row labels for narrow screens. */
+  rowsShort?: string[];
+  cols: string[];
+  values: number[][];
+  rowLabel: string;
+  colLabel: string;
+  format?: Fmt;
+  /** Cells to outline, as [row, column]. */
+  marks?: [number, number][];
+}
+
+const { id, n, title, subtitle, source, note, desc, rows, cols, values, rowLabel, colLabel, format = {}, marks = [] } = Astro.props;
+const rowsShort = Astro.props.rowsShort ?? rows;
+const flat = values.flat();
+const lo = Math.min(...flat);
+const hi = Math.max(...flat);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// One hue, light to dark. Square root spreads the low end, where most cells sit.
+const A = [250, 243, 247];
+const B = [96, 36, 74];
+const shade = (v: number) => {
+  const t = Math.sqrt((v - lo) / (hi - lo || 1));
+  const c = A.map((a, i) => Math.round(a + (B[i] - a) * t));
+  return { fill: `rgb(${c.join(',')})`, dark: t > 0.55 };
+};
+
+function build(L: Layout) {
+  const f = L.narrow ? 10.5 : 12;
+  const labels = L.narrow ? rowsShort : rows;
+  const left = Math.max(...labels.map((r) => r.length * f * 0.58)) + 12;
+  const top = f * 2 + 26;
+  const cw = (L.W - left - 2) / cols.length;
+  const ch = L.narrow ? 30 : 34;
+  const H = top + rows.length * ch + 4;
+  let s = '';
+  s += `<text x="${left + (cols.length * cw) / 2}" y="${f + 2}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(colLabel)}</text>`;
+  s += `<text x="0" y="${f + 2}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(rowLabel)}</text>`;
+  cols.forEach((c, j) => {
+    s += `<text x="${left + j * cw + cw / 2}" y="${top - 8}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(c)}</text>`;
+  });
+  rows.forEach((r, i) => {
+    const y = top + i * ch;
+    s += `<text x="${left - 8}" y="${y + ch / 2 + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK}">${esc(labels[i])}</text>`;
+    cols.forEach((c, j) => {
+      const v = values[i][j];
+      const { fill, dark } = shade(v);
+      const x = left + j * cw;
+      s += `<rect x="${x + 1}" y="${y + 1}" width="${cw - 2}" height="${ch - 2}" rx="3" fill="${fill}"><title>${esc(`${r}, ${c}: ${fmt(v, format)}`)}</title></rect>`;
+      s += `<text x="${x + cw / 2}" y="${y + ch / 2 + f * 0.35}" text-anchor="middle" font-size="${f}" fill="${dark ? '#fff' : INK}" style="font-weight:${dark ? 600 : 500}">${esc(fmt(v, format))}</text>`;
+    });
+  });
+  for (const [i, j] of marks) {
+    s += `<rect x="${left + j * cw + 1}" y="${top + i * ch + 1}" width="${cw - 2}" height="${ch - 2}" rx="3" fill="none" stroke="${INK}" stroke-width="2"/>`;
+  }
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const data = {
+  head: [`${rowLabel} \\ ${colLabel}`, ...cols],
+  rows: rows.map((r, i) => [r, ...values[i].map((v) => fmt(v, format))]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

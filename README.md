@@ -6,7 +6,7 @@ Charlie Brockmeier's personal site: a pixel-art player profile, with a one-page 
 - `/resume`: the same facts on one printable page (press <kbd>R</kbd> on the home page). The PDF is `public/charlie-brockmeier-resume.pdf`.
 - `/contact`: email, links and the resume.
 - `/projects/<id>`: a page per project.
-- `/writing/illiquidity-premium`: *The Illiquidity Premium, Revisited* (2026), a rewrite of a college paper with charts, a calculator and 90 sources. The 2025 original is at `/writing/illiquidity-premium-2025`.
+- `/writing/illiquidity-premium`: *The Illiquidity Premium Changed Hands* (2026), a rewrite of a college paper that takes a side, with 20 charts, a calculator and 101 sources. The 2025 original is at `/writing/illiquidity-premium-2025`.
 
 Press <kbd>⌘K</kbd> or <kbd>/</kbd> on any page to search the site.
 

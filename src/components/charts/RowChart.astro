@@ -1,0 +1,150 @@
+---
+// Horizontal bars, one row per item, for two jobs:
+//   * a ranked list (mode "bars"): each bar runs from the base to its value;
+//   * a waterfall (mode "waterfall"): "level" rows run from zero, "change" rows float
+//     from the running total, and a thin connector carries the total down the page.
+// Labels sit in a column on the left so long names stay readable on a phone.
+import Figure from './Figure.astro';
+import { SERIES, INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, wrap2, type Fmt, type Layout } from './lib';
+
+interface Row {
+  label: string;
+  /** Shorter label for narrow screens. */
+  short?: string;
+  value: number;
+  /** Waterfall only: "level" is a total drawn from zero; "change" adds to the running total. */
+  kind?: 'level' | 'change';
+  /** Bars only: index into `groups`, which sets the color. */
+  group?: number;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  mode?: 'bars' | 'waterfall';
+  rows: Row[];
+  groups?: string[];
+  xLabel: string;
+  xMin?: number;
+  xMax?: number;
+  format?: Fmt;
+  /** Vertical reference lines, e.g. par. */
+  refs?: { v: number; label?: string }[];
+}
+
+const { id, n, title, subtitle, source, note, desc, mode = 'bars', rows, groups = [], xLabel, format = {}, refs = [] } = Astro.props;
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const UP = SERIES[3];
+const DOWN = SERIES[2];
+const TOTAL = SERIES[0];
+
+// Where each bar starts and ends.
+let run = 0;
+const spans = rows.map((r) => {
+  if (mode === 'bars') return { from: Astro.props.xMin ?? 0, to: r.value, color: SERIES[r.group ?? 0], text: fmt(r.value, format) };
+  if (r.kind === 'level') {
+    run = r.value;
+    return { from: 0, to: r.value, color: TOTAL, text: fmt(r.value, format) };
+  }
+  const from = run;
+  run += r.value;
+  return { from, to: run, color: r.value < 0 ? DOWN : UP, text: `${r.value > 0 ? '+' : ''}${fmt(r.value, format)}` };
+});
+const ends = spans.flatMap((s) => [s.from, s.to]).concat(refs.map((r) => r.v));
+const t = ticks(Astro.props.xMin ?? Math.min(0, ...ends), Astro.props.xMax ?? Math.max(0, ...ends), 5);
+const d0 = Astro.props.xMin ?? t[0];
+const d1 = Astro.props.xMax ?? t[t.length - 1];
+const tickVals = t.filter((v) => v >= d0 - 1e-9 && v <= d1 + 1e-9);
+
+function build(L: Layout) {
+  const f = L.narrow ? 11 : 12;
+  const labelLines = rows.map((r) => {
+    const text = L.narrow ? (r.short ?? r.label) : r.label;
+    return wrap2(text, L.narrow ? 17 : 34);
+  });
+  const left = Math.min(L.narrow ? 124 : 250, Math.max(...labelLines.flat().map((l) => l.length * f * 0.56)) + 14);
+  const valueW = Math.max(...spans.map((s) => s.text.length * f * 0.62)) + 10;
+  const top = refs.some((r) => r.label) ? f + 12 : 8;
+  const rh = L.narrow ? 38 : 34;
+  const bh = L.narrow ? 16 : 18;
+  const bottom = f * 2 + 22;
+  const H = top + rows.length * rh + bottom;
+  const x0 = left;
+  const x1 = L.W - valueW;
+  const sx = scale(d0, d1, x0, x1);
+  const tickFmt = { ...format, decimals: tickVals.some((v) => !Number.isInteger(v)) ? 1 : 0 };
+  const yBase = top + rows.length * rh;
+
+  let s = '';
+  const every = L.narrow && tickVals.length > 5 ? 2 : 1;
+  tickVals.forEach((v, i) => {
+    s += `<line x1="${sx(v)}" x2="${sx(v)}" y1="${top}" y2="${yBase}" stroke="${GRID}"/>`;
+    if (i % every === 0) s += `<text x="${sx(v)}" y="${yBase + f + 5}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, tickFmt))}</text>`;
+  });
+  s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(xLabel)}</text>`;
+  if (d0 < 0 && d1 > 0) s += `<line x1="${sx(0)}" x2="${sx(0)}" y1="${top}" y2="${yBase}" stroke="${AXIS}" stroke-width="1.25"/>`;
+  for (const r of refs) {
+    s += `<line x1="${sx(r.v)}" x2="${sx(r.v)}" y1="${top}" y2="${yBase}" stroke="${AXIS}" stroke-width="1.25" stroke-dasharray="4 3"/>`;
+    if (r.label) s += `<text x="${sx(r.v)}" y="${top - 5}" text-anchor="end" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
+  }
+
+  rows.forEach((r, i) => {
+    const sp = spans[i];
+    const yc = top + i * rh + rh / 2;
+    const lines = labelLines[i];
+    lines.forEach((ln, k) => {
+      const y = yc + f * 0.35 + (k - (lines.length - 1) / 2) * (f + 2);
+      const bold = mode === 'waterfall' && r.kind === 'level';
+      s += `<text x="${x0 - 10}" y="${y}" text-anchor="end" font-size="${f}" fill="${INK}"${bold ? ' style="font-weight:600"' : ''}>${esc(ln)}</text>`;
+    });
+    const a = sx(Math.min(sp.from, sp.to));
+    const b = sx(Math.max(sp.from, sp.to));
+    const w = Math.max(1.5, b - a);
+    s += `<rect x="${a}" y="${yc - bh / 2}" width="${w}" height="${bh}" rx="3" fill="${sp.color}"><title>${esc(`${r.label}: ${sp.text}`)}</title></rect>`;
+    s += `<text x="${a + w + 6}" y="${yc + f * 0.35}" font-size="${f}" fill="${INK}" style="font-weight:600">${esc(sp.text)}</text>`;
+    // Connector from this row's running total to the next row.
+    if (mode === 'waterfall' && i < rows.length - 1) {
+      const x = sx(sp.to);
+      s += `<line x1="${x}" x2="${x}" y1="${yc + bh / 2}" y2="${yc + rh - bh / 2}" stroke="${INK_SOFT}" stroke-dasharray="2 2"/>`;
+    }
+  });
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend =
+  mode === 'waterfall'
+    ? [
+        { name: 'Total', color: TOTAL },
+        { name: 'Subtracts', color: DOWN },
+        ...(rows.some((r) => r.kind === 'change' && r.value > 0) ? [{ name: 'Adds', color: UP }] : []),
+      ]
+    : groups.map((g, i) => ({ name: g, color: SERIES[i] }));
+const data = {
+  head: mode === 'waterfall' ? ['Step', 'Change', 'Running total'] : groups.length > 1 ? ['', 'Group', xLabel] : ['', xLabel],
+  rows: rows.map((r, i) =>
+    mode === 'waterfall'
+      ? [r.label, r.kind === 'level' ? '–' : spans[i].text, fmt(spans[i].to, format)]
+      : groups.length > 1
+        ? [r.label, groups[r.group ?? 0], spans[i].text]
+        : [r.label, spans[i].text],
+  ),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

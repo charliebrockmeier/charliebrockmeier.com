@@ -170,7 +170,7 @@ export const quests: Quest[] = [
       { role: 'Product manager', org: 'Conagra Brands', when: 'Senior capstone, 2024–25', what: 'Led a team using machine learning on $500M of capital-expenditure decisions.' },
     ],
     reward: 'Graduated with High Distinction',
-    link: { label: 'Read The Illiquidity Premium, Revisited', url: '/writing/illiquidity-premium' },
+    link: { label: 'Read The Illiquidity Premium Changed Hands', url: '/writing/illiquidity-premium' },
     unlocked: 'AI',
     levels: { finance: 5, code: 5, ai: 2, lead: 7 },
     levelUps: [
@@ -490,8 +490,8 @@ export const resume = {
     },
   ],
   research: {
-    title: 'The Illiquidity Premium, Revisited',
-    line: 'A 2026 rewrite of my May 2025 FINA 475H paper: what investors are actually paid for illiquidity across public markets, buyouts, venture, private credit, real estate and secondaries, with charts and 90 public sources.',
+    title: 'The Illiquidity Premium Changed Hands',
+    line: 'A 2026 rewrite of my May 2025 FINA 475H paper. It argues that after fees and leverage the average private fund has paid nothing for its lockup for a decade, and that the premium now goes to whoever supplies liquidity. 20 charts and 101 public sources.',
     url: '/writing/illiquidity-premium',
   },
   education: {
