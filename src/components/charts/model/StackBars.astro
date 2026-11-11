@@ -1,0 +1,101 @@
+---
+// Horizontal bars that each split one whole into the same parts: a portfolio per row.
+// Rows can sit under group headings. A part prints its share inside when the text
+// fits; the legend names the parts and the data table has every value.
+import Figure from '../Figure.astro';
+import { INK, INK_SOFT, GRID, WIDE, NARROW, fmt, textWidth, type Fmt, type Layout } from '../lib';
+import { inkOn } from './palette';
+
+interface Row {
+  label: string;
+  /** Short label for narrow screens. */
+  short?: string;
+  /** Shares, in the order of `parts`. */
+  values: number[];
+  /** Right-hand annotation, e.g. expected return. */
+  note?: string;
+  /** Start a new group with this heading above the row. */
+  group?: string;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  parts: { name: string; color: string }[];
+  rows: Row[];
+  /** Heading over the right-hand annotations. */
+  noteLabel?: string;
+  format?: Fmt;
+  /** Scale: the share that fills the full width (default 100, or the widest row). */
+  max?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, parts, rows, noteLabel, format = { suffix: '%', decimals: 0 } } = Astro.props;
+const totals = rows.map((r) => r.values.reduce((s, v) => s + Math.max(0, v), 0));
+const full = Astro.props.max ?? Math.max(100, ...totals);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const hasNotes = rows.some((r) => r.note);
+
+function build(L: Layout) {
+  const f = L.f;
+  const label = (r: Row) => (L.narrow ? (r.short ?? r.label) : r.label);
+  const noteW = hasNotes ? Math.max(...rows.map((r) => textWidth(r.note ?? '', f - 1)), textWidth(noteLabel ?? '', f - 1)) + 10 : 0;
+  // Wide: labels sit left of the bars. Narrow: labels sit on their own line above.
+  const left = L.narrow ? 0 : Math.max(...rows.map((r) => textWidth(label(r), f))) + 12;
+  const x0 = left;
+  const x1 = L.W - noteW - 2;
+  const bar = 22;
+  const rowH = L.narrow ? bar + f + 12 : bar + 10;
+  let y = hasNotes && noteLabel ? f + 4 : 2;
+  let s = '';
+  if (hasNotes && noteLabel) s += `<text x="${L.W}" y="${f}" text-anchor="end" font-size="${f - 1}" fill="${INK_SOFT}" style="font-weight:600">${esc(noteLabel)}</text>`;
+  for (const r of rows) {
+    if (r.group) {
+      y += 6;
+      s += `<text x="0" y="${y + f}" font-size="${f}" fill="${INK}" style="font-weight:700">${esc(r.group)}</text>`;
+      s += `<line x1="0" x2="${L.W}" y1="${y + f + 5}" y2="${y + f + 5}" stroke="${GRID}"/>`;
+      y += f + 12;
+    }
+    const by = L.narrow ? y + f + 5 : y;
+    if (L.narrow) s += `<text x="0" y="${y + f}" font-size="${f}" fill="${INK}">${esc(label(r))}</text>`;
+    else s += `<text x="${x0 - 10}" y="${by + bar / 2 + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK}">${esc(label(r))}</text>`;
+    let cx = x0;
+    r.values.forEach((v, i) => {
+      if (v <= 0.05) return;
+      const w = ((x1 - x0) * v) / full;
+      const p = parts[i];
+      const text = fmt(v, format);
+      s += `<rect x="${cx + 1}" y="${by}" width="${Math.max(0.5, w - 2)}" height="${bar}" rx="3" fill="${p.color}"><title>${esc(`${r.label}: ${p.name} ${fmt(v, { ...format, decimals: 1 })}`)}</title></rect>`;
+      if (textWidth(text, f - 1) + 8 < w) s += `<text x="${cx + 6}" y="${by + bar / 2 + f * 0.33}" font-size="${f - 1}" fill="${inkOn(p.color)}" style="font-weight:600;pointer-events:none">${esc(text)}</text>`;
+      cx += w;
+    });
+    if (r.note) s += `<text x="${L.W}" y="${by + bar / 2 + f * 0.35}" text-anchor="end" font-size="${f - 1}" fill="${INK}">${esc(r.note)}</text>`;
+    y += rowH;
+  }
+  return { H: y + 2, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const used = parts.map((p, i) => ({ ...p, i })).filter((p) => rows.some((r) => r.values[p.i] > 0.05));
+const data = {
+  head: ['', ...used.map((p) => p.name), ...(hasNotes ? [noteLabel ?? 'Note'] : [])],
+  rows: rows.map((r) => [r.group ? `${r.group}: ${r.label}` : r.label, ...used.map((p) => fmt(r.values[p.i], { ...format, decimals: 1 })), ...(hasNotes ? [r.note ?? ''] : [])]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={used.map((p) => ({ name: p.name, color: p.color }))} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

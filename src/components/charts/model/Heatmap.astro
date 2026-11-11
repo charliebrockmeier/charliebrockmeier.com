@@ -1,0 +1,118 @@
+---
+// Heatmap: one or more panels of rows by columns, each cell shaded on a one-hue ramp
+// and printed with its value, so nothing depends on reading the color. Panels stack.
+import Figure from '../Figure.astro';
+import { INK, INK_SOFT, WIDE, NARROW, fmt, textWidth, type Fmt, type Layout } from '../lib';
+import { ramp, inkOn } from './palette';
+
+interface Panel {
+  name: string;
+  /** values[row][col] */
+  values: number[][];
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  panels: Panel[];
+  rows: string[];
+  /** Shorter row labels for narrow screens. */
+  rowsN?: string[];
+  cols: string[];
+  rowTitle: string;
+  colTitle: string;
+  min?: number;
+  max?: number;
+  format?: Fmt;
+}
+
+const { id, n, title, subtitle, source, note, desc, panels, rows, cols, rowTitle, colTitle, format = {} } = Astro.props;
+const all = panels.flatMap((p) => p.values.flat());
+const lo = Astro.props.min ?? Math.min(...all);
+const hi = Astro.props.max ?? Math.max(...all);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function build(L: Layout) {
+  const f = L.f;
+  const rl = (L.narrow && Astro.props.rowsN) || rows;
+  const left = Math.max(...rl.map((r) => textWidth(r, f))) + 10;
+  const cw = (L.W - left - 2) / cols.length;
+  const ch = L.narrow ? 24 : 26;
+  const head = f + 22;
+  const panelH = head + rows.length * ch + 8;
+  const H = panels.length * panelH + f + 14;
+  let s = '';
+  panels.forEach((p, pi) => {
+    const y0 = pi * panelH;
+    s += `<text x="0" y="${y0 + f}" font-size="${f}" fill="${INK}" style="font-weight:700">${esc(p.name)}</text>`;
+    cols.forEach((c, ci) => {
+      s += `<text x="${left + ci * cw + cw / 2}" y="${y0 + head - 5}" text-anchor="middle" font-size="${f - 1}" fill="${INK_SOFT}">${esc(c)}</text>`;
+    });
+    p.values.forEach((row, ri) => {
+      const y = y0 + head + ri * ch;
+      s += `<text x="${left - 8}" y="${y + ch / 2 + f * 0.35}" text-anchor="end" font-size="${f - 1}" fill="${INK}">${esc(rl[ri])}</text>`;
+      row.forEach((v, ci) => {
+        const fill = ramp((v - lo) / (hi - lo || 1));
+        const label = fmt(v, format);
+        s += `<rect x="${left + ci * cw + 1}" y="${y + 1}" width="${cw - 2}" height="${ch - 2}" rx="3" fill="${fill}"><title>${esc(`${p.name}, ${rowTitle} ${rows[ri]}, ${colTitle} ${cols[ci]}: ${label}`)}</title></rect>`;
+        if (textWidth(label, f - 1) < cw - 4) s += `<text x="${left + ci * cw + cw / 2}" y="${y + ch / 2 + f * 0.33}" text-anchor="middle" font-size="${f - 1}" fill="${inkOn(fill)}" style="font-weight:600;pointer-events:none">${esc(label)}</text>`;
+      });
+    });
+  });
+  s += `<text x="${left + (L.W - left) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(colTitle)}</text>`;
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const data = {
+  head: ['', rowTitle, ...cols],
+  rows: panels.flatMap((p) => p.values.map((row, ri) => [p.name, rows[ri], ...row.map((v) => fmt(v, format))])),
+};
+const stops = [0, 0.25, 0.5, 0.75, 1];
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} data={data}>
+  <p class="heat-scale" aria-hidden="true">
+    <span>{fmt(lo, format)}</span>
+    {stops.map((t) => <i style={`background:${ramp(t)}`} />)}
+    <span>{fmt(hi, format)}</span>
+    <span class="heat-rows">Rows: {rowTitle}</span>
+  </p>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>
+
+<style>
+  .heat-scale {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.2rem 0 0.6rem;
+    color: var(--ink-soft, #4f4868);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+  }
+
+  .heat-scale i {
+    width: 22px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .heat-rows {
+    margin-left: 0.6rem;
+  }
+</style>

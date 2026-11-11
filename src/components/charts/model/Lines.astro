@@ -1,0 +1,193 @@
+---
+// Line chart for dense or uneven series on a numeric x axis: curves, time series,
+// frontiers and fan charts. Lines carry no marker per point (the data table has the
+// values); each line ends in a label, and optional bands, labeled points and reference
+// lines sit behind or on top. Two layouts, like every chart in the paper.
+import Figure from '../Figure.astro';
+import { INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, ticks, scale, fmt, textWidth, type Fmt, type Layout } from '../lib';
+import { CAT } from './palette';
+
+type Pt = [number, number];
+
+interface Series {
+  name: string;
+  /** Short name for the end label on narrow screens. */
+  short?: string;
+  pts: Pt[];
+  /** Index into the categorical palette, or a hex color. */
+  color?: number | string;
+  /** Thin line for context series. */
+  light?: boolean;
+  /** Dashed: a projection or a what-if, not data. */
+  dash?: boolean;
+  /** Draw a dot on every point (sparse series only). */
+  dots?: boolean;
+  /** Hide the end label (the legend still names the line). */
+  noLabel?: boolean;
+  /** Leave the line out of the legend too (context lines explained in the note). */
+  noLegend?: boolean;
+}
+
+interface Band {
+  name: string;
+  lo: Pt[];
+  hi: Pt[];
+  color?: number | string;
+  opacity?: number;
+}
+
+interface Mark {
+  x: number;
+  y: number;
+  label: string;
+  short?: string;
+  color?: number | string;
+  /** 'br' is below and to the right, 'al' above and to the left: clear of a rising line through the point. */
+  pos?: 'left' | 'right' | 'above' | 'below' | 'br' | 'al';
+  posN?: 'left' | 'right' | 'above' | 'below' | 'br' | 'al';
+  hollow?: boolean;
+  /** Draw the point without its label (the label is carried by a vertical marker). */
+  bare?: boolean;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  series: Series[];
+  bands?: Band[];
+  marks?: Mark[];
+  xTicks: { v: number; label: string }[];
+  /** Fewer ticks on narrow screens. */
+  xTicksN?: { v: number; label: string }[];
+  xMin?: number;
+  xMax?: number;
+  xLabel?: string;
+  yLabel: string;
+  yMin?: number;
+  yMax?: number;
+  format?: Fmt;
+  refs?: { v: number; label?: string }[];
+  vrefs?: { v: number; label: string }[];
+  /** Data table; built from the series at the tick positions when omitted. */
+  table?: { head: string[]; rows: (string | number)[][] };
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, series, bands = [], marks = [], xLabel, yLabel, format = {}, refs = [], vrefs = [], height } = Astro.props;
+
+const col = (c: number | string | undefined, i: number) => (typeof c === 'string' ? c : CAT[(c ?? i) % CAT.length]);
+const allY = [...series.flatMap((s) => s.pts.map((p) => p[1])), ...bands.flatMap((b) => [...b.lo, ...b.hi].map((p) => p[1])), ...marks.map((m) => m.y)];
+const allX = [...series.flatMap((s) => s.pts.map((p) => p[0])), ...marks.map((m) => m.x)];
+const t = ticks(Astro.props.yMin ?? Math.min(...allY), Astro.props.yMax ?? Math.max(...allY), 5);
+const d0 = Astro.props.yMin ?? t[0];
+const d1 = Astro.props.yMax ?? t[t.length - 1];
+const tickVals = t.filter((v) => v >= d0 - 1e-9 && v <= d1 + 1e-9);
+const x0d = Astro.props.xMin ?? Math.min(...allX);
+const x1d = Astro.props.xMax ?? Math.max(...allX);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height - 10 : height) : L.H;
+  const f = L.f;
+  const xt = (L.narrow && Astro.props.xTicksN) || Astro.props.xTicks;
+  const tickFmt = { ...format, decimals: tickVals.some((v) => !Number.isInteger(v)) ? Math.max(1, format.decimals ?? 1) : 0 };
+  const left = Math.max(...tickVals.map((v) => textWidth(fmt(v, tickFmt), f))) + 14;
+  const labeled = series.filter((s) => !s.noLabel);
+  const endText = (s: Series) => `${L.narrow ? (s.short ?? s.name) : s.name}: ${fmt(s.pts[s.pts.length - 1][1], format)}`;
+  const right = labeled.length ? Math.max(...labeled.map((s) => textWidth(endText(s), f - 1))) + 12 : 14;
+  const top = 26;
+  const bottom = f + 16 + (xLabel ? f + 10 : 0);
+  const x0 = left;
+  const x1 = L.W - right;
+  const sx = scale(x0d, x1d, x0 + 4, x1 - 4);
+  const sy = scale(d0, d1, H - bottom, top);
+  const path = (pts: Pt[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join('');
+
+  let s = '';
+  for (const v of tickVals) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(v)}" y2="${sy(v)}" stroke="${GRID}"/>`;
+    s += `<text x="${x0 - 8}" y="${sy(v) + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, tickFmt))}</text>`;
+  }
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(yLabel)}</text>`;
+  for (const b of bands) {
+    const c = col(b.color, 0);
+    const d = `${path(b.hi)}${[...b.lo].reverse().map((p) => `L${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join('')}Z`;
+    s += `<path d="${d}" fill="${c}" opacity="${b.opacity ?? 0.12}"/>`;
+  }
+  for (const r of refs) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(r.v)}" y2="${sy(r.v)}" stroke="${AXIS}" stroke-width="1.25"/>`;
+    if (r.label) s += `<text x="${x0 + 4}" y="${sy(r.v) - 4}" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
+  }
+  for (const r of vrefs) {
+    s += `<line x1="${sx(r.v)}" x2="${sx(r.v)}" y1="${top}" y2="${H - bottom}" stroke="${AXIS}" stroke-width="1.25"/>`;
+    const anchor = sx(r.v) > (x0 + x1) / 2 ? 'end' : 'start';
+    s += `<text x="${sx(r.v) + (anchor === 'end' ? -5 : 5)}" y="${top + f}" text-anchor="${anchor}" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
+  }
+  for (const tk of xt) {
+    s += `<line x1="${sx(tk.v)}" x2="${sx(tk.v)}" y1="${H - bottom}" y2="${H - bottom + 4}" stroke="${AXIS}"/>`;
+    s += `<text x="${sx(tk.v)}" y="${H - bottom + f + 6}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(tk.label)}</text>`;
+  }
+  s += `<line x1="${x0}" x2="${x1}" y1="${H - bottom}" y2="${H - bottom}" stroke="${AXIS}"/>`;
+  if (xLabel) s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(xLabel)}</text>`;
+
+  // End labels keep at least a line of space between neighbours.
+  const placed = labeled.map((se) => ({ se, y: sy(se.pts[se.pts.length - 1][1]) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < placed.length; i++) if (placed[i].y - placed[i - 1].y < f + 1) placed[i].y = placed[i - 1].y + f + 1;
+  const over = placed.length ? placed[placed.length - 1].y - (H - bottom) : 0;
+  if (over > 0) for (const p of placed) p.y -= over;
+
+  series.forEach((se, si) => {
+    const c = col(se.color, si);
+    s += `<path d="${path(se.pts)}" fill="none" stroke="${c}" stroke-width="${se.light ? 1.25 : 2}" stroke-linejoin="round" stroke-linecap="round"${se.dash ? ' stroke-dasharray="5 4"' : ''}/>`;
+    if (se.dots) for (const p of se.pts) s += `<circle cx="${sx(p[0])}" cy="${sy(p[1])}" r="3.5" fill="${c}" stroke="#fff" stroke-width="1.5"><title>${esc(`${se.name}: ${fmt(p[1], format)}`)}</title></circle>`;
+    const last = se.pts[se.pts.length - 1];
+    s += `<circle cx="${sx(last[0])}" cy="${sy(last[1])}" r="4" fill="${c}" stroke="#fff" stroke-width="2"><title>${esc(`${se.name}: ${fmt(last[1], format)}`)}</title></circle>`;
+    const py = placed.find((p) => p.se === se)?.y;
+    if (py !== undefined) s += `<text x="${sx(last[0]) + 9}" y="${py + f * 0.35}" font-size="${f - 1}" fill="${INK}" style="font-weight:600">${esc(endText(se))}</text>`;
+  });
+  for (const m of marks) {
+    const c = col(m.color, 0);
+    const px = sx(m.x);
+    const py = sy(m.y);
+    const pos = (L.narrow && m.posN) || m.pos || 'right';
+    const label = L.narrow ? (m.short ?? m.label) : m.label;
+    const dx = pos === 'right' ? 8 : pos === 'left' ? -8 : pos === 'br' ? 5 : pos === 'al' ? -5 : 0;
+    const dy = pos === 'above' || pos === 'al' ? -9 : pos === 'below' || pos === 'br' ? f + 7 : f * 0.35;
+    const anchor = pos === 'right' || pos === 'br' ? 'start' : pos === 'left' || pos === 'al' ? 'end' : 'middle';
+    s += `<circle cx="${px}" cy="${py}" r="4.5" fill="${m.hollow ? '#fff' : c}" stroke="${m.hollow ? c : '#fff'}" stroke-width="2"><title>${esc(`${m.label}: ${fmt(m.y, format)}`)}</title></circle>`;
+    if (!m.bare) s += `<text x="${px + dx}" y="${py + dy}" text-anchor="${anchor}" font-size="${f - 1}" fill="${INK}" paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round">${esc(label)}</text>`;
+  }
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const legend = [
+  ...series.map((s, i) => ({ name: s.name, color: col(s.color, i), line: true, skip: s.noLegend })).filter((l) => !l.skip),
+  ...bands.map((b) => ({ name: b.name, color: col(b.color, 0) })),
+];
+const at = (pts: Pt[], x: number) => {
+  const hit = pts.find((p) => Math.abs(p[0] - x) < 1e-9);
+  return hit ? fmt(hit[1], format) : '–';
+};
+const data = Astro.props.table ?? {
+  head: [xLabel ?? '', ...series.map((s) => s.name)],
+  rows: Astro.props.xTicks.map((tk) => [tk.label, ...series.map((s) => at(s.pts, tk.v))]),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

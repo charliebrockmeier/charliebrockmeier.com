@@ -1,0 +1,52 @@
+{
+  "_about": "Input for the 'My own portfolio' section. Percentages only: no dollar amounts, account numbers, institution names or employer details belong in this file. Change the numbers here and re-run scripts/model/build.mjs; the page follows.",
+
+  "asOf": "2026-11-09",
+
+  "profile": {
+    "ageBand": "25-34",
+    "modelAge": 25,
+    "gamma": 2,
+    "income": "stable"
+  },
+
+  "accounts": [
+    { "id": "roth", "label": "Roth IRA", "weight": 37.5, "taxFree": true },
+    { "id": "k401", "label": "401(k)", "weight": 15.2, "taxFree": true },
+    { "id": "taxable", "label": "Taxable brokerage", "weight": 40.85, "taxFree": false },
+    { "id": "bank", "label": "Bank cash", "weight": 6.5, "taxFree": false }
+  ],
+
+  "_holdings": "weight is percent of the liquid portfolio (View A). 'look' is the look-through to the model's asset classes per 1.00 of the holding; a leveraged fund has exposure above 1 and negative cash. 'tilt' marks holdings that are not a broad index.",
+  "holdings": [
+    { "ticker": "SWTSX", "label": "U.S. total stock market index fund", "account": "roth", "weight": 37.5, "look": { "us": 1 } },
+    { "ticker": "VTI", "label": "U.S. total stock market ETF", "account": "taxable", "weight": 22.8, "look": { "us": 1 } },
+    { "ticker": "TDF 2065", "label": "Target-date 2065 index fund", "account": "k401", "weight": 15.2, "look": "schwab2065" },
+    { "ticker": "VXUS", "label": "International stocks ex U.S., index ETF", "account": "taxable", "weight": 3.6, "look": "exUs" },
+    { "ticker": "GGLL", "label": "2x daily leveraged ETF on one stock", "account": "taxable", "weight": 3.2, "look": { "single": 2, "cash": -1 }, "tilt": "leveraged single stock" },
+    { "ticker": "AVUV", "label": "U.S. small-cap value ETF", "account": "taxable", "weight": 2.5, "look": { "us": 1 }, "tilt": "factor" },
+    { "ticker": "SMH", "label": "Semiconductor sector ETF", "account": "taxable", "weight": 2.0, "look": { "single": 1 }, "tilt": "sector" },
+    { "ticker": "NOW", "label": "Single stock", "account": "taxable", "weight": 1.4, "look": { "single": 1 }, "tilt": "single stock" },
+    { "ticker": "GOOGL", "label": "Single stock", "account": "taxable", "weight": 1.2, "look": { "single": 1 }, "tilt": "single stock" },
+    { "ticker": "VT", "label": "Global stock index ETF", "account": "taxable", "weight": 1.1, "look": "global" },
+    { "ticker": "SLV", "label": "Silver trust", "account": "taxable", "weight": 1.0, "look": { "gold": 1 }, "tilt": "metal" },
+    { "ticker": "RVII", "label": "Listed closed-end fund of private companies", "account": "taxable", "weight": 0.65, "look": { "private": 1 }, "tilt": "private" },
+    { "ticker": "Cash", "label": "Bank and brokerage cash", "account": "bank", "weight": 7.9, "look": { "cash": 1 }, "bankShare": 6.5 }
+  ],
+
+  "viewB": {
+    "_note": "Unvested employer stock as a share of the total when it is included. 'About 35%'. No company name, ticker, price or grant detail belongs here.",
+    "employerStockPct": 35
+  },
+
+  "plan": {
+    "quarters": 12,
+    "employerSaleQuarter": 8,
+    "_contribPerQuarterPct": "New money added each quarter, as a percent of today's liquid portfolio. Not known yet: leave null. The page then shows the path without it and a what-if table.",
+    "contribPerQuarterPct": null,
+    "contribWhatIf": [1, 2, 3],
+    "_bankCashIsReserve": "true: bank cash stays outside the model as a reserve. false: it is invested with the rest.",
+    "bankCashIsReserve": true,
+    "capitalGainsTaxRate": 0.15
+  }
+}

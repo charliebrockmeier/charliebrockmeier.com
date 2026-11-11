@@ -1,0 +1,354 @@
+---
+// The model as a calculator: the reader sets age, retirement age, risk aversion, how
+// stock-like their pay is, savings so far and savings rate; it applies the paper's
+// closed form and shows the mix, its expected real return and risk, the chance stocks
+// trail TIPS, and where the expected path ends. Inputs come from the model's data file.
+import data from '../../../data/model2026-data.json';
+import { solveModel, groupName, type ModelInputs, type Answers } from './calc';
+import { ASSET, STOCKS } from './palette';
+
+interface Props {
+  id: string;
+  n?: number | string;
+}
+const { id, n } = Astro.props;
+
+const model: ModelInputs = {
+  rf: data.expected.muExact.tips / 100,
+  muEq: data.expected.muExact.eq / 100,
+  varEq: data.risk.cov9[1][1],
+  curve: data.curves.real as [number, number][],
+  earn: [
+    [29.5, data.lifecycle.census['25-34'].median],
+    [39.5, data.lifecycle.census['35-44'].median],
+    [49.5, data.lifecycle.census['45-54'].median],
+    [59.5, data.lifecycle.census['55-64'].median],
+  ],
+  q: data.calc.q,
+  eqW: [data.meta.equityWeights.us, data.meta.equityWeights.intl, data.meta.equityWeights.em],
+  t01: data.meta.t01,
+  ladder: data.retirement.byYears['30'].start,
+};
+const d: Answers = { age: 45, retire: 65, gamma: 4, beta: data.meta.incomeBeta.stable, save: data.meta.savingsRate, years: 3.5, funded: 1.5 };
+const o = solveModel(model, d);
+const pct = (v: number, dp = 0) => `${v.toFixed(dp)}%`;
+const parts = [
+  { key: 'us', name: 'U.S. stocks', color: STOCKS[0] },
+  { key: 'intl', name: 'International developed', color: STOCKS[1] },
+  { key: 'em', name: 'Emerging markets', color: STOCKS[2] },
+  { key: 'tips', name: 'TIPS', color: ASSET.tips },
+] as const;
+const betas = data.meta.incomeBeta;
+const note = `Method: stock share = clip([π / (γσ²) − β(1 − k)] / k, 0, 1), with π = ${((model.muEq - model.rf) * 100).toFixed(2)} points, σ = ${(Math.sqrt(model.varEq) * 100).toFixed(1)}%, k = savings so far ÷ (savings so far + present value of the savings still to come) and β the share of future pay that behaves like stocks. Pay follows the Census age profile <span class="cite">[<a href="#src-28">28</a>]</span>, discounted on the real Treasury curve <span class="cite">[<a href="#src-1">1</a>]</span>. Retirees put 1 ÷ (funded ratio) of wealth in a TIPS ladder and invest the rest at π / (γσ²). “Stocks trail TIPS” uses a lognormal approximation. A stand-alone investor with this γ would hold <span data-out="alone">${pct(o.alone)}</span> in stocks.`;
+---
+
+<figure class="chart calc model-calc" id={id} aria-labelledby={`${id}-t`}>
+  <figcaption class="chart-head">
+    <p class="chart-title" id={`${id}-t`}>
+      {n !== undefined && <span class="chart-n">Calculator {n}.</span>}
+      The model for one investor
+    </p>
+    <p class="chart-sub">Set the inputs. The mix is the model's answer at November 2026 prices. It is an illustration, not advice for you.</p>
+  </figcaption>
+  <form class="calc-form" data-model={JSON.stringify(model)}>
+    <label>
+      <span>Age <output name="age-v">{d.age}</output></span>
+      <input type="range" name="age" min="22" max="85" step="1" value={d.age} />
+    </label>
+    <label>
+      <span>Retirement age <output name="retire-v">{d.retire}</output></span>
+      <input type="range" name="retire" min="55" max="72" step="1" value={d.retire} />
+    </label>
+    <label>
+      <span>Risk aversion γ <output name="gamma-v">{d.gamma.toFixed(1)} · {groupName(d.gamma)}</output></span>
+      <input type="range" name="gamma" min="1.5" max="10" step="0.5" value={d.gamma} />
+    </label>
+    <label>
+      <span>Pay <output name="beta-v" class="print-only">Stable (β = {betas.stable})</output></span>
+      <select name="beta">
+        <option value={betas.stable} selected>Stable (β = {betas.stable})</option>
+        <option value={betas.cyclical}>Cyclical (β = {betas.cyclical})</option>
+        <option value={betas.stockLike}>Stock-like (β = {betas.stockLike})</option>
+      </select>
+    </label>
+    <label data-saver>
+      <span>Savings so far <output name="years-v">{d.years.toFixed(2)} years of pay</output></span>
+      <input type="range" name="years" min="0" max="25" step="0.25" value={d.years} />
+    </label>
+    <label data-saver>
+      <span>Savings rate <output name="save-v">{pct(d.save * 100, 1)} of pay</output></span>
+      <input type="range" name="save" min="0" max="30" step="0.1" value={(d.save * 100).toFixed(1)} />
+    </label>
+    <label data-retiree hidden>
+      <span>Funded ratio <output name="funded-v">{d.funded.toFixed(2)}</output></span>
+      <input type="range" name="funded" min="0.6" max="4" step="0.05" value={d.funded} />
+    </label>
+  </form>
+
+  <div class="mix" aria-hidden="true">
+    {parts.map((p) => <i data-bar={p.key} style={`--c:${p.color};flex-grow:${(o as any)[p.key].toFixed(2)}`} />)}
+  </div>
+  <ul class="mix-key">
+    {
+      parts.map((p) => (
+        <li data-row={p.key} hidden={(o as any)[p.key] < 0.05}>
+          <span class="key" style={`--c:${p.color}`} />
+          {p.name} <b data-out={p.key}>{pct((o as any)[p.key])}</b>
+        </li>
+      ))
+    }
+  </ul>
+
+  <dl class="calc-out" aria-live="polite">
+    <div class="key">
+      <dt>Stocks</dt>
+      <dd data-out="stocks">{pct(o.stocks)}</dd>
+      <dd class="hint">of savings, at global market weights; the rest in TIPS</dd>
+    </div>
+    <div>
+      <dt>Expected real return</dt>
+      <dd data-out="mu">{pct(o.mu, 1)}</dd>
+      <dd class="hint">a year, before fees and taxes</dd>
+    </div>
+    <div>
+      <dt>Volatility</dt>
+      <dd data-out="vol">{pct(o.vol, 1)}</dd>
+      <dd class="hint">a year, with TIPS held to maturity</dd>
+    </div>
+    <div>
+      <dt>Bad year, 1 in 100</dt>
+      <dd data-out="loss">{pct(o.loss, 1).replace('-', '−')}</dd>
+      <dd class="hint">real return on the portfolio</dd>
+    </div>
+    <div>
+      <dt>Stocks trail TIPS</dt>
+      <dd data-out="trail">{o.trail === null ? '–' : pct(o.trail)}</dd>
+      <dd class="hint" data-out="trail-hint">chance over {o.horizon} years</dd>
+    </div>
+    <div>
+      <dt data-out="hk-label">Savings still to come</dt>
+      <dd data-out="hk">{o.hYears.toFixed(1)}×</dd>
+      <dd class="hint" data-out="hk-hint">years of pay, present value; {pct((1 - o.k) * 100)} of retirement wealth</dd>
+    </div>
+    <div data-saver>
+      <dt>Savings at retirement</dt>
+      <dd data-out="end">{o.endYears.toFixed(1)}×</dd>
+      <dd class="hint">final pay, if every year earned its expected return</dd>
+    </div>
+    <div data-saver>
+      <dt>Ladder income</dt>
+      <dd data-out="income">{pct(o.income)}</dd>
+      <dd class="hint">of final pay for 30 years, at today's real yields</dd>
+    </div>
+  </dl>
+  <p class="chart-note" set:html={note} />
+</figure>
+
+<script>
+  import { solveModel, groupName, type ModelInputs } from './calc';
+
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-model]')) {
+    const root = form.closest('figure')!;
+    const model = JSON.parse(form.dataset.model!) as ModelInputs;
+    const val = (name: string) => Number((form.elements.namedItem(name) as HTMLInputElement).value);
+    const show = (name: string, text: string) => ((form.elements.namedItem(`${name}-v`) as HTMLOutputElement).value = text);
+    const put = (key: string, text: string) => {
+      const el = root.querySelector(`[data-out="${key}"]`);
+      if (el) el.textContent = text;
+    };
+    const pct = (v: number, dp = 0) => `${v.toFixed(dp)}%`;
+    const update = () => {
+      const a = { age: val('age'), retire: val('retire'), gamma: val('gamma'), beta: val('beta'), save: val('save') / 100, years: val('years'), funded: val('funded') };
+      const o = solveModel(model, a) as Record<string, any>;
+      show('age', String(a.age));
+      show('retire', String(a.retire));
+      show('gamma', `${a.gamma.toFixed(1)} · ${groupName(a.gamma)}`);
+      show('save', `${pct(a.save * 100, 1)} of pay`);
+      show('years', `${a.years.toFixed(2)} years of pay`);
+      show('funded', a.funded.toFixed(2));
+      show('beta', (form.elements.namedItem('beta') as HTMLSelectElement).selectedOptions[0]?.text ?? '');
+      for (const el of root.querySelectorAll<HTMLElement>('[data-saver]')) el.hidden = o.retired;
+      for (const el of root.querySelectorAll<HTMLElement>('[data-retiree]')) el.hidden = !o.retired;
+      for (const key of ['us', 'intl', 'em', 'tips']) {
+        (root.querySelector(`[data-bar="${key}"]`) as HTMLElement).style.flexGrow = o[key].toFixed(2);
+        (root.querySelector(`[data-row="${key}"]`) as HTMLElement).hidden = o[key] < 0.05;
+        put(key, pct(o[key]));
+      }
+      put('stocks', pct(o.stocks));
+      put('mu', pct(o.mu, 1));
+      put('vol', pct(o.vol, 1));
+      put('loss', pct(o.loss, 1).replace('-', '−'));
+      put('trail', o.trail === null ? '–' : pct(o.trail));
+      put('trail-hint', o.trail === null ? 'no stocks held' : `chance over ${o.horizon} years`);
+      put('hk-label', o.retired ? 'Spending floor' : 'Savings still to come');
+      put('hk', o.retired ? pct(o.floor) : `${o.hYears.toFixed(1)}×`);
+      put('hk-hint', o.retired ? `of wealth in a TIPS ladder paying ${model.ladder.toFixed(2)}% of cost a year` : `years of pay, present value; ${pct((1 - o.k) * 100)} of retirement wealth`);
+      put('end', `${o.endYears.toFixed(1)}×`);
+      put('income', pct(o.income));
+      put('alone', pct(o.alone));
+    };
+    form.addEventListener('input', update);
+    update();
+  }
+</script>
+
+<style>
+  .calc-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 0.75rem 1.5rem;
+    margin-top: 0.9rem;
+  }
+
+  .calc-form label {
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.8125rem;
+  }
+
+  .calc-form label[hidden],
+  .calc-out div[hidden] {
+    display: none;
+  }
+
+  .calc-form label span {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--ink-soft, #4f4868);
+  }
+
+  .calc-form output {
+    color: var(--ink, #1b1533);
+    font-weight: 700;
+    font-variant-numeric: lining-nums;
+    white-space: nowrap;
+  }
+
+  .calc-form input[type='range'] {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--accent, #7a3460);
+  }
+
+  .calc-form select {
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--rule, #e2dccd);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink, #1b1533);
+    font: inherit;
+  }
+
+  .mix {
+    display: flex;
+    gap: 2px;
+    height: 28px;
+    margin-top: 1.1rem;
+  }
+
+  .mix i {
+    flex-basis: 0;
+    min-width: 0;
+    border-radius: 3px;
+    background: var(--c);
+  }
+
+  .mix-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.8125rem;
+  }
+
+  .mix-key li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mix-key li[hidden] {
+    display: none;
+  }
+
+  .mix-key .key {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: var(--c);
+  }
+
+  .mix-key b {
+    color: var(--ink, #1b1533);
+    font-variant-numeric: lining-nums;
+  }
+
+  .calc-out {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .calc-out div {
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--rule, #e2dccd);
+    border-radius: 6px;
+    background: #fbf8f1;
+  }
+
+  .calc-out div.key {
+    border-color: var(--accent, #7a3460);
+    background: #f7eef3;
+  }
+
+  .calc-out dt {
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .calc-out dd {
+    margin: 0;
+  }
+
+  .calc-out dd[data-out]:not(.hint) {
+    margin-top: 0.2rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .calc-out .hint {
+    color: var(--ink-soft, #4f4868);
+    font-size: 0.6875rem;
+    line-height: 1.3;
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  @media print {
+    .calc-form input[type='range'],
+    .calc-form select {
+      display: none;
+    }
+
+    .print-only {
+      display: inline;
+    }
+
+    .mix i,
+    .mix-key .key {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>

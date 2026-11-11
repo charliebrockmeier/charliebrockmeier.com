@@ -1,0 +1,61 @@
+{
+  "_about": "Hand-entered inputs for scripts/model/build.mjs. Two kinds: (1) public numbers read from a document that fetch.py does not parse, each with its source; (2) the model's own parameters, which are choices, not data. The paper labels both.",
+
+  "asOf": "2026-11-09",
+
+  "windows": {
+    "recent": ["2022-01", "2026-09"],
+    "long": ["2011-05", "2026-09"],
+    "before": ["2011-05", "2021-12"]
+  },
+
+  "equityWeights": {
+    "_source": "FTSE Global All Cap Index factsheet, data as at 30 October 2026, country breakdown. U.S. 62.89%. Emerging is my sum of the markets FTSE classifies as emerging (about 9.6%); developed ex U.S. is the remainder.",
+    "_url": "https://research.ftserussell.com/Analytics/FactSheets/Home/DownloadSingleIssue?issueName=GEISLMS&IsManual=false",
+    "us": 0.629,
+    "intl": 0.275,
+    "em": 0.096
+  },
+
+  "credit": {
+    "_source": "Investment grade: expected loss is half the spread, the long-run finding of Giesecke, Longstaff, Schaefer and Strebulaev (2011). High yield: 3.61% weighted-average annual default rate, 1971-2013 (Altman and Kuehne 2014) times a 60% loss given default (40% recovery is the convention in CDS pricing and my assumption).",
+    "igLossShareOfSpread": 0.5,
+    "hyDefaultRate": 3.61,
+    "hyLossGivenDefault": 0.6
+  },
+
+  "goldRealReturn": 0,
+
+  "_materialityBp": "An asset stays on the menu only if it adds at least this many basis points a year to a stand-alone investor's certainty-equivalent return, at some risk aversion on the grid.",
+  "materialityBp": 1,
+
+  "savingsRate": {
+    "_source": "Vanguard, How America Saves 2026: average total contribution rate (participant and employer) 12.1% in 2025.",
+    "value": 0.121
+  },
+
+  "lifecycle": { "startAge": 25, "retireAge": 65, "ladderYears": 30, "lastAge": 100 },
+
+  "gammaGrid": [2, 3, 4, 6, 8, 10],
+  "gammaLabels": { "2": "Aggressive", "3": "Growth", "4": "Balanced", "6": "Moderate", "8": "Cautious", "10": "Very cautious" },
+
+  "incomeBeta": {
+    "_note": "Share of human capital that behaves like stocks. Model parameters, bracketed by the literature the paper cites; not estimates.",
+    "stable": 0,
+    "cyclical": 0.15,
+    "stockLike": 0.4
+  },
+  "incomeLabels": { "stable": "Stable pay", "cyclical": "Cyclical pay", "stockLike": "Stock-like pay" },
+
+  "estimationRisk": {
+    "_note": "Not used in the base case. Kept for the sensitivity run only.",
+    "sigmaMu": 0
+  },
+
+  "monteCarlo": { "paths": 10000, "seed": 20261109, "studentT": 5 },
+
+  "morningstar": {
+    "_source": "Morningstar, 2026 Target-Date Fund Landscape (data as of Dec. 31, 2025): median equity exposure 45 years from retirement 93%; U.S. stocks 62% of the Morningstar Global Markets Index at end-2025.",
+    "medianEquityAt45Years": 93
+  }
+}

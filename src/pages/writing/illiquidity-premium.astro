@@ -63,7 +63,8 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
       <p class="dek">{paper.subtitle}</p>
       <p class="byline">{site.name} · {minutes} min read · {nFig} charts, {nTab} tables</p>
       <p class="versions">
-        First version: {paper.firstVersion} · Rewritten: {paper.rewritten} · <a href={paper.original}>Read the original</a>
+        First version: {paper.firstVersion} · Rewritten: {paper.rewritten} · <a href={paper.original}>Read the original</a> ·
+        Companion: <a href="/writing/brockmeier-model">The Brockmeier Model</a>
       </p>
       <p class="disclaimer">{paper.disclaimer}</p>
     </header>

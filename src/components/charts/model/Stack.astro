@@ -1,0 +1,131 @@
+---
+// Stacked area: how a whole (a portfolio, 100%) is split as x moves (age, or quarters
+// of a plan). Layers are separated by a 2px white line; each is named in the legend
+// and, where it is thick enough, inside its own area.
+import Figure from '../Figure.astro';
+import { INK, INK_SOFT, GRID, AXIS, WIDE, NARROW, scale, fmt, textWidth, type Fmt, type Layout } from '../lib';
+import { inkOn } from './palette';
+
+interface Layer {
+  name: string;
+  short?: string;
+  values: number[];
+  color: string;
+}
+
+interface Props {
+  id: string;
+  n?: number | string;
+  title: string;
+  subtitle?: string;
+  source: string;
+  note?: string;
+  desc: string;
+  x: number[];
+  /** Bottom layer first. */
+  layers: Layer[];
+  xTicks: { v: number; label: string }[];
+  xTicksN?: { v: number; label: string }[];
+  xLabel?: string;
+  yLabel: string;
+  format?: Fmt;
+  /** Vertical markers, e.g. an event in a plan. */
+  vrefs?: { v: number; label: string }[];
+  /** Rows of the data table (x positions); defaults to the ticks. */
+  tableAt?: number[];
+  height?: number;
+}
+
+const { id, n, title, subtitle, source, note, desc, x, layers, xLabel, yLabel, format = { suffix: '%', decimals: 0 }, vrefs = [], height } = Astro.props;
+const total = x.map((_, i) => layers.reduce((s, l) => s + l.values[i], 0));
+const yMax = Math.max(...total);
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function build(L: Layout) {
+  const H = height ? (L.narrow ? height - 10 : height) : L.H;
+  const f = L.f;
+  const xt = (L.narrow && Astro.props.xTicksN) || Astro.props.xTicks;
+  const left = textWidth(fmt(100, format), f) + 14;
+  const right = 10;
+  const top = 26;
+  const bottom = f + 16 + (xLabel ? f + 10 : 0);
+  const x0 = left;
+  const x1 = L.W - right;
+  const sx = scale(x[0], x[x.length - 1], x0, x1);
+  const sy = scale(0, yMax, H - bottom, top);
+  let s = '';
+  const yt = yMax > 99 ? [0, 25, 50, 75, 100] : [0, yMax / 2, yMax];
+  for (const v of yt) {
+    s += `<line x1="${x0}" x2="${x1}" y1="${sy(v)}" y2="${sy(v)}" stroke="${GRID}"/>`;
+    s += `<text x="${x0 - 8}" y="${sy(v) + f * 0.35}" text-anchor="end" font-size="${f}" fill="${INK_SOFT}">${esc(fmt(v, format))}</text>`;
+  }
+  s += `<text x="${x0 - 8}" y="${top - 12}" font-size="${f}" fill="${INK_SOFT}" style="font-weight:600">${esc(yLabel)}</text>`;
+  const base = x.map(() => 0);
+  layers.forEach((l) => {
+    const lo = [...base];
+    const hi = base.map((b, i) => b + l.values[i]);
+    if (Math.max(...l.values) > 0.05) {
+      const up = hi.map((v, i) => `${i ? 'L' : 'M'}${sx(x[i]).toFixed(1)},${sy(v).toFixed(1)}`).join('');
+      const down = lo.map((v, i) => `L${sx(x[i]).toFixed(1)},${sy(v).toFixed(1)}`).reverse().join('');
+      s += `<path d="${up}${down}Z" fill="${l.color}" stroke="#fff" stroke-width="2" stroke-linejoin="round"><title>${esc(l.name)}</title></path>`;
+      // Label inside the layer, where a box the size of the text has the most headroom
+      // and is clear of any vertical marker.
+      const label = L.narrow ? (l.short ?? l.name) : l.name;
+      const half = textWidth(label, f) / 2;
+      let pick: { cx: number; mid: number; clear: number } | null = null;
+      for (let i = 0; i < x.length; i++) {
+        const cx = sx(x[i]);
+        if (cx - half < x0 + 4 || cx + half > x1 - 4) continue;
+        if (vrefs.some((r) => Math.abs(cx - sx(r.v)) < half + 8)) continue;
+        // Every data point under the text, plus one on each side.
+        let p = i;
+        while (p > 0 && sx(x[p]) > cx - half - 2) p--;
+        let q = i;
+        while (q < x.length - 1 && sx(x[q]) < cx + half + 2) q++;
+        const floor = Math.max(...lo.slice(p, q + 1));
+        const ceil = Math.min(...hi.slice(p, q + 1));
+        const clear = sy(floor) - sy(ceil);
+        if (clear > f + 6 && (!pick || clear > pick.clear + 0.5)) pick = { cx, mid: (floor + ceil) / 2, clear };
+      }
+      if (pick) s += `<text x="${pick.cx}" y="${sy(pick.mid) + f * 0.35}" text-anchor="middle" font-size="${f}" fill="${inkOn(l.color)}" style="font-weight:600;pointer-events:none">${esc(label)}</text>`;
+    }
+    for (let i = 0; i < base.length; i++) base[i] = hi[i];
+  });
+  for (const r of vrefs) {
+    s += `<line x1="${sx(r.v)}" x2="${sx(r.v)}" y1="${top - 4}" y2="${H - bottom}" stroke="${INK}" stroke-width="1.25"/>`;
+    const anchor = sx(r.v) > (x0 + x1) / 2 ? 'end' : 'start';
+    s += `<text x="${sx(r.v) + (anchor === 'end' ? -5 : 5)}" y="${top - 8}" text-anchor="${anchor}" font-size="${f - 1}" fill="${INK}">${esc(r.label)}</text>`;
+  }
+  for (const tk of xt) {
+    s += `<line x1="${sx(tk.v)}" x2="${sx(tk.v)}" y1="${H - bottom}" y2="${H - bottom + 4}" stroke="${AXIS}"/>`;
+    s += `<text x="${sx(tk.v)}" y="${H - bottom + f + 6}" text-anchor="middle" font-size="${f}" fill="${INK}">${esc(tk.label)}</text>`;
+  }
+  s += `<line x1="${x0}" x2="${x1}" y1="${H - bottom}" y2="${H - bottom}" stroke="${AXIS}"/>`;
+  if (xLabel) s += `<text x="${(x0 + x1) / 2}" y="${H - 4}" text-anchor="middle" font-size="${f}" fill="${INK_SOFT}">${esc(xLabel)}</text>`;
+  return { H, body: s };
+}
+
+const wide = build(WIDE);
+const narrow = build(NARROW);
+const shown = layers.filter((l) => Math.max(...l.values) > 0.05);
+const legend = [...shown].reverse().map((l) => ({ name: l.name, color: l.color }));
+const rowsAt = Astro.props.tableAt ?? Astro.props.xTicks.map((tk) => tk.v);
+const data = {
+  head: [xLabel ?? '', ...shown.map((l) => l.name)],
+  rows: rowsAt.map((v) => {
+    const i = x.indexOf(v);
+    return [Astro.props.xTicks.find((tk) => tk.v === v)?.label ?? String(v), ...shown.map((l) => fmt(l.values[i], { ...format, decimals: 1 }))];
+  }),
+};
+---
+
+<Figure id={id} n={n} title={title} subtitle={subtitle} source={source} note={note} legend={legend.length > 1 ? legend : []} data={data}>
+  <svg class="wide" viewBox={`0 0 ${WIDE.W} ${wide.H}`} role="img" aria-labelledby={`${id}-t ${id}-dw`}>
+    <desc id={`${id}-dw`}>{desc}</desc>
+    <g set:html={wide.body} />
+  </svg>
+  <svg class="narrow" viewBox={`0 0 ${NARROW.W} ${narrow.H}`} role="img" aria-labelledby={`${id}-t ${id}-dn`}>
+    <desc id={`${id}-dn`}>{desc}</desc>
+    <g set:html={narrow.body} />
+  </svg>
+</Figure>

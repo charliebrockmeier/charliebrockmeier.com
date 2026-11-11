@@ -7,6 +7,7 @@ Charlie Brockmeier's personal site: a pixel-art player profile, with a one-page 
 - `/contact`: email, links and the resume.
 - `/projects/<id>`: a page per project.
 - `/writing/illiquidity-premium`: *The Illiquidity Premium Changed Hands* (2026), a rewrite of a college paper that takes a side, with 20 charts, a calculator and 101 sources. The 2025 original is at `/writing/illiquidity-premium-2025`.
+- `/writing/brockmeier-model`: *The Brockmeier Model* (2026), a portfolio model priced off November 2026 yields instead of historical averages: how much risk each age, risk tolerance and kind of paycheck should hold, with 19 charts, 14 tables, a calculator and 40 sources. It ends with my own portfolio in percentages and a three-year plan to move it.
 
 Press <kbd>⌘K</kbd> or <kbd>/</kbd> on any page to search the site.
 
@@ -22,8 +23,10 @@ npm run dev        # http://localhost:4321
 npm run build      # writes dist/; fetches live chess and GitHub numbers first
 npm run preview    # serves dist/
 npm run check      # after a build: every page at phone to desktop widths, no overflow or console errors
-npm run check:paper  # every citation in the paper points to a source
-npm run pdf        # after a build: reprint the resume and paper PDFs
+npm run check:paper  # every citation in the illiquidity paper points to a source
+npm run check:model  # the same for the Brockmeier model paper
+npm run model      # rerun the portfolio model (scripts/model) and rewrite its data file
+npm run pdf        # after a build: reprint the resume and both paper PDFs
 ```
 
 `check` and `pdf` use Playwright: `npm i -D playwright && npx playwright install chromium` once.

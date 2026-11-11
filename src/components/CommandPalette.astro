@@ -8,6 +8,7 @@ import { achievements, builds, email, quests, resumePdf } from '../data/profile'
 import { branches } from '../data/skills';
 import { trips } from '../data/sidequests';
 import { paper2026 } from '../data/paper2026';
+import { model2026 } from '../data/model2026';
 
 type Item = { g: string; t: string; h?: string; href?: string; act?: string; k?: string };
 
@@ -28,6 +29,7 @@ const pages: Item[] = [
   { t: 'Contact', h: 'Email, links and a note', href: '/contact', k: 'recruiter reach hire email' },
   { t: 'Resume', h: 'One page', href: '/resume', k: 'cv experience' },
   { t: paper2026.title, h: 'Paper, 2026', href: '/writing/illiquidity-premium', k: 'research private markets writing illiquidity' },
+  { t: model2026.title, h: 'Paper, 2026', href: '/writing/brockmeier-model', k: 'research portfolio model asset allocation risk retirement TIPS stocks writing' },
   { t: 'The illiquidity premium (2025 original)', h: 'Paper, 2025', href: '/writing/illiquidity-premium-2025', k: 'research capstone writing' },
   ...builds.map((b) => ({ t: b.name, h: 'Project', href: `/projects/${b.id}`, k: b.line })),
 ].map((p) => ({ ...p, g: 'Pages' }));
@@ -46,9 +48,10 @@ const story: Item[] = quests.flatMap((q) => [
 const skills: Item[] = branches.flatMap((b) => b.skills.map((s) => ({ g: 'Skills', t: s.name, h: `${b.name} · ${s.from}`, href: '/#character', k: s.note })));
 const travel: Item[] = trips.map((t) => ({ g: 'Trips', t: `${t.place}, ${t.state}`, h: String(t.year), href: '/#side-quests', k: t.note }));
 const paper: Item[] = paper2026.sections.map((x) => ({ g: 'Paper', t: x.heading, h: paper2026.title, href: `/writing/illiquidity-premium#${x.id}`, k: 'illiquidity premium private markets' }));
+const model: Item[] = model2026.sections.map((x) => ({ g: 'Paper', t: x.heading, h: model2026.title, href: `/writing/brockmeier-model#${x.id}`, k: 'brockmeier model portfolio allocation' }));
 const badges: Item[] = achievements.map((a) => ({ g: 'Achievements', t: a.name, h: a.note, href: '/#achievements' }));
 
-const index = [...sections, ...pages, ...actions, ...story, ...skills, ...paper, ...travel, ...badges];
+const index = [...sections, ...pages, ...actions, ...story, ...skills, ...paper, ...model, ...travel, ...badges];
 ---
 
 <dialog class="palette" aria-label="Search the site" data-palette>

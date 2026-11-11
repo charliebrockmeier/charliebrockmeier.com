@@ -444,7 +444,7 @@ export const paper2026 = {
           p: 'Theory is clear about who should hold illiquid assets: investors whose horizon is longer than the lockup and whose need for cash is low and predictable. That describes a perpetual endowment better than a pension, and a pension better than an individual. The industry’s growth is running in the other direction.',
         },
         {
-          p: 'How much is a separate question from who. The model in Section 2 gives the scale: about a twelfth of the weight an asset would get if it were liquid, for something that trades once a decade and pays no premium [99].',
+          p: 'How much is a separate question from who. The model in Section 2 gives the scale: about a twelfth of the weight an asset would get if it were liquid, for something that trades once a decade and pays no premium [99]. I work the sizing through for individual investors, by age and risk tolerance, in a companion paper, <a href="/writing/brockmeier-model">The Brockmeier Model</a>. There the default weight on private funds is zero, and anything above zero has to fit inside a liquidity budget.',
         },
         { h3: 'Endowments and pensions' },
         {

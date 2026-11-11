@@ -1,4 +1,4 @@
-// Print the resume and the paper to PDF from the built site, with same-site links
+// Print the resume and the two papers to PDF from the built site, with same-site links
 // pointing at https://charliebrockmeier.com. Writes to public/ (the source of truth)
 // and dist/ (so the current build has them too).
 //
@@ -12,6 +12,7 @@ import { playwright, serve } from './serve.mjs';
 const jobs = [
   ['/resume', 'charlie-brockmeier-resume.pdf'],
   ['/writing/illiquidity-premium', 'writing/illiquidity-premium-2026.pdf'],
+  ['/writing/brockmeier-model', 'writing/brockmeier-model.pdf'],
 ];
 
 const { chromium } = playwright();

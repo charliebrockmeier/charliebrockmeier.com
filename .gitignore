@@ -31,3 +31,6 @@ my_spotify_data/
 
 # Claude Code agent worktrees (scratch checkouts, never part of the site)
 .claude/worktrees/
+
+# Brockmeier model: raw downloads (re-fetch with scripts/model/fetch.py)
+scripts/model/.cache/
