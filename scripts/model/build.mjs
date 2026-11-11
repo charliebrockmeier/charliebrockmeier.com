@@ -246,8 +246,16 @@ function expected() {
   return { mu, regions, g, gSpan, reit: { dy: reitDy, g: reitG, nominalGrowth: nomG * 100, inflation: infl * 100, from: n.months[0], to: n.months[iEnd] }, ig: { base: igBase, oas: ig.oas, loss: igLoss, oad: ig.oad, ytw: ig.ytw, asOf: ig.asOf }, hy: { base: hyBase, oas: hy.oas, loss: hyLoss, oad: hy.oad, ytw: hy.ytw, asOf: hy.asOf }, bill, cross };
 }
 const E = expected();
-const MU9 = MODEL.map((k) => E.mu[k] / 100);
-const MU11 = SIM.map((k) => E.mu[k] / 100);
+// The returns read off prices are compound (geometric) rates: a yield plus a compound
+// growth rate, what a holder should expect to earn a year over a long horizon. The
+// optimizer, the Merton share and the simulation need arithmetic means, which are higher
+// by half the variance. TIPS held to maturity have no variance in the model, so no adjustment.
+const MU9G = MODEL.map((k) => E.mu[k] / 100);
+const MU9 = MU9G.map((m, i) => (i === 0 ? m : m + S9[i][i] / 2));
+const MU11 = SIM.map((k, i) => E.mu[k] / 100 + S11[i][i] / 2);
+// Arithmetic mean of the simulated global stock portfolio (three regions at market weights).
+const MU_EQ_SIM = EQW[0] * MU11[1] + EQW[1] * MU11[2] + EQW[2] * MU11[3];
+const RF_MONTH = (1 + RF / 100) ** (1 / 12) - 1;
 
 // ================================================================ 4. history
 function history() {
@@ -329,29 +337,31 @@ function stats(x9) {
     let dd = 0;
     for (const r of hist11.X) {
       let pr = 0;
-      for (let j = 0; j < w.length; j++) pr += w[j] * (ladder && j === 0 ? RF / 1200 : r[j]);
+      for (let j = 0; j < w.length; j++) pr += w[j] * (ladder && j === 0 ? RF_MONTH : r[j]);
       v *= 1 + pr;
       peak = Math.max(peak, v);
       dd = Math.min(dd, v / peak - 1);
     }
     return dd * 100;
   };
-  return { mu: m * 100, vol: vol * 100, volMtm: volMtm * 100, loss1in100: (m + vol * T01) * 100, drawdown: worst(true), drawdownMtm: worst(false), risky: (1 - x9[0] - x9[8]) * 100 };
+  // mu is the compound return of the mix (arithmetic mean less half its variance); the bad year uses the arithmetic mean.
+  return { mu: (m - (vol * vol) / 2) * 100, muArith: m * 100, vol: vol * 100, volMtm: volMtm * 100, loss1in100: (m + vol * T01) * 100, drawdown: worst(true), drawdownMtm: worst(false), risky: (1 - x9[0] - x9[8]) * 100 };
 }
 
 // ================================================================ 6. Merton anchor
 function merton() {
-  const premium = MU9[1] - RF / 100;
+  const premium = MU9[1] - RF / 100; // arithmetic: what the formula needs
+  const premiumGeo = MU9G[1] - RF / 100; // compound: what prices show
   const variance = S9[1][1];
   const hv = (H.annual.stocks.vol / 100) ** 2;
   const hp = (H.annual.stocks.arith - H.annual.bills.arith) / 100;
   const rows = A.gammaGrid.map((g) => ({ gamma: g, today: (premium / (g * variance)) * 100, historical: (hp / (g * hv)) * 100 }));
   const muGrid = [];
   for (let m = 2.5; m <= 9.001; m += 0.25) muGrid.push(round(m, 2));
-  const sens = Object.fromEntries([2, 4, 8].map((g) => [g, muGrid.map((m) => Math.max(0, Math.min(100, ((m - RF) / 100 / (g * variance)) * 100)))]));
+  const sens = Object.fromEntries([2, 4, 8].map((g) => [g, muGrid.map((m) => Math.max(0, Math.min(100, (((m - RF) / 100 + variance / 2) / (g * variance)) * 100)))]));
   // The risk aversion at which the classic inputs produce the classic portfolios.
   const implied = Object.fromEntries([100, 80, 60, 40, 20].map((s) => [s, hp / ((s / 100) * hv)]));
-  return { premium: premium * 100, vol: Math.sqrt(variance) * 100, histPremium: hp * 100, histVol: Math.sqrt(hv) * 100, rows, muGrid, sens, implied };
+  return { premium: premium * 100, premiumGeo: premiumGeo * 100, muArith: MU9[1] * 100, vol: Math.sqrt(variance) * 100, histPremium: hp * 100, histVol: Math.sqrt(hv) * 100, rows, muGrid, sens, implied };
 }
 const M = merton();
 
@@ -521,16 +531,18 @@ const RET = retirement();
 function sensitivities() {
   const zeroTips = (S) => S.map((row, i) => row.map((v, j) => (i === 0 || j === 0 ? 0 : v)));
   const named = (x) => Object.fromEntries(MODEL.map((m, i) => [m, round(x[i] * 100, 1)]));
-  // Same expected returns, three estimation windows for risk (gamma 4, no human capital).
+  // Same compound returns, three estimation windows for risk (gamma 4, no human capital).
+  // Each window's arithmetic means use that window's own variances.
+  const arith = (S) => MU9G.map((m, i) => (i === 0 ? m : m + S[i][i] / 2));
   const windows = {};
   for (const w of ['recent', 'long', 'before']) {
     const S = mapCov(RISK[w].shrunk);
-    const x = allocate(4, 1, 0, MU9, zeroTips(S), EVERY);
-    windows[w] = { weights: named(x), eqVol: Math.sqrt(S[1][1]) * 100, corrStockLongBond: S[1][6] / Math.sqrt(S[1][1] * S[6][6]), merton: (ERP / (4 * S[1][1])) * 100 };
+    const x = allocate(4, 1, 0, arith(S), zeroTips(S), EVERY);
+    windows[w] = { weights: named(x), eqVol: Math.sqrt(S[1][1]) * 100, corrStockLongBond: S[1][6] / Math.sqrt(S[1][1] * S[6][6]), merton: ((arith(S)[1] - RF / 100) / (4 * S[1][1])) * 100 };
   }
   // No shrinkage at all.
   const raw = mapCov(RISK.recent.sample);
-  windows.recentUnshrunk = { weights: named(allocate(4, 1, 0, MU9, zeroTips(raw), EVERY)), eqVol: Math.sqrt(raw[1][1]) * 100, corrStockLongBond: raw[1][6] / Math.sqrt(raw[1][1] * raw[6][6]), merton: (ERP / (4 * raw[1][1])) * 100 };
+  windows.recentUnshrunk = { weights: named(allocate(4, 1, 0, arith(raw), zeroTips(raw), EVERY)), eqVol: Math.sqrt(raw[1][1]) * 100, corrStockLongBond: raw[1][6] / Math.sqrt(raw[1][1] * raw[6][6]), merton: ((arith(raw)[1] - RF / 100) / (4 * raw[1][1])) * 100 };
   // Historical-average expected returns with today's risk: what the classic inputs prescribe.
   const histMu = MODEL.map((k) => (k === 'tips' ? H.safe : H.mu[k]) / 100);
   const classic = Object.fromEntries([2, 4, 8].map((g) => [g, named(allocate(g, 1, 0, histMu, S9opt, EVERY))]));
@@ -538,7 +550,7 @@ function sensitivities() {
   const S11opt = zeroTips(S11);
   const regional = {};
   for (const g of [2, 4, 8]) {
-    const x = solveQP({ mu: MU11, Sigma: S11opt, gamma: g });
+    const x = solveQP({ mu: MU11.map((m, i) => (i === 0 ? RF / 100 : m)), Sigma: S11opt, gamma: g });
     regional[g] = Object.fromEntries(SIM.map((m, i) => [m, round(x[i] * 100, 1)]));
   }
   // Equity share at 30 and 45 as pay becomes more stock-like.
@@ -563,8 +575,8 @@ function sensitivities() {
   const aloneNow = (g) => ERP / (g * S9[1][1]);
   const hp = (H.annual.stocks.arith - H.annual.bills.arith) / 100;
   const aloneHist = (g) => hp / (g * (H.annual.stocks.vol / 100) ** 2);
-  const allPay = Object.fromEntries([2, 4, 8].map((g) => [g, glide(aloneNow(g), (x) => RF / 100 + x * ERP, 1)]));
-  const classicGlide = Object.fromEntries([2, 4, 8].map((g) => [g, glide(aloneHist(g), (x) => H.annual.bills.arith / 100 + x * hp, SAVE)]));
+  const allPay = Object.fromEntries([2, 4, 8].map((g) => [g, glide(aloneNow(g), (x) => RF / 100 + x * ERP - (x * x * S9[1][1]) / 2, 1)]));
+  const classicGlide = Object.fromEntries([2, 4, 8].map((g) => [g, glide(aloneHist(g), (x) => H.annual.bills.arith / 100 + x * hp - (x * x * (H.annual.stocks.vol / 100) ** 2) / 2, SAVE)]));
   return { windows, classic, regional, betaSweep, allPay, classicGlide };
 }
 const SENS = sensitivities();
@@ -738,14 +750,14 @@ function simulate() {
         for (let i = 0; i < tracks.length; i++) {
           // The model holds TIPS that mature when the money is needed: they earn their real
           // yield whatever their interim price. Benchmark bond funds are marked to market.
-          let pr = tracks[i].kind === 'model' ? w[i][0] * (rf / 12) : w[i][0] * r[0];
+          let pr = tracks[i].kind === 'model' ? w[i][0] * RF_MONTH : w[i][0] * r[0];
           for (let j = 1; j < n; j++) pr += w[i][j] * r[j];
           wealth[i] = wealth[i] * (1 + pr) + (SAVE * earnings(a) * zInc[tracks[i].inc]) / 12;
         }
-        for (const inc of incomes) tipsW[inc] = tipsW[inc] * (1 + rf / 12) + (SAVE * earnings(a) * zInc[inc]) / 12;
+        for (const inc of incomes) tipsW[inc] = tipsW[inc] * (1 + RF_MONTH) + (SAVE * earnings(a) * zInc[inc]) / 12;
       }
       // Stock-like pay moves with the stock market: a permanent shock of beta times the surprise.
-      zInc.stockLike = Math.max(0.2, zInc.stockLike * (1 + A.incomeBeta.stockLike * (eqYear - 1 - MU9[1])));
+      zInc.stockLike = Math.max(0.2, zInc.stockLike * (1 + A.incomeBeta.stockLike * (eqYear - 1 - MU_EQ_SIM)));
     }
     if (fanModel >= 0) {
       fan.model[fanAges - 1][p] = wealth[fanModel];
@@ -1141,6 +1153,8 @@ const data = {
     mu: Object.fromEntries(Object.entries(E.mu).map(([k, v]) => [k, r2(v)])),
     muExact: Object.fromEntries(Object.entries(E.mu).map(([k, v]) => [k, round(v, 6)])),
     premium: Object.fromEntries(Object.entries(E.mu).map(([k, v]) => [k, r2(v - RF)])),
+    // Arithmetic means the model uses: compound return plus half the variance (TIPS: none).
+    muArith: Object.fromEntries(MODEL.map((k, i) => [k, r2(MU9[i] * 100)])),
     regions: Object.fromEntries(Object.entries(E.regions).map(([k, v]) => [k, { ...v, eyTrailing: r2(v.eyTrailing), eyForward: r2(v.eyForward), ey: r2(v.ey), ddm: r2(v.ddm), mu: r2(v.mu) }])),
     g: r2(E.g),
     gSpan: E.gSpan,
@@ -1169,7 +1183,7 @@ const data = {
     eqVol: Object.fromEntries(['recent', 'long', 'before'].map((w) => [w, r2(Math.sqrt(quad(RISK[w].sample, P[1])) * 100)])),
   },
   materiality: { thresholdBp: A.materialityBp, active: MODEL.filter((_, i) => ACTIVE[i]), rows: MAT.map((r) => ({ id: r.id, gainBp: round(r.gainBp, 3), weight2: round(r.weight2, 1), weight4: round(r.weight4, 1), beta: round(r.beta, 3), alphaBp: r.alphaBp === null ? null : round(r.alphaBp, 1) })) },
-  merton: { premium: r2(M.premium), vol: r2(M.vol), histPremium: r2(M.histPremium), histVol: r2(M.histVol), rows: M.rows.map((r) => ({ gamma: r.gamma, today: r2(r.today), historical: r2(r.historical) })), muGrid: M.muGrid, sens: Object.fromEntries(Object.entries(M.sens).map(([k, v]) => [k, v.map((x) => r2(x))])), implied: Object.fromEntries(Object.entries(M.implied).map(([k, v]) => [k, r2(v)])) },
+  merton: { premium: r2(M.premium), premiumGeo: r2(M.premiumGeo), muArith: r2(M.muArith), vol: r2(M.vol), histPremium: r2(M.histPremium), histVol: r2(M.histVol), rows: M.rows.map((r) => ({ gamma: r.gamma, today: r2(r.today), historical: r2(r.historical) })), muGrid: M.muGrid, sens: Object.fromEntries(Object.entries(M.sens).map(([k, v]) => [k, v.map((x) => r2(x))])), implied: Object.fromEntries(Object.entries(M.implied).map(([k, v]) => [k, r2(v)])) },
   frontier: {
     today: { ...F.today, tangency: { ...F.today.tangency, vol: r2(F.today.tangency.vol), mu: r2(F.today.tangency.mu), sharpe: round(F.today.tangency.sharpe, 3) } },
     hist: { ...F.hist, safe: r2(F.hist.safe), tangency: { ...F.hist.tangency, vol: r2(F.hist.tangency.vol), mu: r2(F.hist.tangency.mu), sharpe: round(F.hist.tangency.sharpe, 3) } },

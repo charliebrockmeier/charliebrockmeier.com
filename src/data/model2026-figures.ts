@@ -21,6 +21,10 @@ const longDate = (iso: string) => `${['January', 'February', 'March', 'April', '
 const yearOf = (m: string) => Number(m.slice(0, 4)) + (Number(m.slice(5, 7)) - 0.5) / 12;
 const E = D.expected;
 const mu = E.mu;
+// Stand-alone stock share (percent) at a compound stock return m and a safe rate r, in percent.
+// The formula takes the arithmetic mean, so half the variance is added to the compound return.
+const VAR = (D.merton.vol / 100) ** 2;
+const shareAt = (m: number, g: number, r: number = D.expected.mu.tips) => Math.max(0, Math.min(100, (((m - r) / 100 + VAR / 2) / (g * VAR)) * 100));
 const G = D.meta.gammaLabels as Record<string, string>;
 const INC = D.meta.incomeLabels as Record<string, string>;
 const ages = D.lifecycle.ages;
@@ -103,19 +107,19 @@ export const figures: Record<string, ModelFigure> = {
     kind: 'bar',
     props: {
       title: 'What prices imply now, against the averages most advice is built on',
-      subtitle: 'Expected real return a year by asset class: implied by November 2026 prices, and the average of realized real returns',
-      desc: `Stocks: ${mu.eq}% implied against ${D.history.annual.stocks.arith}% average. Listed real estate: ${mu.reit}% against ${D.history.series.reit.arith}%. Corporate bonds: ${mu.ig}% against ${D.history.annual.baa.arith}%. Treasury bonds: ${mu.tips}% against ${D.history.annual.bonds.arith}%. Cash: ${mu.cash}% against ${D.history.annual.bills.arith}%. Gold: ${mu.gold}% against ${D.history.annual.gold.arith}%.`,
+      subtitle: 'Compound real return a year by asset class: implied by November 2026 prices, and realized',
+      desc: `Stocks: ${mu.eq}% implied against ${D.history.annual.stocks.geo}% realized. Listed real estate: ${mu.reit}% against ${D.history.series.reit.geo}%. Corporate bonds: ${mu.ig}% against ${D.history.annual.baa.geo}%. Treasury bonds: ${mu.tips}% against ${D.history.annual.bonds.geo}%. Cash: ${mu.cash}% against ${D.history.annual.bills.geo}%. Gold: ${mu.gold}% against ${D.history.annual.gold.geo}%.`,
       categories: ['Stocks', 'REITs', 'Corporates', 'Treasuries', 'Cash', 'Gold'],
       series: [
         { name: 'Implied by November 2026 prices', values: [mu.eq, mu.reit, mu.ig, mu.tips, mu.cash, mu.gold], color: 0 },
-        { name: 'Average since 1928 (real estate since 1972)', values: [D.history.annual.stocks.arith, D.history.series.reit.arith, D.history.annual.baa.arith, D.history.annual.bonds.arith, D.history.annual.bills.arith, D.history.annual.gold.arith], color: 1 },
+        { name: 'Realized since 1928 (real estate since 1972)', values: [D.history.annual.stocks.geo, D.history.series.reit.geo, D.history.annual.baa.geo, D.history.annual.bonds.geo, D.history.annual.bills.geo, D.history.annual.gold.geo], color: 1 },
       ],
       yLabel: 'Real return a year, %',
       yMin: 0,
       yMax: 10,
       format: { suffix: '%', decimals: 1 },
-      note: 'Implied: global stocks at market weights; listed real estate (FTSE Nareit All Equity REITs); investment-grade corporate bonds; Treasury bonds at the 10-year TIPS yield; a 4-week bill less breakeven inflation; gold at zero. Averages are arithmetic means of annual real returns, 1928–2025: S&P 500, Baa corporates, 10-year Treasuries, 3-month bills, gold; real estate is my calculation from monthly FTSE Nareit returns, 1972–2026. All derived values are my arithmetic from the cited data.',
-      source: '{tab:inputs} for the implied values; Damodaran [12] and Nareit [13] for the averages.',
+      note: 'Implied: global stocks at market weights; listed real estate (FTSE Nareit All Equity REITs); investment-grade corporate bonds; Treasury bonds at the 10-year TIPS yield; a 4-week bill less breakeven inflation; gold at zero. Realized: compound annual real returns, 1928–2025: S&P 500, Baa corporates, 10-year Treasuries, 3-month bills, gold; real estate is my calculation from monthly FTSE Nareit returns, 1972–2026. Both sets are compound rates, so they compare like for like. All derived values are my arithmetic from the cited data.',
+      source: '{tab:inputs} for the implied values; Damodaran [12] and Nareit [13] for the realized returns.',
     },
   },
 
@@ -175,24 +179,24 @@ export const figures: Record<string, ModelFigure> = {
     kind: 'lines',
     props: {
       title: 'The stock share is the premium divided by risk aversion times variance',
-      subtitle: `Merton share of a stand-alone investor as the expected real return on stocks changes; TIPS at ${mu.tips}%, stock volatility ${D.merton.vol}%`,
-      desc: `At the model's ${mu.eq}% expected return a balanced investor (γ = 4) holds ${f1(D.merton.rows[2].today)}% in stocks. At the CAPE yield of ${E.cross.capeYield}% the share is zero. At Damodaran's implied ${E.cross.damodaranReal}% it is ${f1(((E.cross.damodaranReal - mu.tips) / (4 * D.merton.vol ** 2)) * 100)}%. At the historical ${D.history.annual.stocks.arith}% it is ${f1(((D.history.annual.stocks.arith - mu.tips) / (4 * D.merton.vol ** 2)) * 100)}%.`,
+      subtitle: `Merton share of a stand-alone investor as the compound real return on stocks changes; TIPS at ${mu.tips}%, stock volatility ${D.merton.vol}%`,
+      desc: `At the model's ${mu.eq}% compound return a balanced investor (γ = 4) holds ${f1(D.merton.rows[2].today)}% in stocks. At the CAPE yield of ${E.cross.capeYield}% the share is ${f1(shareAt(E.cross.capeYield, 4))}%. At Damodaran's implied ${E.cross.damodaranReal}% it is ${f1(shareAt(E.cross.damodaranReal, 4))}%. At the ${D.history.annual.stocks.geo}% that U.S. stocks compounded at from 1928 to 2025 it is ${f1(shareAt(D.history.annual.stocks.geo, 4))}%.`,
       series: [2, 4, 8].map((g, i) => ({ name: `γ = ${g}, ${G[g].toLowerCase()}`, short: `γ ${g}`, pts: D.merton.muGrid.map((m, j) => [m, (D.merton.sens as Record<string, number[]>)[g][j]] as [number, number]), color: i })),
       marks: [
-        { x: E.cross.capeYield, y: 0, label: `1 ÷ CAPE, ${E.cross.capeYield}%`, short: '1 ÷ CAPE', pos: 'below', color: '#4f4868', hollow: true },
+        { x: E.cross.capeYield, y: shareAt(E.cross.capeYield, 4), label: `1 ÷ CAPE, ${E.cross.capeYield}%`, short: '1 ÷ CAPE', pos: 'right', color: '#4f4868', hollow: true },
         { x: mu.eq, y: D.merton.rows[2].today, label: `Model, ${mu.eq}%`, short: 'Model', bare: true, color: 1 },
-        { x: E.cross.damodaranReal, y: Math.min(100, ((E.cross.damodaranReal - mu.tips) / (4 * D.merton.vol ** 2)) * 1e4), label: `Damodaran, ${E.cross.damodaranReal}%`, short: 'Damodaran', pos: 'br', color: '#4f4868', hollow: true },
-        { x: D.history.annual.stocks.arith, y: Math.min(100, ((D.history.annual.stocks.arith - mu.tips) / (4 * D.merton.vol ** 2)) * 1e4), label: `1928–2025 average, ${D.history.annual.stocks.arith}%`, short: 'History', pos: 'al', color: '#4f4868', hollow: true },
+        { x: E.cross.damodaranReal, y: shareAt(E.cross.damodaranReal, 4), label: `Damodaran, ${E.cross.damodaranReal}%`, short: 'Damodaran', pos: 'br', color: '#4f4868', hollow: true },
+        { x: D.history.annual.stocks.geo, y: shareAt(D.history.annual.stocks.geo, 4), label: `1928–2025 realized, ${D.history.annual.stocks.geo}%`, short: 'History', pos: 'al', color: '#4f4868', hollow: true },
       ],
       vrefs: [{ v: mu.eq, label: `Model, ${mu.eq}%` }],
       xTicks: [3, 4, 5, 6, 7, 8, 9].map((v) => ({ v, label: `${v}%` })),
-      xLabel: 'Expected real return on stocks',
+      xLabel: 'Compound real return on stocks',
       yLabel: 'Share in stocks, %',
       yMin: -15,
       yMax: 100,
       refs: [{ v: 0 }],
       format: { suffix: '%', decimals: 0 },
-      note: 'Shares are capped at 100% (no borrowing). The points sit on the γ = 4 line; the vertical line marks the stock return this paper uses. My arithmetic.',
+      note: 'Shares are capped at 100% (no borrowing). The share uses the arithmetic mean, the compound return on the axis plus half the variance. The points sit on the γ = 4 line; the vertical line marks the stock return this paper uses. My arithmetic.',
       source: 'Merton (1969) [22]; inputs from {tab:inputs} and {tab:risk}.',
     },
   },
@@ -200,7 +204,7 @@ export const figures: Record<string, ModelFigure> = {
   frontier: {
     kind: 'lines',
     props: {
-      title: 'Same risks, a quarter of the reward',
+      title: `Same risks, ${Math.round((D.frontier.today.tangency.sharpe / D.frontier.hist.tangency.sharpe) * 100)}% of the reward`,
       subtitle: 'Efficient frontier of the eight risky asset classes, long-only, with November 2026 implied returns and with historical-average returns; risk is the 2022–2026 covariance in both',
       desc: `With today's inputs the best mix of risky assets earns ${D.frontier.today.tangency.mu}% for ${D.frontier.today.tangency.vol}% volatility, a slope of ${D.frontier.today.tangency.sharpe} over TIPS at ${mu.tips}%. With historical averages it earns ${D.frontier.hist.tangency.mu}% for ${D.frontier.hist.tangency.vol}%, a slope of ${D.frontier.hist.tangency.sharpe} over bills at ${D.history.safe}%.`,
       series: [
@@ -313,10 +317,10 @@ export const figures: Record<string, ModelFigure> = {
       desc: `At 40 the model holds ${f1(stock('stable', 4, 40))}% in stocks at today's prices and ${f1(D.sensitivity.classicGlide['4'][15])}% with historical averages; the target-date series holds about ${D.tdf.find((p) => p.vintage === '2050')!.equity}%. At 65 the three are ${f1(stock('stable', 4, 65))}%, ${f1(D.sensitivity.classicGlide['4'][40])}% and about ${Math.round((D.tdf.find((p) => p.vintage === '2030')!.equity * 1 + D.tdf.find((p) => p.vintage === '2025')!.equity * 4) / 5)}%.`,
       series: [
         { name: 'Model, 1928–2025 averages', short: 'Averages', pts: ages.map((a, j) => [a, D.sensitivity.classicGlide['4'][j]] as [number, number]), color: 2 },
-        { name: 'Target-date series, holdings', short: 'Target-date', pts: D.tdf.filter((p) => p.age >= 25).map((p) => [p.age, p.equity] as [number, number]), color: 1, dots: true },
+        { name: 'Target-date series, holdings', short: 'Target-date', pts: D.tdf.filter((p) => p.age >= 25 && p.age <= 66).map((p) => [p.age, p.equity] as [number, number]), color: 1, dots: true },
         { name: 'Model, November 2026 prices', short: 'Model', pts: ages.map((a, j) => [a, W.stable['4'][j][1]] as [number, number]), color: 0 },
       ],
-      xTicks: [25, 35, 45, 55, 65, 75].map((v) => ({ v, label: String(v) })),
+      xTicks: [25, 35, 45, 55, 65].map((v) => ({ v, label: String(v) })),
       xLabel: 'Age',
       yLabel: 'Stocks, % of portfolio',
       yMin: 0,
@@ -352,7 +356,7 @@ export const figures: Record<string, ModelFigure> = {
       yMin: 0,
       yMax: 100,
       format: { suffix: '%', decimals: 0 },
-      note: `Savings so far are ${pc(D.sensitivity.betaSweep.k45 * 100, 0)} of retirement wealth at 45 on the stable-pay path. At 30, where they are ${pc(D.sensitivity.betaSweep.k30 * 100, 0)}, the lines are five times steeper: a balanced investor goes from ${f1(D.sensitivity.betaSweep.age30['4'][1])}% in stocks at β of 0.05 to ${f1(D.sensitivity.betaSweep.age30['4'][5])}% at 0.25. My calculation.`,
+      note: `Savings so far are ${pc(D.sensitivity.betaSweep.k45 * 100, 0)} of retirement wealth at 45 on the stable-pay path. At 30, where they are ${pc(D.sensitivity.betaSweep.k30 * 100, 0)}, the lines are ${Math.round(((1 - D.sensitivity.betaSweep.k30) / D.sensitivity.betaSweep.k30) / ((1 - D.sensitivity.betaSweep.k45) / D.sensitivity.betaSweep.k45))} times steeper once the no-borrowing limit stops binding: a balanced investor goes from ${f1(D.sensitivity.betaSweep.age30['4'][4])}% in stocks at β of 0.2 to ${f1(D.sensitivity.betaSweep.age30['4'][8])}% at 0.4. My calculation.`,
       source: 'Model output.',
     },
   },
@@ -469,7 +473,7 @@ export const figures: Record<string, ModelFigure> = {
     kind: 'stackbars',
     props: {
       title: 'The model portfolios for a balanced investor, by age and paycheck',
-      subtitle: 'Percent of savings for γ = 4; expected real return and volatility a year at right',
+      subtitle: 'Percent of savings for γ = 4; compound expected real return and volatility a year at right',
       desc: `With stable pay the portfolio is ${Math.round(stock('stable', 4, 30))}% stocks at 30, ${Math.round(stock('stable', 4, 40))}% at 40, ${Math.round(stock('stable', 4, 50))}% at 50, ${Math.round(stock('stable', 4, 60))}% at 60 and ${Math.round(stock('stable', 4, 65))}% at 65. With cyclical pay it is ${Math.round(stock('cyclical', 4, 30))}% at 30 and ${Math.round(stock('cyclical', 4, 40))}% at 40. With stock-like pay it holds ${Math.round(stock('stockLike', 4, 40))}% at 40 and ${Math.round(stock('stockLike', 4, 60))}% at 60.`,
       parts: [
         { name: 'Global stocks', color: ASSET.stocks },
@@ -513,7 +517,7 @@ export const figures: Record<string, ModelFigure> = {
   mePath: {
     kind: 'stack',
     props: {
-      title: 'The plan: twelve quarterly steps, with the employer-stock sale in the middle',
+      title: `The plan: twelve quarterly steps, with the employer-stock sale at about quarter ${plan.employerSaleQuarter}`,
       subtitle: 'Portfolio including unvested employer stock (View B), percent of the total at each quarter',
       desc: `Employer stock stays near ${me.viewB.employer}% until it is sold in quarter ${plan.employerSaleQuarter}. U.S. index funds go from ${f1(plan.base[0].b.us)}% to ${f1(last.b.us)}%, international stocks from ${f1(plan.base[0].b.intl + plan.base[0].b.em)}% to ${f1(last.b.intl + last.b.em)}%, and single-name exposure from ${f1(plan.base[0].b.single)}% to ${f1(last.b.single)}%.`,
       x: plan.base.map((r) => r.q),
@@ -557,7 +561,7 @@ export const figures: Record<string, ModelFigure> = {
         head: ['Quarter', 'Off target, View A', 'Tracking error, View A', 'Tracking error, View B', 'What happens'],
         rows: plan.base.map((r) => [r.q === 0 ? 'Today' : `Q${r.q}`, pc(r.offTarget), pc(r.te, 2), pc(r.teB, 2), r.note || '–']),
       },
-      note: `Tracking error is the volatility of the difference between the portfolio and the target: class weights through the 2022–2026 covariance, plus the firm-specific risk of single names (from public prices [40]) and of a typical single stock for the employer shares (${me.single.idio}% a year [36]). “Off target” is half the sum of absolute weight differences. My calculation.`,
+      note: `Tracking error is the volatility of the difference between the portfolio and the target: class weights through the 2022–2026 covariance, plus the risk the market does not explain in single names (from public prices [40]) and in a typical single stock for the employer shares (${me.single.idio}% a year [36]). “Off target” is half the sum of absolute weight differences. My calculation.`,
       source: 'Model output.',
     },
   },
@@ -566,25 +570,25 @@ export const figures: Record<string, ModelFigure> = {
   inputs: {
     kind: 'table',
     props: {
-      title: 'Expected real returns implied by prices on November 9, 2026',
-      subtitle: 'Each row is a yield or a valuation read off a public source, turned into a real return by the rule in the text',
-      columns: [{ label: 'Asset class' }, { label: 'What the price says' }, { label: 'Expected real return', align: 'right' }, { label: 'Over 10-year TIPS', align: 'right' }, { label: 'Realized average', align: 'right' }],
+      title: 'Real returns implied by prices on November 9, 2026',
+      subtitle: 'Each row is a yield or a valuation read off a public source, turned into a compound real return by the rule in the text',
+      columns: [{ label: 'Asset class' }, { label: 'What the price says' }, { label: 'Priced real return, compound', align: 'right' }, { label: 'Over 10-year TIPS', align: 'right' }, { label: 'Realized, compound', align: 'right' }, { label: 'Arithmetic mean the model uses', align: 'right' }],
       rows: [
-        ['TIPS, 10-year', `Real yield ${f2(mu.tips)}% [1]`, pc(mu.tips, 2), '0.00', 'none before 1997'],
-        ['Global stocks', `U.S. ${pc(D.meta.equityWeights.us * 100)}, international ${pc(D.meta.equityWeights.intl * 100)}, emerging ${pc(D.meta.equityWeights.em * 100)} [17]`, pc(mu.eq, 2), sg(E.premium.eq), `${f2(D.history.annual.stocks.arith)}% (U.S., 1928–2025)`],
-        ['— U.S. stocks', `P/E ${E.regions.us.pe} trailing, ${E.regions.us.peFy1} forward; dividend yield ${E.regions.us.dy}% [4]`, pc(mu.us, 2), sg(E.premium.us), `${f2(D.history.series.us.arith)}% (1926–2026)`],
-        ['— International developed', `P/E ${E.regions.intl.pe}, ${E.regions.intl.peFy1}; yield ${E.regions.intl.dy}% [5]`, pc(mu.intl, 2), sg(E.premium.intl), `${f2(D.history.series.intl.arith)}% (1990–2026)`],
-        ['— Emerging markets', `P/E ${E.regions.em.pe}, ${E.regions.em.peFy1}; yield ${E.regions.em.dy}% [6]`, pc(mu.em, 2), sg(E.premium.em), `${f2(D.history.series.em.arith)}% (1989–2026)`],
-        ['Listed real estate', `Dividend yield ${E.reit.dy}%; real growth of the price index ${sg(E.reit.g)}% a year since 1971 [13]`, pc(mu.reit, 2), sg(E.premium.reit), `${f2(D.history.series.reit.arith)}% (1972–2026)`],
-        ['High-yield credit', `Yield ${E.hy.ytw}%, spread ${Math.round(E.hy.oas)} bp, duration ${E.hy.oad} [8]; expected loss ${f2(E.hy.loss)}% [15]`, pc(mu.hy, 2), sg(E.premium.hy), 'no long history'],
-        ['Investment-grade credit', `Yield ${E.ig.ytw}%, spread ${Math.round(E.ig.oas)} bp, duration ${E.ig.oad} [7]; expected loss ${f2(E.ig.loss)}% [14]`, pc(mu.ig, 2), sg(E.premium.ig), `${f2(D.history.annual.baa.arith)}% (Baa, 1928–2025)`],
-        ['Long Treasuries', `20-year yield ${f2(D.curves.nominal.find((p) => p[0] === 20)![1])}% less breakeven ${f2(D.curves.breakeven[3][1])}% [1, 2]`, pc(mu.tsyLong, 2), sg(E.premium.tsyLong), `${f2(D.history.annual.bonds.arith)}% (10-year, 1928–2025)`],
-        ['Intermediate Treasuries', `5-year yield ${f2(D.curves.nominal.find((p) => p[0] === 5)![1])}% less breakeven ${f2(D.curves.breakeven[0][1])}% [1, 2]`, pc(mu.tsyInt, 2), sg(E.premium.tsyInt), `${f2(D.history.annual.bonds.arith)}% (10-year, 1928–2025)`],
-        ['Cash', `4-week bill ${f2(D.curves.bill)}% less 5-year breakeven ${f2(D.curves.breakeven[0][1])}% [1–3]`, pc(mu.cash, 2), sg(E.premium.cash), `${f2(D.history.annual.bills.arith)}% (bills, 1928–2025)`],
-        ['Gold', 'No yield; the real price reverts toward its mean [16]', pc(mu.gold, 2), sg(E.premium.gold), `${f2(D.history.annual.gold.arith)}% (1928–2025)`],
+        ['TIPS, 10-year', `Real yield ${f2(mu.tips)}% [1]`, pc(mu.tips, 2), '0.00', 'none before 1997', pc(mu.tips, 2)],
+        ['Global stocks', `U.S. ${pc(D.meta.equityWeights.us * 100)}, international ${pc(D.meta.equityWeights.intl * 100)}, emerging ${pc(D.meta.equityWeights.em * 100)} [17]`, pc(mu.eq, 2), sg(E.premium.eq), `${f2(D.history.annual.stocks.geo)}% (U.S., 1928–2025)`, pc(E.muArith.eq, 2)],
+        ['— U.S. stocks', `P/E ${E.regions.us.pe} trailing, ${E.regions.us.peFy1} forward; dividend yield ${E.regions.us.dy}% [4]`, pc(mu.us, 2), sg(E.premium.us), `${f2(D.history.series.us.geo)}% (1926–2026)`, '–'],
+        ['— International developed', `P/E ${E.regions.intl.pe}, ${E.regions.intl.peFy1}; yield ${E.regions.intl.dy}% [5]`, pc(mu.intl, 2), sg(E.premium.intl), `${f2(D.history.series.intl.geo)}% (1990–2026)`, '–'],
+        ['— Emerging markets', `P/E ${E.regions.em.pe}, ${E.regions.em.peFy1}; yield ${E.regions.em.dy}% [6]`, pc(mu.em, 2), sg(E.premium.em), `${f2(D.history.series.em.geo)}% (1989–2026)`, '–'],
+        ['Listed real estate', `Dividend yield ${E.reit.dy}%; real growth of the price index ${sg(E.reit.g)}% a year since 1971 [13]`, pc(mu.reit, 2), sg(E.premium.reit), `${f2(D.history.series.reit.geo)}% (1972–2026)`, pc(E.muArith.reit, 2)],
+        ['High-yield credit', `Yield ${E.hy.ytw}%, spread ${Math.round(E.hy.oas)} bp, duration ${E.hy.oad} [8]; expected loss ${f2(E.hy.loss)}% [15]`, pc(mu.hy, 2), sg(E.premium.hy), 'no long history', pc(E.muArith.hy, 2)],
+        ['Investment-grade credit', `Yield ${E.ig.ytw}%, spread ${Math.round(E.ig.oas)} bp, duration ${E.ig.oad} [7]; expected loss ${f2(E.ig.loss)}% [14]`, pc(mu.ig, 2), sg(E.premium.ig), `${f2(D.history.annual.baa.geo)}% (Baa, 1928–2025)`, pc(E.muArith.ig, 2)],
+        ['Long Treasuries', `20-year yield ${f2(D.curves.nominal.find((p) => p[0] === 20)![1])}% less breakeven ${f2(D.curves.breakeven[3][1])}% [1, 2]`, pc(mu.tsyLong, 2), sg(E.premium.tsyLong), `${f2(D.history.annual.bonds.geo)}% (10-year, 1928–2025)`, pc(E.muArith.tsyLong, 2)],
+        ['Intermediate Treasuries', `5-year yield ${f2(D.curves.nominal.find((p) => p[0] === 5)![1])}% less breakeven ${f2(D.curves.breakeven[0][1])}% [1, 2]`, pc(mu.tsyInt, 2), sg(E.premium.tsyInt), `${f2(D.history.annual.bonds.geo)}% (10-year, 1928–2025)`, pc(E.muArith.tsyInt, 2)],
+        ['Cash', `4-week bill ${f2(D.curves.bill)}% less 5-year breakeven ${f2(D.curves.breakeven[0][1])}% [1–3]`, pc(mu.cash, 2), sg(E.premium.cash), `${f2(D.history.annual.bills.geo)}% (bills, 1928–2025)`, pc(E.muArith.cash, 2)],
+        ['Gold', 'No yield; the real price reverts toward its mean [16]', pc(mu.gold, 2), sg(E.premium.gold), `${f2(D.history.annual.gold.geo)}% (1928–2025)`, pc(E.muArith.gold, 2)],
       ],
-      minWidth: 620,
-      note: `Index statistics are as of ${longDate(E.regions.us.asOf)}; the Treasury curves as of ${longDate(D.meta.realCurveDate)}; the REIT yield is October 2026. Stocks: half the average of trailing and forward earnings yield, half dividend yield plus ${E.g}% real growth. Credit: Treasury real yield at the index's duration, plus spread, less expected loss. Realized averages are arithmetic means of real returns from Damodaran [12], French [18] and Nareit [13]. Every derived value is my arithmetic.`,
+      minWidth: 700,
+      note: `Index statistics are as of ${longDate(E.regions.us.asOf)}; the Treasury curves as of ${longDate(D.meta.realCurveDate)}; the REIT yield is October 2026. Stocks: half the average of trailing and forward earnings yield, half dividend yield plus ${E.g}% real growth. Credit: Treasury real yield at the index's duration, plus spread, less expected loss. Realized returns are compound annual real returns from Damodaran [12], French [18] and Nareit [13]. The last column adds half of each asset's 2022–2026 variance to the priced return; TIPS held to maturity have none. The three stock regions are held as one asset. Every derived value is my arithmetic.`,
       source: 'As cited in each row.',
     },
   },
@@ -639,9 +643,9 @@ export const figures: Record<string, ModelFigure> = {
   windows: {
     kind: 'table',
     props: {
-      title: 'Same expected returns, different years of risk data',
+      title: 'Same priced returns, different years of risk data',
       subtitle: 'Long-only optimum for a stand-alone balanced investor (γ = 4) under each covariance estimate',
-      columns: [{ label: 'Risk estimated on' }, { label: 'Stock–long-bond correlation', align: 'right' }, { label: 'Stock volatility', align: 'right' }, { label: 'Stocks', align: 'right' }, { label: 'Long Treasuries', align: 'right' }, { label: 'High yield', align: 'right' }, { label: 'TIPS', align: 'right' }],
+      columns: [{ label: 'Risk estimated on' }, { label: 'Stock–long-bond correlation', align: 'right' }, { label: 'Stock volatility', align: 'right' }, { label: 'Stocks', align: 'right' }, { label: 'Long Treasuries', align: 'right' }, { label: 'High yield', align: 'right' }, { label: 'TIPS', align: 'right' }, { label: 'Stocks if only stocks and TIPS', align: 'right' }],
       rows: (
         [
           ['recent', '2022–2026, shrunk (the model)'],
@@ -650,11 +654,11 @@ export const figures: Record<string, ModelFigure> = {
           ['before', '2011–2021, shrunk'],
         ] as const
       ).map(([k, label]) => {
-        const w = (D.sensitivity.windows as Record<string, { weights: Record<string, number>; eqVol: number; corrStockLongBond: number }>)[k];
-        return [label, sg(w.corrStockLongBond), pc(w.eqVol), pc(w.weights.eq), pc(w.weights.tsyLong), pc(w.weights.hy), pc(w.weights.tips)];
+        const w = (D.sensitivity.windows as Record<string, { weights: Record<string, number>; eqVol: number; corrStockLongBond: number; merton: number }>)[k];
+        return [label, sg(w.corrStockLongBond), pc(w.eqVol), pc(w.weights.eq), pc(w.weights.tsyLong), pc(w.weights.hy), pc(w.weights.tips), pc(w.merton)];
       }),
       minWidth: 600,
-      note: 'All nine asset classes are available in these runs. The correlation is global stocks against 20-year Treasuries. My calculation.',
+      note: 'All nine asset classes are available in these runs. Compound returns are the same in every row; each row adds half of its own variances to get arithmetic means. The correlation is global stocks against 20-year Treasuries. The last column is the share with only stocks and TIPS on the menu, so the difference from the Stocks column is what the other assets add. My calculation.',
       source: 'Model output.',
     },
   },
@@ -670,7 +674,7 @@ export const figures: Record<string, ModelFigure> = {
         return [n, String(64 + Number(n)), pc(D.retirement.byYears[n].start, 2), pc(s.male), pc(s.female), pc(s.either)];
       }),
       minWidth: 560,
-      note: `Survival is from age 65 to the birthday after the last payment, SSA ${D.retirement.ssaYear} period table; the couple column assumes independent lives. A fair real annuity for one 65-year-old would pay ${f2(D.retirement.annuityRate)}% (my arithmetic from the same table and curve, before any insurer's costs). My calculation.`,
+      note: `Survival is from age 65 to the birthday after the last payment, SSA ${D.retirement.ssaYear} period table; the couple column assumes independent lives. A fair real annuity for one 65-year-old would pay ${f2(D.retirement.annuityRate)}%, the average of the rates for a man and a woman (my arithmetic from the same table and curve, before any insurer's costs). My calculation.`,
       source: 'U.S. Treasury real yield curve [1]; SSA life table [31].',
     },
   },
@@ -725,14 +729,14 @@ export const figures: Record<string, ModelFigure> = {
     props: {
       title: 'The matrix: model portfolios for 45 groups',
       subtitle: 'By age, risk aversion and kind of paycheck: percent of savings in global stocks and in TIPS, with expected real return and three measures of risk. The line under each row says why it differs from its neighbors',
-      columns: [{ label: 'Risk' }, { label: 'Pay' }, { label: 'Savings, years of pay', align: 'right' }, { label: 'Stocks', align: 'right' }, { label: 'TIPS', align: 'right' }, { label: 'Expected real return', align: 'right' }, { label: 'Volatility', align: 'right' }, { label: 'Bad year, 1 in 100', align: 'right' }, { label: 'Worst fall 2011–26', align: 'right' }],
+      columns: [{ label: 'Risk' }, { label: 'Pay' }, { label: 'Savings, years of pay', align: 'right' }, { label: 'Stocks', align: 'right' }, { label: 'TIPS', align: 'right' }, { label: 'Expected real return, compound', align: 'right' }, { label: 'Volatility', align: 'right' }, { label: 'Bad year, 1 in 100', align: 'right' }, { label: 'Worst fall 2011–26', align: 'right' }],
       rows: D.matrix.map((m, i) => ({
         group: i % 9 === 0 ? (m.band === 'At 65' ? 'At 65, the day the paychecks stop' : `Age ${m.band.replace('-', ' to ')}, shown at ${m.age}`) : undefined,
         cells: [`${G[String(m.gamma)]}, γ\u00a0${m.gamma}`, INC[m.income].replace(' pay', '').replace('-', '\u2011'), f1(m.wealthYears), pc(m.weights.eq, 0), pc(100 - Math.round(m.weights.eq), 0), pc(m.mu, 2), pc(m.vol), neg(m.loss1in100), neg(m.drawdown)],
         why: m.reason,
       })),
       minWidth: 600,
-      note: 'Each group follows its own expected path from 25 with median pay and a 12.1% saving rate, so savings differ a little across rows. Volatility, the bad year and the worst fall count TIPS as held to maturity; marked to market as a 10-year TIPS fund, every row would show a fall of 26% to 30% since 2011, almost all of it in 2022. “Worst fall” is the largest real peak-to-trough loss of the mix from May 2011 to September 2026, rebalanced monthly. The bad year uses a Student-t with five degrees of freedom. My calculation.',
+      note: 'Each group follows its own expected path from 25 with median pay and a 12.1% saving rate, so savings differ a little across rows. The expected return is the compound rate of the mix; the bad year starts from its arithmetic mean. Volatility, the bad year and the worst fall count TIPS as held to maturity; marked to market as a 10-year TIPS fund, every row would show a fall of 26% to 30% since 2011, most of it in 2022. “Worst fall” is the largest real peak-to-trough loss of the mix from May 2011 to September 2026, rebalanced monthly. The bad year uses a Student-t with five degrees of freedom. My calculation.',
       source: 'Model output; inputs from {tab:inputs} and {tab:risk}.',
     },
   },
@@ -786,7 +790,7 @@ export const figures: Record<string, ModelFigure> = {
       columns: [{ label: 'Savings as a share of total wealth (k)' }, { label: `Single names and sector, ${me.tiltExposure}% of the liquid portfolio`, align: 'right' }, { label: `Employer stock, about ${me.viewB.employer}% of the total`, align: 'right' }],
       rows: me.hurdles.map((h) => [pc(h.k * 100, 0), `${f2(h.tilt)}%`, `${f2(h.employer)}%`]),
       minWidth: 520,
-      note: `Hurdle = γ × k × w × σ², with w the position's weight and σ its firm-specific volatility: ${me.tiltIdioVol}% for the basket of single names (measured on 2022–2026 monthly prices [40]) and ${me.single.idio}% for a typical single stock [36]. k is not published here; a saver at 25 with one year of pay in the bank has a k of ${(1 / (1 + D.lifecycle.humanCapital.stable[0] / D.lifecycle.earnings[0])).toFixed(2)} at the default saving rate. The hurdle leaves out the link between an employer's stock and the paycheck from the same employer, which makes the true number higher. My arithmetic.`,
+      note: `Hurdle = γ × k × w × σ², with w the position's weight and σ the volatility the market does not explain: ${me.tiltIdioVol}% for the basket of single names (measured on 2022–2026 monthly prices [40]) and ${me.single.idio}% for a typical single stock, industry and firm risk together [36]. k is not published here; a saver at 25 with one year of pay in the bank has a k of ${(1 / (1 + D.lifecycle.humanCapital.stable[0] / D.lifecycle.earnings[0])).toFixed(2)} at the default saving rate. The hurdle leaves out the link between an employer's stock and the paycheck from the same employer, which makes the true number higher. My arithmetic.`,
       source: 'Model output; Campbell, Lettau, Malkiel and Xu [36]; Nasdaq prices [40].',
     },
   },
@@ -802,7 +806,7 @@ export const figures: Record<string, ModelFigure> = {
         ...plan.whatIf.map((w) => [`${w.contrib}%`, pc(w.q4.offTarget), pc(w.q8.offTarget), pc(w.final.offTarget), pc(w.q4.te, 2), pc(w.final.a.single)]),
       ],
       minWidth: 560,
-      note: 'Each 1% of the portfolio added per quarter closes about 1 point of the gap per quarter until international stocks reach target, then dilutes the legacy positions. Off target is half the sum of absolute weight differences on the liquid portfolio. My arithmetic.',
+      note: 'Each 1% of the portfolio added per quarter takes about 0.7 points more off the gap each quarter in the first year, until international stocks reach target, then dilutes the legacy positions. Off target is half the sum of absolute weight differences on the liquid portfolio. My arithmetic.',
       source: 'Model output.',
     },
   },

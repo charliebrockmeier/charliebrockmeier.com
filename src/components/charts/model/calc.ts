@@ -10,7 +10,7 @@
 export type ModelInputs = {
   /** Real yield on 10-year TIPS, decimal. */
   rf: number;
-  /** Expected real return on global stocks, decimal. */
+  /** Arithmetic mean real return on global stocks (compound return plus half the variance), decimal. */
   muEq: number;
   /** Annual variance of global stocks' real return. */
   varEq: number;
@@ -100,7 +100,7 @@ export function solveModel(m: ModelInputs, a: Answers) {
   if (!retired) {
     for (let t = a.age; t < a.retire; t++) {
       const s = shareAt(f, human(t)).share;
-      f = f * (1 + m.rf + s * premium) + a.save * earn(t);
+      f = f * (1 + m.rf + s * premium - (s * s * m.varEq) / 2) + a.save * earn(t);
     }
   }
   const finalPay = earn(a.retire - 1);
@@ -115,7 +115,8 @@ export function solveModel(m: ModelInputs, a: Answers) {
     intl: share * 100 * m.eqW[1],
     em: share * 100 * m.eqW[2],
     tips: (1 - share) * 100,
-    mu: mu * 100,
+    // Shown as a compound rate: the arithmetic mean less half the variance of the mix.
+    mu: (mu - (vol * vol) / 2) * 100,
     vol: vol * 100,
     loss: (mu + vol * m.t01) * 100,
     trail,

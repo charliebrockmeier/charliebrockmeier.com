@@ -15,7 +15,8 @@ const { id, n } = Astro.props;
 
 const model: ModelInputs = {
   rf: data.expected.muExact.tips / 100,
-  muEq: data.expected.muExact.eq / 100,
+  // Arithmetic mean: the compound return read off prices plus half the variance.
+  muEq: data.expected.muExact.eq / 100 + data.risk.cov9[1][1] / 2,
   varEq: data.risk.cov9[1][1],
   curve: data.curves.real as [number, number][],
   earn: [
@@ -39,7 +40,7 @@ const parts = [
   { key: 'tips', name: 'TIPS', color: ASSET.tips },
 ] as const;
 const betas = data.meta.incomeBeta;
-const note = `Method: stock share = clip([π / (γσ²) − β(1 − k)] / k, 0, 1), with π = ${((model.muEq - model.rf) * 100).toFixed(2)} points, σ = ${(Math.sqrt(model.varEq) * 100).toFixed(1)}%, k = savings so far ÷ (savings so far + present value of the savings still to come) and β the share of future pay that behaves like stocks. Pay follows the Census age profile <span class="cite">[<a href="#src-28">28</a>]</span>, discounted on the real Treasury curve <span class="cite">[<a href="#src-1">1</a>]</span>. Retirees put 1 ÷ (funded ratio) of wealth in a TIPS ladder and invest the rest at π / (γσ²). “Stocks trail TIPS” uses a lognormal approximation. A stand-alone investor with this γ would hold <span data-out="alone">${pct(o.alone)}</span> in stocks.`;
+const note = `Method: stock share = clip([π / (γσ²) − β(1 − k)] / k, 0, 1), with π = ${((model.muEq - model.rf) * 100).toFixed(2)} points (the arithmetic premium: the compound premium plus half the variance), σ = ${(Math.sqrt(model.varEq) * 100).toFixed(1)}%, k = savings so far ÷ (savings so far + present value of the savings still to come) and β the share of future pay that behaves like stocks. Pay follows the Census age profile <span class="cite">[<a href="#src-28">28</a>]</span>, discounted on the real Treasury curve <span class="cite">[<a href="#src-1">1</a>]</span>. Retirees put 1 ÷ (funded ratio) of wealth in a TIPS ladder and invest the rest at π / (γσ²). “Stocks trail TIPS” uses a lognormal approximation. A stand-alone investor with this γ would hold <span data-out="alone">${pct(o.alone)}</span> in stocks.`;
 ---
 
 <figure class="chart calc model-calc" id={id} aria-labelledby={`${id}-t`}>
