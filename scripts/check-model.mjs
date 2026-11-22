@@ -123,9 +123,15 @@ if (unknown.length) problems.push(`Figures referenced but not defined: ${unknown
 if (unplaced.length) problems.push(`Figures defined but never placed: ${unplaced.join(', ')}`);
 if (twice.length) problems.push(`Figures placed twice: ${twice.join(', ')}`);
 
+// Section references: {sec:id} in the prose must name a section id in the paper.
+const sectionIds = new Set([...body.matchAll(/^ {6}id: '([\w-]+)',/gm)].map((m) => m[1]));
+const secRefs = [...prose.matchAll(/\{sec:([\w-]+)\}/g)].map((m) => m[1]);
+const badSec = [...new Set(secRefs)].filter((id) => !sectionIds.has(id));
+if (badSec.length) problems.push(`Section references with no such section: ${badSec.join(', ')}`);
+
 console.log(`${sources.length} sources, ${cited.size} cited; ${defined.size} figures and tables, ${placed.length} placed.`);
 if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log('Every citation resolves, every source is cited, and every figure reference exists.');
+console.log('Every citation resolves, every source is cited, and every figure and section reference exists.');

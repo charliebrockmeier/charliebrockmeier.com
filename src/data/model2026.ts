@@ -16,7 +16,7 @@ export type Block =
   | { fig: string }
   | { calc: true };
 
-export type Section = { id: string; heading: string; blocks: Block[] };
+export type Section = { id: string; heading: string; blocks: Block[]; appendix?: boolean };
 
 // ---- numbers used in the prose, all from the model's data file
 // A true minus sign for negative numbers.
@@ -77,6 +77,16 @@ const spell = (d: string) => d.replace(/^[A-Z][a-z]{2}\b/, (m) => ({ Jan: 'Janua
 const longDate = (iso: string) => `${month(iso)}`.replace(' ', ` ${Number(iso.slice(8, 10))}, `);
 const month = (m: string) => `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
 
+// The main results, listed in the Introduction.
+const keyPoints = [
+  `<strong>The reward for risk is about a third of what the textbooks use.</strong> On November 9, 2026 ten-year TIPS yielded ${f2(mu.tips)}% after inflation and thirty-year TIPS ${f2(D.curves.real[4][1])}% [1]. Global stocks are priced to compound at about ${f2(mu.eq)}% a year (my arithmetic from index earnings and dividend yields [4–6, 9]). That is ${f2(M.premiumGeo)} points more than TIPS. From 1928 to 2025 U.S. stocks compounded ${f2(histGeoPremium)} points a year faster than Treasury bills [12]. As arithmetic means, which is what the portfolio formula takes, the two premiums are ${f2(M.premium)} and ${f2(M.histPremium)} points.`,
+  `<strong>So the “60/40 investor” should hold a third to under a half in stocks once the paychecks stop.</strong> The Merton share is the premium divided by risk aversion times variance [22]. The risk aversion that gives ${r0(merton(4).historical)}% in stocks on the historical averages gives ${f1(merton(4).today)}% on today’s prices. Measured against Treasury bonds instead of bills, the old 60% becomes ${r0(shareBond60)}%. The rest belongs in TIPS, not in nominal bonds.`,
+  `<strong>Age matters because of the savings you have not made yet.</strong> Future savings are an asset, and for stable pay they behave like a bond. The model has a balanced saver all in stocks until ${leaves('stable', 4)}, at ${r0(stock('stable', 4, 40))}% by 40 and ${r0(stock('stable', 4, 65))}% at 65. The largest target-date series holds ${r0(tdfAt('2050').equity)}% at 41 and about half at 65 [32]. Run on the 1928–2025 averages, the same model gives ${r0(D.sensitivity.classicGlide['4'][15])}% at 40 and ${r0(D.sensitivity.classicGlide['4'][40])}% at 65: a target-date fund is this model with stale inputs.`,
+  `<strong>A stock-like paycheck can take the whole stock budget.</strong> If ${r0(D.meta.incomeBeta.stockLike * 100)}% of your future pay moves with the market, a balanced saver should hold ${r0(stock('stockLike', 4, 25))}% in stocks at 25, ${r0(stock('stockLike', 4, 35))}% at 35 and ${r0(stock('stockLike', 4, 55))}% at 55. The glide path runs upward, not downward.`,
+  `<strong>The 4% rule is obsolete in both directions.</strong> A 30-year TIPS ladder bought today pays ${f2(ladder)}% of its cost a year, after inflation, with no chance of running out (my arithmetic from the Treasury real curve [1]). Taking 4% from a 60/40 portfolio runs out within 30 years in ${r0(ruin.sixtyForty[2])}% of simulated paths at today’s prices.`,
+  `<strong>Eleven asset classes go in and two come out.</strong> After TIPS and global stocks, nothing else on the menu pays enough for the stock risk it carries. Nominal Treasuries lost their job when their correlation with stocks went from ${f2(D.risk.corr.before[1][8])} to +${f2(D.risk.corr.recent[1][8])}. Private assets get a weight of zero and a liquidity budget.`,
+];
+
 export const model2026 = {
   title: 'The Brockmeier Model',
   subtitle: 'How much risk to take at each age when stocks are priced to beat TIPS by two points a year, not six',
@@ -90,22 +100,21 @@ export const model2026 = {
   disclaimer:
     'Views are my own and not those of my employer. Nothing here is investment advice. Every figure comes from a public source cited at the end, or is labeled as my own arithmetic; none comes from my employer’s data or products, or from any client.',
 
-  keyPoints: [
-    `<strong>The reward for risk is about a third of what the textbooks use.</strong> On November 9, 2026 ten-year TIPS yielded ${f2(mu.tips)}% after inflation and thirty-year TIPS ${f2(D.curves.real[4][1])}% [1]. Global stocks are priced to compound at about ${f2(mu.eq)}% a year (my arithmetic from index earnings and dividend yields [4–6, 9]). That is ${f2(M.premiumGeo)} points more than TIPS. From 1928 to 2025 U.S. stocks compounded ${f2(histGeoPremium)} points a year faster than Treasury bills [12]. As arithmetic means, which is what the portfolio formula takes, the two premiums are ${f2(M.premium)} and ${f2(M.histPremium)} points.`,
-    `<strong>So the “60/40 investor” should hold a third to under a half in stocks once the paychecks stop.</strong> The Merton share is the premium divided by risk aversion times variance [22]. The risk aversion that gives ${r0(merton(4).historical)}% in stocks on the historical averages gives ${f1(merton(4).today)}% on today’s prices. Measured against Treasury bonds instead of bills, the old 60% becomes ${r0(shareBond60)}%. The rest belongs in TIPS, not in nominal bonds.`,
-    `<strong>Age matters because of the savings you have not made yet.</strong> Future savings are an asset, and for stable pay they behave like a bond. The model has a balanced saver all in stocks until ${leaves('stable', 4)}, at ${r0(stock('stable', 4, 40))}% by 40 and ${r0(stock('stable', 4, 65))}% at 65. The largest target-date series holds ${r0(tdfAt('2050').equity)}% at 41 and about half at 65 [32]. Run on the 1928–2025 averages, the same model gives ${r0(D.sensitivity.classicGlide['4'][15])}% at 40 and ${r0(D.sensitivity.classicGlide['4'][40])}% at 65: a target-date fund is this model with stale inputs.`,
-    `<strong>A stock-like paycheck can take the whole stock budget.</strong> If ${r0(D.meta.incomeBeta.stockLike * 100)}% of your future pay moves with the market, a balanced saver should hold ${r0(stock('stockLike', 4, 25))}% in stocks at 25, ${r0(stock('stockLike', 4, 35))}% at 35 and ${r0(stock('stockLike', 4, 55))}% at 55. The glide path runs upward, not downward.`,
-    `<strong>The 4% rule is obsolete in both directions.</strong> A 30-year TIPS ladder bought today pays ${f2(ladder)}% of its cost a year, after inflation, with no chance of running out (my arithmetic from the Treasury real curve [1]). Taking 4% from a 60/40 portfolio runs out within 30 years in ${r0(ruin.sixtyForty[2])}% of simulated paths at today’s prices.`,
-    `<strong>Eleven asset classes go in and two come out.</strong> After TIPS and global stocks, nothing else on the menu pays enough for the stock risk it carries. Nominal Treasuries lost their job when their correlation with stocks went from ${f2(D.risk.corr.before[1][8])} to +${f2(D.risk.corr.recent[1][8])}. Private assets get a weight of zero and a liquidity budget.`,
-  ],
+  abstract: `Most portfolio advice is calibrated to U.S. returns from 1928 to 2025, when stocks compounded ${f2(histGeoPremium)} points a year faster than Treasury bills. This paper builds a life-cycle portfolio model from the prices of November 9, 2026 instead. Ten-year TIPS then yielded ${f2(mu.tips)}% after inflation, and global stocks were priced to compound at about ${f2(mu.eq)}%, a premium of ${f2(M.premiumGeo)} points. At those prices only two of eleven asset classes earn a place: global stocks at market weights, and TIPS that mature when the money is needed. A balanced investor with no paycheck holds ${f1(merton(4).today)}% in stocks, against ${r0(merton(4).historical)}% on the historical averages. Counting future savings as an asset, a saver with stable pay holds all stocks until ${leaves('stable', 4)}, ${r0(stock('stable', 4, 40))}% at 40 and ${r0(stock('stable', 4, 65))}% at 65, well below the largest target-date series; a balanced saver whose pay moves with the market holds less stock when young, not more. A 30-year TIPS ladder pays ${f2(ladder)}% of its cost a year, more than the 4% rule, with no chance of running out. Private assets get a weight of zero and a liquidity budget. The last sections apply the model to my own portfolio and list its limits.`,
+  keywords: 'Life-cycle portfolio choice; TIPS; equity premium; human capital; target-date funds; retirement income',
+  jel: 'G11, G12, D15, J26',
 
+  keyPoints,
+
+  /** Kept for search and older links; the Conclusion carries this on the page. */
   take: `My take: at these prices the question is not which risky assets to own. It is how much of your wealth is still future savings, and whether that future pay is safe. Hold global stocks at market weights for the risk you want, hold TIPS that mature when you need the money for everything else, and move from the first to the second faster than a target-date fund does. My own portfolio fails that test on one count: it is ${r0(me.usShareOfEquityA)}% U.S. inside its stocks. The last section is the plan to fix it.`,
 
   sections: [
     {
       id: 'question',
-      heading: 'The question',
+      heading: 'Introduction',
       blocks: [
+        { h3: 'The question and the approach' },
         {
           p: 'What is the right portfolio? Most answers are a rule of thumb: 60/40, your age in bonds, a target-date fund, 4% a year in retirement. Each rule was fitted to a century of U.S. returns in which stocks earned about 8% a year more than cash. Nobody can buy that century. What you can buy is today’s prices, and today’s prices are published.',
         },
@@ -115,14 +124,26 @@ export const model2026 = {
         {
           p: 'I take positions where the numbers support them. Where a result rests on an assumption I chose, I say so and show what happens if it is wrong.',
         },
+        { h3: 'Main results' },
+        {
+          p: 'The main results are these.',
+        },
+        { list: keyPoints, ordered: true },
+        { h3: 'How the paper is organized' },
+        {
+          p: `{sec:prices} reads expected real returns off November 2026 prices, and {sec:risk} measures risk on the years since 2022. {sec:one} solves the problem for an investor with no paycheck; that answer is the benchmark every later section adjusts. {sec:menu} offers eleven asset classes and finds that only TIPS and global stocks earn a place. {sec:pay} adds the savings a person has not made yet, which is what makes the answer depend on age and on the kind of job, and compares the result with target-date funds. {sec:retire} prices retirement income off the same curve. {sec:sim} simulates whole lives to test the rules against the usual alternatives. {sec:private} sets a limit for private assets. {sec:matrix} collects the model portfolios by group, {sec:mine} applies the model to my own portfolio, {sec:limits} lists what the model leaves out, and {sec:conclusion} concludes. {sec:appendix-matrix} has the full table of 45 groups, {sec:appendix-calc} an interactive version of the model, and {sec:appendix-data} notes on data and replication.`,
+        },
       ],
     },
 
     {
       id: 'prices',
-      heading: 'What prices say in November 2026',
+      heading: 'Expected returns implied by prices',
       blocks: [
-        { h3: 'The safe asset' },
+        {
+          p: `This section turns published prices into expected real returns, one asset class at a time, and sets them beside the historical averages that most advice still uses. {tab:inputs} collects the results; every later section takes its returns from it.`,
+        },
+        { h3: 'The safe asset: TIPS' },
         {
           p: `Treasury Inflation-Protected Securities pay a fixed yield on top of inflation. On November 9, 2026 the Treasury’s par real curve stood at ${f2(D.curves.real[0][1])}% for five years, ${f2(mu.tips)}% for ten and ${f2(D.curves.real[4][1])}% for thirty [1]. At the end of 2021 the ten-year real yield was ${f2(D.curves.realThen.curve[2][1])}% [1]. {fig:curve} shows both curves. An investor who needs purchasing power at a known date can now lock in close to 3% a year above inflation, with no credit risk and no forecast. Every other asset in this paper is measured against that.`,
         },
@@ -148,7 +169,7 @@ export const model2026 = {
           p: `No single method deserves much trust, so here are two others for the U.S. number. Shiller’s cyclically adjusted P/E was ${X.cape} on November 9 [10], an earnings yield of ${f2(X.capeYield)}%, which is ${f2(Math.abs(X.excessCapeYield))} points ${X.excessCapeYield < 0 ? 'below' : 'above'} the ten-year TIPS yield. Damodaran’s implied equity risk premium on November 1 was ${f2(X.damodaranErp)}% over a ${f2(X.damodaranTbond)}% Treasury bond, an expected nominal return of ${f2(X.damodaranNominal)}% [11], or ${f2(X.damodaranReal)}% after breakeven inflation (my arithmetic). My ${f2(mu.us)}% sits between the two. One input pulls it up: the trailing P/E of ${D.expected.regions.us.pe} on the index page [4] is lower than the ${X.trailingPe} that multpl reports on as-reported S&P 500 earnings [10]. Using the higher multiple would take ${f2(0.25 * (100 / D.expected.regions.us.pe - 100 / X.trailingPe))} points off the U.S. return. {fig:ecy} shows why the low end deserves respect: for most of the last twenty years stocks out-yielded TIPS by three to six points. They no longer do.`,
         },
         { fig: 'ecy' },
-        { h3: 'Everything else' },
+        { h3: 'Credit, real estate, gold and cash' },
         {
           p: `Credit pays the Treasury yield plus a spread, less what defaults take back. Investment-grade corporate bonds yield ${D.expected.ig.ytw}% with a spread of ${r0(D.expected.ig.oas)} basis points [7]. Over 150 years spreads have run about twice default losses [14], so I keep half the spread: ${f2(mu.ig)}% real. High-yield bonds yield ${D.expected.hy.ytw}% with a spread of ${r0(D.expected.hy.oas)} basis points [8]. The long-run default rate on high-yield bonds is 3.61% a year [15]; with 40% recovered, which is my assumption, the expected loss is ${f2(D.expected.hy.loss)}% and the expected real return ${f2(mu.hy)}%.`,
         },
@@ -156,6 +177,7 @@ export const model2026 = {
           p: `Listed real estate yields ${D.expected.reit.dy}% in dividends [13]. Since 1971 the price-only index of equity REITs has grown ${f2(D.expected.reit.nominalGrowth)}% a year against inflation of ${f2(D.expected.reit.inflation)}%, so real growth is ${f2(D.expected.reit.g)}% [13, 20] and the expected real return is ${f2(mu.reit)}% (my arithmetic). Gold has no yield, and its real price has tended to fall back after running above its average [16]; I give it zero. Cash is a four-week bill at ${f2(D.curves.bill)}% [3] less breakeven inflation: ${f2(mu.cash)}%.`,
         },
         { fig: 'inputs' },
+        { h3: 'Prices against the historical averages' },
         {
           p: `{fig:implied} puts these next to the averages that most allocation advice still runs on. From 1928 to 2025 the S&P 500 compounded at ${f2(H.stocks.geo)}% a year after inflation (${f2(H.stocks.arith)}% as an arithmetic average), ten-year Treasuries at ${f2(H.bonds.geo)}% and bills at ${f2(H.bills.geo)}% (my arithmetic from Damodaran’s annual series [12]). Stocks are priced to compound at about ${r0((mu.eq / H.stocks.geo) * 100)}% of that rate. Safe assets are priced to return more than they did. Compounded, the gap between stocks and the safe asset has gone from ${f2(histGeoPremium)} points over bills to ${f2(M.premiumGeo)} over TIPS. As arithmetic means it has gone from ${f2(M.histPremium)} to ${f2(M.premium)}.`,
         },
@@ -165,11 +187,12 @@ export const model2026 = {
 
     {
       id: 'risk',
-      heading: 'Risk: the years since 2022',
+      heading: 'Measuring risk on 2022–2026 data',
       blocks: [
         {
           p: `Expected returns come from prices. Risk has to come from data, and the choice of years is a choice of regime. I use monthly real returns from January 2022 to September 2026, ${D.meta.windows.recent.months} months. That window starts when real yields began to rise from below zero and covers the period in which stocks and Treasuries have moved together. It is short, so I shrink it and I show the longer windows beside it.`,
         },
+        { h3: 'Data and estimation' },
         {
           p: `The series are public and none is built on an index from my employer. U.S. stocks are the CRSP market return and international stocks are French’s developed ex-U.S. and emerging series [18]. Treasuries and TIPS are par bonds repriced each month from the Treasury curves [1, 2]. Real estate is the FTSE Nareit All Equity REITs index [13]. Credit and gold are fund net asset values [19]. Everything is deflated by the CPI [20]; the BLS published no index for ${D.meta.cpiFilled.map(month).join(' or ')}, and I fill that month on a constant growth path.`,
         },
@@ -177,6 +200,7 @@ export const model2026 = {
           eq: 'Σ̂ = δ·F + (1 − δ)·S',
           caption: `S: sample covariance of monthly real returns, annualized. F: the same variances with every correlation set to the average correlation. δ: the shrinkage intensity that minimizes expected squared error (Ledoit and Wolf [21]). On the 2022–2026 window δ is ${r0(D.meta.windows.recent.delta * 100)}% and the average correlation is ${f2(D.meta.windows.recent.rbar)}.`,
         },
+        { h3: 'More volatility, and stocks and bonds now move together' },
         { fig: 'risk' },
         {
           p: `Two things in {fig:risk} drive the results. First, volatility is higher than in the calm decade before: global stocks at market weights have run at ${f1(D.risk.eqVol.recent)}% a year since 2022 against ${f1(D.risk.eqVol.before)}% from 2011 to 2021, and a ten-year TIPS bond at ${f1(D.risk.vol.recent.tips)}% against ${f1(D.risk.vol.before.tips)}%. Second, the sign of the stock-bond correlation flipped. From May 2011 to December 2021 the correlation between U.S. stocks and a 20-year Treasury was ${f2(D.risk.corr.before[1][8])}. Since January 2022 it has been +${f2(D.risk.corr.recent[1][8])}.`,
@@ -185,6 +209,7 @@ export const model2026 = {
         {
           p: `{fig:corr} shows the rolling version back to the 1990s. The 36-month correlation averaged ${f2(sbAvg)} from 2000 to 2020, turned positive in ${month(sb.find(([m, c]) => m > '2015' && c > 0)![0])} and was ${f2(sb[sb.length - 1][1])} in September 2026. For twenty years a long Treasury was insurance that paid a yield. In this regime it is a second risky asset with the expected return of the safe one.`,
         },
+        { h3: 'Fat tails' },
         {
           p: `Monthly returns also have fatter tails than a normal distribution: excess kurtosis from 2011 to 2026 is about ${f1(D.risk.kurtosis.us)} for stocks, ${f1(D.risk.kurtosis.tips)} for TIPS and ${f1(D.risk.kurtosis.hy)} for high yield. The simulations below draw from a Student-t distribution with ${D.meta.nu} degrees of freedom, not a normal one.`,
         },
@@ -193,10 +218,14 @@ export const model2026 = {
 
     {
       id: 'one',
-      heading: 'One investor, no paycheck',
+      heading: 'The benchmark: an investor with no paycheck',
       blocks: [
         {
-          p: 'Start with someone who lives off a portfolio and nothing else. I give investors constant relative risk aversion, the standard assumption: losing a given percentage hurts the same at any level of wealth, and a single number γ says how much.',
+          p: 'This section solves the simplest version of the problem: one investor with no future pay, one risky asset and one safe one. Its answer, the Merton share, is the benchmark that every later section adjusts.',
+        },
+        { h3: 'Preferences and the optimal stock share' },
+        {
+          p: 'I give investors constant relative risk aversion, the standard assumption: losing a given percentage hurts the same at any level of wealth, and a single number γ says how much.',
         },
         {
           eq: 'U(W) = W<sup>1−γ</sup> / (1 − γ)',
@@ -209,16 +238,20 @@ export const model2026 = {
           eq: 'α* = (μ − r) / (γσ²)',
           caption: 'α*: share of wealth in the risky asset. μ − r: its arithmetic mean return over the safe asset. σ²: its variance.',
         },
+        { h3: 'Which asset is safe' },
         {
           p: `The safe asset is the one that is safe at the investor’s horizon. For someone funding spending years away, that is an inflation-indexed bond maturing when the money is needed, not cash [25]. So r is the TIPS yield, and TIPS held to maturity carry no risk in the model even though their price moves in between. That is the one place I depart from a textbook mean-variance setup, and it matters: marked to market, a ten-year TIPS fund lost about ${r0(-D.retirement.retirees[0].drawdownMtm)}% after inflation between late 2021 and late 2023 (my calculation from the Treasury real curve), while a TIPS bond held to maturity paid exactly what it promised. One simplification: I use the ten-year TIPS yield as r at every age. Against the thirty-year yield of ${f2(D.curves.real[4][1])}% the balanced share below would be ${r0(shareAt(mu.eq, 4, D.curves.real[4][1]))}%, and against the five-year yield of ${f2(D.curves.real[0][1])}% it would be ${r0(shareAt(mu.eq, 4, D.curves.real[0][1]))}%.`,
         },
+        { h3: 'Calibrating risk aversion' },
         {
           p: `Risk aversion needs a scale people recognize. I use the old averages for that. With the 1928–2025 premium of ${f2(M.histPremium)} points over bills and volatility of ${f1(M.histVol)}%, a γ of ${f1(M.implied['60'])} gives the classic 60% in stocks and a γ of ${f1(M.implied['100'])} gives 100%. So I call γ = 2 aggressive, 3 growth, 4 balanced, 6 moderate, 8 cautious and 10 very cautious. The labels depend on what the old safe asset was. Against ten-year Treasuries instead of bills the old premium is ${f2(histBondPremium)} points, and 60% in stocks is a γ of ${f1(gammaBond60)}, my growth investor. So read “the 60/40 investor” as γ between 3 and 4. {fig:merton} gives the share each holds on the old averages and on today’s prices.`,
         },
         { fig: 'merton' },
+        { h3: 'Results' },
         {
           p: `The balanced investor who held ${r0(merton(4).historical)}% in stocks on the averages holds ${f1(merton(4).today)}% on today’s prices. The growth investor goes from ${r0(merton(3).historical)}% to ${f1(merton(3).today)}%, and the aggressive one from more than everything to ${f1(merton(2).today)}%. Nothing about these people changed. The premium fell by ${r0((1 - M.premium / M.histPremium) * 100)}% and the formula is linear in it; lower volatility gave some of that back.`,
         },
+        { h3: 'Sensitivity to the stock return' },
         { fig: 'sens' },
         {
           p: `{fig:sens} shows how much rides on the stock return, the least certain input. Reading each estimate, like mine, as a compound return: at the CAPE yield the balanced investor holds ${r0(shareAt(X.capeYield, 4))}% in stocks, and at Damodaran’s number ${r0(shareAt(X.damodaranReal, 4))}%. Only the top of that range gets her near 60%. It also shows how little is at stake. Holding the Merton share instead of no stocks at all is worth ${r0(ceBp(M.premium, M.vol, 4))} basis points a year in certainty-equivalent return to the balanced investor today, against ${f1(ceBp(M.histPremium, M.histVol, 4) / 100)} points on the old averages (π² ÷ 2γσ², my arithmetic). When the safe asset pays ${f2(mu.tips)}%, getting the stock share exactly right matters about a quarter as much as it did on the old averages.`,
@@ -231,8 +264,12 @@ export const model2026 = {
 
     {
       id: 'menu',
-      heading: 'Eleven asset classes go in, two come out',
+      heading: 'Which assets to hold: eleven in, two out',
       blocks: [
+        {
+          p: '{sec:one} had one risky asset. This section offers eleven and asks which of them earn a place next to TIPS and global stocks.',
+        },
+        { h3: 'The optimization problem' },
         {
           p: 'The menu has eleven asset classes: TIPS; U.S., international developed and emerging-market stocks; listed real estate; investment-grade and high-yield credit; intermediate and long Treasuries; gold; and cash. A private-asset sleeve is handled separately below. I hold the three stock regions at global market weights as one asset, for a reason I come back to. That leaves nine. The investor’s problem, with no borrowing and no shorting, is',
         },
@@ -243,6 +280,7 @@ export const model2026 = {
         {
           p: 'This is a quadratic program. With nine assets it can be solved exactly by brute force: for each of the 511 possible sets of assets held, the first-order conditions and the budget constraint are a small linear system; the answer is the solution with no negative weight and the highest objective. I checked the weights with a second implementation in another language on a covariance matrix rebuilt from the raw downloads.',
         },
+        { h3: 'Results' },
         { fig: 'frontier' },
         {
           p: `{fig:frontier} shows what the optimizer is choosing among. With today’s returns the best mix of risky assets has a slope of ${f2(D.frontier.today.tangency.sharpe)} over TIPS. With historical-average returns and the same risks it is ${f2(D.frontier.hist.tangency.sharpe)} over bills. The line an investor can travel along is ${r0((D.frontier.today.tangency.sharpe / D.frontier.hist.tangency.sharpe) * 100)}% as steep as it was.`,
@@ -251,11 +289,12 @@ export const model2026 = {
         {
           p: `{fig:menu} asks what each asset adds once TIPS and stocks are available. The test is its premium over TIPS after subtracting its beta times the stock premium. Listed real estate has a beta of ${f2(menu('reit').beta)} and a premium ${r0(-menu('reit').alphaBp!)} basis points too small for it. High yield is ${r0(-menu('hy').alphaBp!)} short, investment-grade credit ${r0(-menu('ig').alphaBp!)}, long Treasuries ${r0(-menu('tsyLong').alphaBp!)}, gold ${r0(-menu('gold').alphaBp!)}. Nothing clears zero, so the optimizer holds none of them at any risk aversion on the grid. The model’s rule is to keep an asset only if it adds at least one basis point a year of certainty-equivalent return, and none adds anything. High yield and real estate are the closest calls: ${r0(-menu('hy').alphaBp!)} and ${r0(-menu('reit').alphaBp!)} basis points are inside the error of my estimates, and I would not argue with someone who held a little of either. Two assets are left: TIPS and global stocks.`,
         },
+        { h3: 'Robustness to the risk window' },
         {
           p: `That is a statement about November 2026 prices, not about these asset classes. {fig:windows} reruns the problem with risk measured on other years. On the 2011–2021 covariance, when long Treasuries hedged stocks, the same compound returns give long Treasuries ${f1(win.before.weights.tsyLong)}% of the portfolio and let the balanced investor hold ${f1(win.before.weights.eq)}% in stocks. With only stocks and TIPS she would hold ${f1(win.before.merton)}% on that window’s lower volatility, so the hedge was worth about ${r0(win.before.weights.eq - win.before.merton)} points of stock exposure. It is gone, and the model does not pay for insurance that stopped paying.`,
         },
         { fig: 'windows' },
-        { h3: 'Why the regions are not optimized' },
+        { h3: 'Why the stock regions are not optimized' },
         {
           p: `If I let the optimizer choose among the three stock regions at their own implied returns, it puts nothing in the U.S.: a balanced investor gets ${f1(D.sensitivity.regional['4'].intl)}% international developed, ${f1(D.sensitivity.regional['4'].em)}% emerging and no U.S. stocks at all. That is what a ${f1(mu.intl - mu.us)}-point gap in expected return does when two assets have a correlation of ${f2(D.risk.corr.recent[1][2])}. I do not believe my regional estimates that much. The gap rests on earnings multiples, a valuation gap can stay open for years, and a corner solution turns any error in it into the whole answer. So the model lets prices set the regional mix, at market weights, and lets valuations set only how much stock to own. The practical reading is narrower and I am confident in it: a portfolio that is all U.S. stocks is betting against the half of the valuation evidence that is clearest.`,
         },
@@ -264,11 +303,15 @@ export const model2026 = {
 
     {
       id: 'pay',
-      heading: 'The asset nobody puts on the statement',
+      heading: 'Future savings and the life cycle',
       blocks: [
+        {
+          p: 'So far the investor has no paycheck. This section adds the savings she has yet to make, which is what makes the answer depend on age and on the kind of job.',
+        },
         {
           p: `A 30-year-old with one year of pay saved does not have a small portfolio. She has a small portfolio plus thirty-five years of contributions that have not happened yet. If her job is secure, those contributions are close to a bond: they arrive on schedule whatever the stock market does. Bodie, Merton and Samuelson made the point in 1992 [24], and Cocco, Gomes and Maenhout put it in one line: labor income substitutes for riskless asset holdings, so the optimal stock share falls with age [26].`,
         },
+        { h3: 'Measuring future savings' },
         {
           p: 'I count only the part of future pay that will be saved. The rest pays for life before retirement and is not available to absorb a market loss unless the saver is willing to cut spending. With a fixed saving rate, the present value of future contributions is exactly the wealth that has yet to arrive in the portfolio:',
         },
@@ -277,6 +320,7 @@ export const model2026 = {
           caption: `H<sub>a</sub>: human capital at age a. s: share of pay saved, ${f1(D.meta.savingsRate * 100)}% including the employer’s contribution [30]. Y<sub>t</sub>: median pay at age t for full-time, year-round workers [28], held flat in real terms. S<sub>a,t</sub>: probability of surviving from a to t [31]. z: the real Treasury yield at that horizon [1]. β: the share of future pay that behaves like stocks. π: the stock premium. R: retirement age, 65.`,
         },
         { fig: 'hc' },
+        { h3: 'The portfolio rule' },
         {
           p: `Total retirement wealth is savings so far, F, plus H. Write k = F / (F + H). The investor wants the Merton share of total wealth in stocks, and a share β of H already behaves like stocks. The portfolio problem on total wealth is the same quadratic program with two changes:`,
         },
@@ -294,11 +338,12 @@ export const model2026 = {
         {
           p: `Read it from the inside out. π / (γσ²) is the Merton share, the stock budget as a fraction of total wealth. β(1 − k) is how much of that budget the paycheck has already spent. Dividing by k turns a share of total wealth into a share of savings, which is why a young saver with little in the bank can be 100% in stocks while holding only a few percent of total wealth in them.`,
         },
+        { h3: 'The glide path' },
         { fig: 'glide' },
         {
           p: `{fig:glide} is the result for a balanced saver with stable pay: all stocks until ${leaves('stable', 4)}, ${f1(stock('stable', 4, 35))}% at 35, ${f1(stock('stable', 4, 40))}% at 40, ${f1(stock('stable', 4, 50))}% at 50 and ${f1(stock('stable', 4, 65))}% at 65. I did not choose that shape. It is the formula evaluated along the path of a median earner who saves ${f1(D.meta.savingsRate * 100)}% of pay. An aggressive saver stays all in stocks until ${leaves('stable', 2)} and ends at ${f1(stock('stable', 2, 65))}%. A cautious one is at ${f1(stock('stable', 8, 30))}% by 30 and ends at ${f1(stock('stable', 8, 65))}%.`,
         },
-        { h3: 'This is where target-date funds come from' },
+        { h3: 'Comparison with target-date funds' },
         {
           p: `Target-date funds hold 93% in stocks at the median for savers 45 years from retirement [33]. The largest series, with 38% of target-date assets [35], holds ${f1(tdfAt('2055').equity)}% for a 36-year-old, ${f1(tdfAt('2040').equity)}% at 51, ${f1(tdfAt('2030').equity)}% at 61 and ${f1(tdfAt('2025').equity)}% at 66, going by its funds’ reported holdings [32]. Feed my model the 1928–2025 averages instead of today’s prices and it produces ${f1(D.sensitivity.classicGlide['4'][15])}% at 40, ${f1(D.sensitivity.classicGlide['4'][25])}% at 50 and ${f1(D.sensitivity.classicGlide['4'][40])}% at 65. That is a target-date fund. {fig:tdf} draws the three together.`,
         },
@@ -306,7 +351,7 @@ export const model2026 = {
         {
           p: `So the industry’s glide path is not wrong in its logic. It is right for a premium of ${f2(M.histPremium)} points. At ${f2(M.premium)} points the same logic says a balanced saver should be at ${f1(stock('stable', 4, 40))}% in stocks at 40, not ${r0(tdfAt('2050').equity)}%, and at ${f1(stock('stable', 4, 65))}% at 65, not about half. The fund is one path sold to everyone, and it does not fit everyone the same way. A growth saver (γ = 3) ends at ${f1(stock('stable', 3, 65))}%, about where the fund does. An aggressive one should hold more stock than the fund from her forties on: ${f1(stock('stable', 2, 50))}% at 50 and ${f1(stock('stable', 2, 65))}% at 65. What none of them should copy is the other half of the fund, nominal bonds held in a fund, where the model holds TIPS that mature when the money is needed.`,
         },
-        { h3: 'When the paycheck is the risky asset' },
+        { h3: 'When the paycheck is risky' },
         {
           p: `Not everyone’s pay is a bond. Benzoni, Collin-Dufresne and Goldstein show that when wages and dividends move together over long horizons, a young worker’s human capital is stock-like and the right stock share is hump-shaped over life, not falling [27]. I use three groups: stable pay with β of ${D.meta.incomeBeta.stable}, cyclical pay with β of ${D.meta.incomeBeta.cyclical} (bonus-heavy or cyclical industries), and stock-like pay with β of ${D.meta.incomeBeta.stockLike} (commission, founders, pay that is largely equity). These β values are my assumptions, chosen to span that literature, not estimates.`,
         },
@@ -326,8 +371,12 @@ export const model2026 = {
 
     {
       id: 'retire',
-      heading: 'Retirement: buy the floor, then decide',
+      heading: 'Retirement: the floor and the surplus',
       blocks: [
+        {
+          p: 'This section prices retirement income off the same real curve, tests the 4% rule against it, and splits a retiree’s wealth into a guaranteed floor and a surplus that can take risk.',
+        },
+        { h3: 'Pricing a TIPS ladder' },
         {
           p: 'At retirement the paychecks stop and the question changes from how much to accumulate to how much can be spent. The real curve answers it by arithmetic. A TIPS ladder is a set of bonds that mature one per year, each sized to pay for that year. Its price comes from discount factors bootstrapped off the par real curve:',
         },
@@ -340,6 +389,7 @@ export const model2026 = {
           p: `On the November 9 curve a ladder of thirty payments pays ${f2(ladder)}% of its cost a year, rising with inflation, from 65 through 94 (my arithmetic [1]). There is no simulation in that number and no probability of failure. {fig:ladder} shows what the same ladder paid at each month-end curve since 2004. In ${month(ladderMin[0])} it paid ${f2(ladderMin[1])}%. The 4% rule made sense when the safe alternative paid three.`,
         },
         { fig: 'ladder' },
+        { h3: 'The 4% rule at today’s prices' },
         {
           p: `The 4% rule comes from Bengen, who published it in 1994 as a worst case from U.S. history: take 4% of the portfolio in the first year, raise it with inflation, and the money lasted 30 years even for someone who retired at the 1968 peak [34]. At today’s prices it is not a worst case. {fig:ruin} runs the test forward with November 2026 expected returns: at a 4% withdrawal a 60/40 portfolio runs out within 30 years in ${f1(ruin.sixtyForty[2])}% of paths, the target-date glide path in ${f1(ruin.tdf[2])}% and an all-stock portfolio in ${f1(ruin.stocks[2])}%. The rule asks a risky portfolio to do, with a failure rate of ${r0(Math.min(ruin.sixtyForty[2], ruin.tdf[2], ruin.stocks[2]))}% to ${r0(Math.max(ruin.sixtyForty[2], ruin.tdf[2], ruin.stocks[2]))}%, what a ladder now does with certainty at a higher rate.`,
         },
@@ -364,10 +414,14 @@ export const model2026 = {
 
     {
       id: 'sim',
-      heading: 'Forty years, ten thousand times',
+      heading: 'Simulating whole lives',
       blocks: [
         {
-          p: `The formulas above are instantaneous. To see what they do over a life I simulate it: ${D.mc.paths.toLocaleString('en-US')} paths, monthly, from 25 to 94. Each month’s real returns for all eleven asset classes are drawn together:`,
+          p: 'The rules so far are formulas for a single moment. This section simulates whole lives, forty years of saving and thirty of spending, to see what the rules deliver against the usual alternatives.',
+        },
+        { h3: 'Design' },
+        {
+          p: `The simulation runs ${D.mc.paths.toLocaleString('en-US')} paths, monthly, from 25 to 94. Each month’s real returns for all eleven asset classes are drawn together:`,
         },
         {
           eq: 'r<sub>t</sub> = μ/12 + L z<sub>t</sub> · √((ν − 2)/ν) / √(χ²<sub>ν,t</sub> / ν)',
@@ -376,17 +430,21 @@ export const model2026 = {
         {
           p: `The saver earns the median pay for her age and saves ${f1(D.meta.savingsRate * 100)}% of it each month. With stock-like pay, her income moves each year by β times the surprise in stock returns, permanently. Five strategies face the same draws. The model re-solves its formula each year on actual savings and the present value of contributions still to come, holds TIPS that mature when the money is needed, buys a ladder with its TIPS at 65 and amortizes its stocks over the years left. Four benchmarks invest the same contributions: 60/40 in U.S. stocks and intermediate Treasuries; the target-date glide path of {fig:tdf}; 100% U.S. stocks; and age in bonds. Each benchmark spends in retirement by amortizing what it holds over the years left.`,
         },
+        { h3: 'The saving years' },
         { fig: 'fan' },
         {
           p: `{fig:fan} shows the saving years for a balanced saver. The model’s median is a little lower than the target-date fund’s at 65, ${f1(D.mc.fan.model[2][40])} years of final pay against ${f1(D.mc.fan.tdf[2][40])}, and its range is much narrower: ${f1(D.mc.fan.model[0][40])} to ${f1(D.mc.fan.model[4][40])} between the 5th and 95th percentiles, against ${f1(D.mc.fan.tdf[0][40])} to ${f1(D.mc.fan.tdf[4][40])}. That is what the model is for. It gives up ${r0((1 - D.mc.fan.model[2][40] / D.mc.fan.tdf[2][40]) * 100)}% of median wealth and its 5th-percentile outcome is ${r0((D.mc.fan.model[0][40] / D.mc.fan.tdf[0][40] - 1) * 100)}% better.`,
         },
+        { h3: 'Retirement income' },
         { fig: 'mc' },
         {
           p: `{fig:mc} carries the same lives through retirement. A saver who bought nothing but TIPS for forty years and a ladder at 65 would replace ${r0(grp('stable', 4).tipsOnly)}% of final pay for thirty years before Social Security, if every contribution could be invested at today’s real yields. That is the bar. The target-date path beats it at the median, ${r0(row('stable', 4, 'tdf').spend[1])}%, and falls short of it in ${r0(row('stable', 4, 'tdf').shortfall)}% of lives. 60/40 falls short in ${r0(row('stable', 4, 'sixtyForty').shortfall)}% and all U.S. stocks in ${r0(row('stable', 4, 'stocks').shortfall)}%. The model falls short in ${r0(row('stable', 4, 'model').shortfall)}%.`,
         },
+        { h3: 'The fixed-curve assumption' },
         {
           p: 'One assumption carries much of this, and I want it in plain sight. The simulation holds the real yield curve fixed. Every future contribution buys TIPS at today’s yields, and the ladder at 65 is priced on today’s curve. Only the TIPS a saver already owns are certain. Real yields were below zero five years ago, and TIPS are not issued beyond thirty years, so a saver under 35 cannot yet buy the bonds that would pay for her last years. If real yields fall, the paths that lean on TIPS end with less than the table shows.',
         },
+        { h3: 'Certainty-equivalent income' },
         {
           eq: 'CE = [ Σ<sub>t</sub> S<sub>t</sub> · E(c<sub>t</sub><sup>1−γ</sup>) / Σ<sub>t</sub> S<sub>t</sub> ]<sup>1/(1−γ)</sup>',
           caption: 'CE: certainty-equivalent income, the constant real income the investor would accept in place of the risky stream. c<sub>t</sub>: real spending at age t, 65 to 94. S<sub>t</sub>: probability of being alive [31]. The expectation is over simulated paths.',
@@ -421,13 +479,12 @@ export const model2026 = {
 
     {
       id: 'matrix',
-      heading: 'The matrix',
+      heading: 'Model portfolios by group',
       blocks: [
         {
-          p: 'Here is the model sorted into groups: five ages, three levels of risk aversion and three kinds of paycheck, each on its own expected path. {fig:matrixBars} shows the balanced investor; {tab:matrix} has all 45 with expected real return, volatility, a bad year and the reason each differs from its neighbors. Retirees are in {tab:retirees}, by funded ratio.',
+          p: 'This section sorts the model into groups: five ages, three levels of risk aversion and three kinds of paycheck, each on its own expected path. {fig:matrixBars} shows the balanced investor. {tab:matrix} in {sec:appendix-matrix} has all 45 groups with expected real return, volatility, a bad year and the reason each differs from its neighbors. Retirees are in {tab:retirees}, by funded ratio.',
         },
         { fig: 'matrixBars' },
-        { fig: 'matrix' },
         {
           p: 'Four patterns are worth saying in words.',
         },
@@ -439,16 +496,12 @@ export const model2026 = {
             `<strong>At the corners:</strong> young savers with stable pay want more stock than they are allowed without borrowing, so they all hold 100% whatever their γ. Cautious savers with stock-like pay want less than zero, so they all hold none.`,
           ],
         },
-        {
-          p: 'The calculator applies the same formula to any age, saving rate and amount saved.',
-        },
-        { calc: true },
       ],
     },
 
     {
       id: 'mine',
-      heading: 'My own portfolio',
+      heading: 'Application: my own portfolio',
       blocks: [
         {
           p: `A model that its author does not hold himself against is a lecture. So here is my portfolio at the ${longDate(me.asOf)} close, in percentages only. View A is the liquid portfolio: a Roth IRA (${f1(me.accounts[0].weight)}%), a 401(k) (${f1(me.accounts[1].weight)}%), a taxable brokerage account (${f1(me.accounts[2].weight)}%) and bank cash (${f1(me.accounts[3].weight)}%). View B adds unvested restricted stock units in my employer’s stock, which are about ${me.viewB.employer}% of the total when included. I do not own those shares yet and cannot sell them, so the model target is measured against View A, and View B is how I look at risk.`,
@@ -463,7 +516,7 @@ export const model2026 = {
         },
         { fig: 'meBars' },
         { fig: 'gap' },
-        { h3: 'What the numbers say' },
+        { h3: 'Diagnosis' },
         {
           list: [
             `<strong>The amount of risk is right. The mix is not.</strong> My stock exposure is ${f1(me.equityA)}% of the liquid portfolio counting the leveraged fund at twice its weight, close to the model’s 100% of the invested part. But ${f1(me.usShareOfEquityA)}% of it is U.S., against a global weight of ${f1(D.meta.equityWeights.us * 100)}% [17]. The target moves ${f1(plan.needAbroad)}% of the portfolio abroad. On the model’s inputs that raises expected real return from ${f2(me.risk.viewA.mu)}% to ${f2(me.risk.target.mu)}% and lowers volatility from ${f1(me.risk.viewA.vol)}% to ${f1(me.risk.target.vol)}% (my arithmetic).`,
@@ -485,7 +538,7 @@ export const model2026 = {
         {
           p: `{fig:hurdle} gives the hurdle for both. Early in a career k is small, so the single-name basket needs only a fraction of a percent a year to justify itself: ${f2(me.hurdles[1].tilt)}% at k of one quarter. I am not going to pretend the model condemns it. The employer stock is different in size. At k of one quarter it needs ${f2(me.hurdles[1].employer)}% a year over the market and at one half ${f2(me.hurdles[2].employer)}%, and that leaves out its link to my salary. The model’s verdict is to sell it when it can be sold. That is a statement about concentration, not about the company.`,
         },
-        { h3: `The plan: ${plan.quarters} quarters` },
+        { h3: `A rebalancing plan in ${plan.quarters} quarters` },
         {
           p: `I am not going to move in one day. The plan runs ${plan.quarters} quarterly steps, about three years, in the order that costs least in tax.`,
         },
@@ -517,7 +570,7 @@ export const model2026 = {
 
     {
       id: 'limits',
-      heading: 'What would change my mind',
+      heading: 'Limitations: what would change my mind',
       blocks: [
         {
           p: 'The model is simple on purpose, and it is wrong in ways I can list.',
@@ -533,8 +586,59 @@ export const model2026 = {
             `<strong>The window is ${D.meta.windows.recent.months} months.</strong> {tab:windows} shows the answer on longer data. If stocks and bonds go back to hedging each other, long Treasuries come back into the portfolio.`,
           ],
         },
+      ],
+    },
+
+    {
+      id: 'conclusion',
+      heading: 'Conclusion',
+      blocks: [
         {
-          p: `None of that changes the main result, which rests on two published numbers: a ten-year TIPS yield of ${f2(mu.tips)}% and stock valuations that imply about ${f2(mu.eq)}%. While those hold, the portfolio that most advice calls balanced holds ${r0((60 / shareBond60 - 1) * 100)}% to ${r0((60 / merton(4).today - 1) * 100)}% more stock than its owner would choose with the prices in front of them, and it holds the rest in the wrong bonds.`,
+          p: `At these prices the question is not which risky assets to own. It is how much of your wealth is still future savings, and whether that future pay is safe. Hold global stocks at market weights for the risk you want, hold TIPS that mature when you need the money for everything else, and move from the first to the second faster than a target-date fund does.`,
+        },
+        {
+          p: `The main result rests on two published numbers: a ten-year TIPS yield of ${f2(mu.tips)}% and stock valuations that imply about ${f2(mu.eq)}%. While those hold, the portfolio that most advice calls balanced holds ${r0((60 / shareBond60 - 1) * 100)}% to ${r0((60 / merton(4).today - 1) * 100)}% more stock than its owner would choose with the prices in front of them, and it holds the rest in the wrong bonds.`,
+        },
+        {
+          p: `My own portfolio fails the model’s test on one count: it is ${r0(me.usShareOfEquityA)}% U.S. inside its stocks. {sec:mine} lays out the plan to fix it. Prices will move, and the model should be re-run when they do; {sec:appendix-data} explains how.`,
+        },
+      ],
+    },
+
+    {
+      id: 'appendix-matrix',
+      heading: 'The 45 groups in full',
+      appendix: true,
+      blocks: [
+        {
+          p: `{tab:matrix} gives the model portfolio for every group in {sec:matrix}: five ages, three levels of risk aversion and three kinds of paycheck, each on its own expected path from 25 with median pay and a ${f1(D.meta.savingsRate * 100)}% saving rate. The line under each row says why it differs from its neighbors.`,
+        },
+        { fig: 'matrix' },
+      ],
+    },
+
+    {
+      id: 'appendix-calc',
+      heading: 'The model as a calculator',
+      appendix: true,
+      blocks: [
+        {
+          p: 'The calculator evaluates the closed-form rule of {sec:pay} for any age, retirement age, risk aversion, kind of pay, amount saved and saving rate, on the same inputs as the rest of the paper. It is an illustration, not advice.',
+        },
+        { calc: true },
+      ],
+    },
+
+    {
+      id: 'appendix-data',
+      heading: 'Data and replication',
+      appendix: true,
+      blocks: [
+        {
+          p: 'Every model number in this paper is computed by the scripts in <code>scripts/model</code> in this site’s repository. They download the cited public data, parse it into one input file, and write one output file that the text, tables and figures all read, so the prose cannot drift from the model. Dates are pinned: prices and yields as of November 9, 2026, and monthly returns through September 2026. The simulation uses a fixed random seed, 20261109, so a rerun reproduces every figure.',
+        },
+        {
+          p: 'No series is built on an index from my employer. U.S. stocks are the CRSP market return and international stocks are Kenneth French’s developed ex-U.S. and emerging series; valuations come from S&P indexes; real estate is the FTSE Nareit All Equity REITs index; Treasuries and TIPS are repriced from the Treasury’s own curves. Where I could not read a provider’s own page and used a republished copy, the reference list says so.',
         },
       ],
     },

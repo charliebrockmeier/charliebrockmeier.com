@@ -133,6 +133,8 @@ const { id, n, title, subtitle, source, note, columns, rows, minWidth = 560 } = 
 
   tr.why td {
     padding-top: 0;
+    /* The explanation is as wide as the scroll box (100cqw); any right padding would push the table past it. */
+    padding-right: 0;
     padding-bottom: 0.45rem;
     color: var(--ink-soft, #4f4868);
     font-size: 0.75rem;

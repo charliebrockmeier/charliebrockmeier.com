@@ -2,6 +2,9 @@
 // The Brockmeier Model: a lifecycle portfolio model priced off November 2026 yields.
 // Text lives in src/data/model2026.ts, figures in src/data/model2026-figures.ts, and
 // every model number in src/data/model2026-data.json (written by scripts/model/build.mjs).
+// Laid out as a research paper: title block, abstract, numbered sections and subsections,
+// numbered equations, lettered appendices and references. A side contents column (wide
+// screens) or a running head (narrow ones) shows where the reader is.
 // The PDF at /writing/brockmeier-model.pdf is printed from this page.
 import Base from '../../layouts/Base.astro';
 import BarChart from '../../components/charts/BarChart.astro';
@@ -17,136 +20,227 @@ import { figures } from '../../data/model2026-figures';
 import { cite } from '../../components/charts/lib';
 import { site } from '../../data/profile';
 
-// Number charts and tables separately, in reading order.
+// Sections are numbered 1..N; appendices are lettered A, B, C.
+const body = paper.sections.filter((s) => !s.appendix);
+const appendices = paper.sections.filter((s) => s.appendix);
+const label: Record<string, string> = {};
+body.forEach((s, i) => (label[s.id] = String(i + 1)));
+appendices.forEach((s, i) => (label[s.id] = String.fromCharCode(65 + i)));
+const isAppendix = (id: string) => appendices.some((s) => s.id === id);
+
+// Subsections are numbered within their section (2.1, 2.2; A.1) and get ids for the contents.
+type Sub = { id: string; num: string; title: string };
+const subs: Record<string, Sub[]> = {};
+for (const s of paper.sections) {
+  let k = 0;
+  subs[s.id] = s.blocks.flatMap((b) => ('h3' in b ? [{ id: `${s.id}-${++k}`, num: `${label[s.id]}.${k}`, title: b.h3 }] : []));
+}
+
+// Charts and tables are numbered separately, and equations in one series, all in reading order.
 const isTable = (id: string) => figures[id].kind === 'table' || figures[id].kind === 'noted';
 const numbers: Record<string, number> = {};
 let nFig = 0;
 let nTab = 0;
+let nEq = 0;
+const eqNo = new Map<Block, number>();
 for (const s of paper.sections)
-  for (const b of s.blocks)
+  for (const b of s.blocks) {
     if ('fig' in b) numbers[b.fig] = isTable(b.fig) ? ++nTab : ++nFig;
+    if ('eq' in b) eqNo.set(b, ++nEq);
+  }
 
-// {fig:id} and {tab:id} in the text and in figure notes become "Figure 3" or "Table 2".
+// {fig:id}, {tab:id} and {sec:id} in any text become "Figure 3", "Table 2", "Section 4" or "Appendix A".
 const refs = (text: string) =>
-  text.replace(/\{(?:fig|tab):(\w+)\}/g, (_m, id: string) => {
+  text.replace(/\{(fig|tab|sec):([\w-]+)\}/g, (_m, kind: string, id: string) => {
+    if (kind === 'sec') {
+      if (!(id in label)) throw new Error(`Unknown section reference: ${id}`);
+      return `<a href="#${id}">${isAppendix(id) ? 'Appendix' : 'Section'} ${label[id]}</a>`;
+    }
     if (!(id in numbers)) throw new Error(`Unknown figure reference: ${id}`);
     return `${isTable(id) ? 'Table' : 'Figure'} ${numbers[id]}`;
   });
+// Figure props are plain text, so section references there become plain words.
+const plainRefs = (text: string) => refs(text).replace(/<a href="#[\w-]+">([^<]+)<\/a>/g, '$1');
 const deep = (v: unknown): unknown =>
-  typeof v === 'string' ? refs(v) : Array.isArray(v) ? v.map(deep) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deep(x)])) : v;
+  typeof v === 'string'
+    ? plainRefs(v)
+    : Array.isArray(v)
+      ? v.map(deep)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deep(x)]))
+        : v;
 const html = (text: string) => cite(refs(text));
 
 const strip = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/\[[\d,\s–-]+\]/g, ' ');
 const blockText = (b: Block) =>
   'p' in b ? b.p : 'h3' in b ? b.h3 : 'list' in b ? b.list.join(' ') : 'eq' in b ? `${b.eq} ${b.caption ?? ''}` : '';
-const allText = [...paper.keyPoints, paper.take, ...paper.sections.flatMap((s) => [s.heading, ...s.blocks.map(blockText)])].map(strip).join(' ');
-const words = allText.split(/\s+/).filter(Boolean).length;
-const minutes = Math.round(words / 230);
+const allText = [paper.abstract, ...paper.sections.flatMap((s) => [s.heading, ...s.blocks.map(blockText)])].map(strip).join(' ');
+const minutes = Math.round(allText.split(/\s+/).filter(Boolean).length / 230);
 const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').split(/[/?]/)[0];
+
+// What the contents column and the running head can point at, in order.
+const outline = [
+  ...paper.sections.flatMap((s) => [
+    { id: s.id, num: label[s.id], title: s.heading, level: 2, section: s.id },
+    ...subs[s.id].map((x) => ({ id: x.id, num: x.num, title: x.title, level: 3, section: s.id })),
+  ]),
+  { id: 'references', num: '', title: 'References', level: 2, section: 'references' },
+];
+
+const renderSection = (s: (typeof paper.sections)[number]) => {
+  let k = 0;
+  return { s, blocks: s.blocks.map((b) => ({ b, sub: 'h3' in b ? subs[s.id][k++] : undefined })) };
+};
 ---
 
 <Base title={`${paper.title} | ${site.name}`} description={paper.description} theme="paper" serif>
-  <div class="toolbar">
-    <a href="/" class="back">Back to the game</a>
-    <span class="actions">
-      <a class="btn" href={paper.pdf}>PDF</a>
-      <a class="btn ghost" href={paper.companion}>Companion paper</a>
+  <nav class="topbar" aria-label="Site">
+    <a href="/">← {site.name}</a>
+    <span>
+      <a href={paper.pdf}>PDF</a>
+      <span aria-hidden="true">·</span>
+      <a href={paper.companion}>Companion paper</a>
     </span>
-  </div>
+  </nav>
+
+  <p class="running" aria-hidden="true" data-running>
+    <a href="#contents"><span class="r-sec" data-r-sec></span><span class="r-sub" data-r-sub></span></a>
+  </p>
+
+  <nav class="side" aria-label="Paper sections" data-side>
+    <p class="side-title">{paper.title}</p>
+    <ol>
+      {
+        outline.map((o) => (
+          <li class:list={[`l${o.level}`]} data-for={o.id} data-section={o.section}>
+            <a href={`#${o.id}`}>
+              {o.num && <span class="n">{o.num}</span>}
+              {o.title}
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
 
   <main class="paper">
-    <header>
-      <p class="kicker">Paper · {paper.published}</p>
+    <header class="titleblock">
       <h1>{paper.title}</h1>
-      <p class="dek">{paper.subtitle}</p>
-      <p class="byline">{site.name} · {minutes} min read · {nFig} charts, {nTab} tables</p>
-      <p class="versions">
-        Prices as of November 9, 2026 · Companion: <a href={paper.companion}>{paper.companionTitle}</a>
+      <p class="subtitle">{paper.subtitle}</p>
+      <p class="author">{site.name}</p>
+      <p class="date">{paper.published} · Prices as of November 9, 2026</p>
+      <p class="companion">
+        Companion paper: <a href={paper.companion}>{paper.companionTitle}</a> · <a href={paper.pdf}>PDF</a> · {minutes} min read
       </p>
-      <p class="disclaimer">{paper.disclaimer}</p>
     </header>
 
-    <section class="abstract" aria-labelledby="summary">
-      <h2 id="summary">Summary</h2>
-      <ul class="keypoints">
-        {paper.keyPoints.map((k) => <li set:html={html(k)} />)}
-      </ul>
-      <p class="take" set:html={html(paper.take)} />
+    <section class="abstract" aria-labelledby="abstract">
+      <h2 id="abstract">Abstract</h2>
+      <p set:html={html(paper.abstract)} />
+      <p class="meta"><em>Keywords:</em> {paper.keywords}</p>
+      <p class="meta"><em>JEL classification:</em> {paper.jel}</p>
     </section>
 
-    <nav class="toc" aria-label="Contents">
+    <p class="disclaimer">{paper.disclaimer}</p>
+
+    <nav class="toc" id="contents" aria-labelledby="contents-title">
+      <h2 id="contents-title">Contents</h2>
       <ol>
         {
-          paper.sections.map((s) => (
+          body.map((s) => (
             <li>
-              <a href={`#${s.id}`}>{s.heading}</a>
+              <a href={`#${s.id}`}>
+                <span class="n">{label[s.id]}</span>
+                {s.heading}
+              </a>
             </li>
           ))
         }
-        <li class="unnumbered">
-          <a href="#sources">Sources</a>
+        {
+          appendices.map((s) => (
+            <li>
+              <a href={`#${s.id}`}>
+                <span class="n">{label[s.id]}</span>
+                Appendix: {s.heading}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a href="#references"><span class="n"></span>References</a>
         </li>
       </ol>
     </nav>
 
     <article class="body">
       {
-        paper.sections.map((s, si) => (
-          <section aria-labelledby={s.id}>
-            <h2 id={s.id}>
-              <span class="num">{si + 1}.</span> {s.heading}
-            </h2>
-            {s.blocks.map((b) => {
-              if ('p' in b) return <p set:html={html(b.p)} />;
-              if ('h3' in b) return <h3>{b.h3}</h3>;
-              if ('eq' in b)
-                return (
-                  <div class="eq">
-                    <p class="eq-line" set:html={b.eq} />
-                    {b.caption && <p class="eq-caption" set:html={html(b.caption)} />}
-                  </div>
-                );
-              if ('list' in b)
-                return b.ordered ? (
-                  <ol class="steps">
-                    {b.list.map((i) => (
-                      <li set:html={html(i)} />
-                    ))}
-                  </ol>
-                ) : (
-                  <ul class="bullets">
-                    {b.list.map((i) => (
-                      <li set:html={html(i)} />
-                    ))}
-                  </ul>
-                );
-              if ('calc' in b) return <ModelCalculator id="calculator" />;
-              const f = figures[b.fig];
-              const p = { id: `fig-${b.fig}`, n: numbers[b.fig], ...(deep(f.props) as object) } as any;
-              if (f.kind === 'bar') return <BarChart {...p} />;
-              if (f.kind === 'lines') return <Lines {...p} />;
-              if (f.kind === 'heat') return <Heatmap {...p} />;
-              if (f.kind === 'stack') return <Stack {...p} />;
-              if (f.kind === 'stackbars') return <StackBars {...p} />;
-              if (f.kind === 'noted') return <NotedTable {...p} />;
-              return <Table {...p} />;
-            })}
-          </section>
-        ))
+        paper.sections.map((section, si) => {
+          const { s, blocks } = renderSection(section);
+          return (
+            <section aria-labelledby={s.id} class:list={{ appendix: s.appendix, 'first-appendix': s.appendix && appendices[0].id === s.id }}>
+              {s.appendix && appendices[0].id === s.id && <p class="appendix-divider">Appendices</p>}
+              <h2 id={s.id} data-h>
+                <span class="num">{label[s.id]}</span>{' '}
+                {s.heading}
+              </h2>
+              {blocks.map(({ b, sub }) => {
+                if ('p' in b) return <p set:html={html(b.p)} />;
+                if ('h3' in b)
+                  return (
+                    <h3 id={sub!.id} data-h>
+                      <span class="num">{sub!.num}</span>{' '}
+                      {b.h3}
+                    </h3>
+                  );
+                if ('eq' in b)
+                  return (
+                    <div class="eq">
+                      <p class="eq-line" set:html={b.eq} />
+                      <p class="eq-no">({eqNo.get(b)})</p>
+                      {b.caption && <p class="eq-caption" set:html={`<em>where</em> ${html(b.caption)}`} />}
+                    </div>
+                  );
+                if ('list' in b)
+                  return b.ordered ? (
+                    <ol class="steps">
+                      {b.list.map((i) => (
+                        <li set:html={html(i)} />
+                      ))}
+                    </ol>
+                  ) : (
+                    <ul class="bullets">
+                      {b.list.map((i) => (
+                        <li set:html={html(i)} />
+                      ))}
+                    </ul>
+                  );
+                if ('calc' in b) return <ModelCalculator id="calculator" />;
+                const f = figures[b.fig];
+                const p = { id: `fig-${b.fig}`, n: numbers[b.fig], ...(deep(f.props) as object) } as any;
+                if (f.kind === 'bar') return <BarChart {...p} />;
+                if (f.kind === 'lines') return <Lines {...p} />;
+                if (f.kind === 'heat') return <Heatmap {...p} />;
+                if (f.kind === 'stack') return <Stack {...p} />;
+                if (f.kind === 'stackbars') return <StackBars {...p} />;
+                if (f.kind === 'noted') return <NotedTable {...p} />;
+                return <Table {...p} />;
+              })}
+            </section>
+          );
+        })
       }
 
-      <section class="sources" aria-labelledby="sources">
-        <h2 id="sources">Sources</h2>
-        <p class="sources-note">
-          Public sources only. Where I could not read a provider’s own page and used a republished copy, the entry says so. Figures labeled as my
-          arithmetic, calculation or simulation come from <code>scripts/model</code> in this site’s repository, which downloads the cited data and
-          re-runs the model.
+      <section class="references" aria-labelledby="references">
+        <h2 id="references" data-h>References</h2>
+        <p class="references-note">
+          Public sources only, numbered in order of first citation. Where I could not read a provider’s own page and used a republished copy, the entry
+          says so. Figures labeled as my arithmetic, calculation or simulation come from <code>scripts/model</code> in this site’s repository.
         </p>
         <ol>
           {
             paper.sources.map((s) => (
               <li id={`src-${s.n}`}>
-                <span class="n">{s.n}.</span>
+                <span class="n">[{s.n}]</span>
                 <span>
                   {s.text}
                   {s.url && (
@@ -165,14 +259,68 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
   </main>
 </Base>
 
+<script>
+  // Where am I: the last heading above the top of the screen lights up in the side
+  // contents (wide screens) and names itself in the running head (narrow ones).
+  const heads = [...document.querySelectorAll<HTMLElement>('.body [data-h]')];
+  const side = document.querySelector<HTMLElement>('[data-side]');
+  const running = document.querySelector<HTMLElement>('[data-running]');
+  const rSec = document.querySelector<HTMLElement>('[data-r-sec]');
+  const rSub = document.querySelector<HTMLElement>('[data-r-sub]');
+  const contents = document.getElementById('contents');
+  const items = new Map([...(side?.querySelectorAll<HTMLElement>('li[data-for]') ?? [])].map((li) => [li.dataset.for!, li]));
+  const textOf = (el: HTMLElement) => el.textContent!.replace(/^Appendix\s*/, '').replace(/\s+/g, ' ').trim();
+  let current = '';
+  let ticking = false;
+
+  const update = () => {
+    ticking = false;
+    const line = 90;
+    let at: HTMLElement | undefined;
+    for (const h of heads) {
+      if (h.getBoundingClientRect().top - line > 0) break;
+      at = h;
+    }
+    const past = contents ? contents.getBoundingClientRect().bottom < 0 : false;
+    running?.classList.toggle('show', past && !!at);
+    side?.classList.toggle('show', past);
+    const id = at?.id ?? '';
+    if (id === current) return;
+    current = id;
+    // The section is the nearest h2 at or above this heading.
+    const idx = at ? heads.indexOf(at) : -1;
+    const sec = idx >= 0 ? heads.slice(0, idx + 1).reverse().find((h) => h.tagName === 'H2') : undefined;
+    if (rSec) rSec.textContent = sec ? textOf(sec) : '';
+    if (rSub) rSub.textContent = at && at.tagName === 'H3' ? textOf(at) : '';
+    for (const [key, li] of items) {
+      li.classList.toggle('active', key === id || (!!sec && key === sec.id && at?.tagName === 'H2'));
+      li.classList.toggle('open', !!sec && li.dataset.section === sec.id);
+      li.classList.toggle('in', !!sec && key === sec.id);
+    }
+    items.get(id)?.scrollIntoView({ block: 'nearest' });
+  };
+
+  addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    },
+    { passive: true },
+  );
+  update();
+</script>
+
 <style is:global>
   body.paper {
-    --bg: #fbf7ee;
-    --ink: #1b1533;
-    --ink-soft: #4f4868;
-    --rule: #e2dccd;
-    --accent: #7a3460;
-    background: var(--bg);
+    --bg: #fff;
+    --ink: #161616;
+    --ink-soft: #555;
+    --rule: #d6d6d6;
+    --accent: #1d4477;
+    background: #fff;
     color: var(--ink);
   }
 
@@ -183,215 +331,217 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
   body.paper :focus-visible {
     outline-color: var(--accent);
   }
+
+  /* Figures and tables in a plain academic frame: black rules, no color in the labels. */
+  .paper .chart {
+    margin: 2.2rem 0;
+    padding: 0.9rem 0 0.8rem;
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .paper .chart-n {
+    color: var(--ink);
+  }
+
+  .paper .chart-title {
+    font-size: 0.95rem;
+  }
+
+  .paper .chart-sub,
+  .paper .chart-note,
+  .paper .chart-source {
+    color: var(--ink-soft);
+  }
+
+  .paper .chart-data summary {
+    color: var(--ink-soft);
+  }
 </style>
 
 <style>
-  .toolbar {
+  /* ---- Top line: plain links, like a preprint server's header */
+  .topbar {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
-    gap: var(--space-xs);
-    max-width: 760px;
+    gap: 0.4rem 1rem;
+    max-width: 800px;
     margin: 0 auto;
-    padding: var(--space-m) var(--gutter) 0;
+    padding: 1rem var(--gutter) 0.8rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
   }
 
-  .back {
-    font-family: var(--font-pixel);
-    font-size: var(--step-1);
-    font-size-adjust: cap-height 0.7;
-  }
-
-  .actions {
+  .topbar span {
     display: flex;
-    gap: var(--space-xs);
+    gap: 0.5rem;
+    color: var(--ink-soft);
   }
 
-  .btn {
-    padding: 0.45rem 0.9rem;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    background: var(--accent);
-    color: #fff !important;
-    font-size: var(--label);
-    font-weight: 600;
+  .topbar a {
     text-decoration: none;
   }
 
-  .btn.ghost {
-    border-color: var(--rule);
-    background: #fff;
-    color: var(--ink) !important;
+  .topbar a:hover {
+    text-decoration: underline;
   }
 
+  /* ---- The page */
   .paper {
-    max-width: 760px;
-    margin: var(--space-m) auto var(--space-2xl);
-    padding: clamp(1.5rem, 5vw, 3.5rem) var(--gutter);
-    background: #fff;
-    border: 1px solid var(--rule);
-    border-radius: 6px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 var(--gutter) 5rem;
+    font-family: var(--font-serif, Georgia, serif);
   }
 
-  .kicker {
-    color: var(--accent);
-    font-size: var(--label);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  .titleblock {
+    margin-top: clamp(2rem, 6vw, 3.5rem);
+    text-align: center;
   }
 
   h1 {
-    margin-top: 6px;
-    font-family: var(--font-serif, Georgia, serif);
-    font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.75rem);
+    font-size: clamp(1.9rem, 1.4rem + 2vw, 2.5rem);
     font-weight: 600;
-    line-height: 1.1;
-    letter-spacing: -0.015em;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     text-wrap: balance;
   }
 
-  .dek {
-    margin-top: 0.5rem;
-    color: var(--ink-soft);
-    font-family: var(--font-serif, Georgia, serif);
-    font-size: clamp(1.1rem, 1rem + 0.5vw, 1.3rem);
-    font-style: italic;
-    line-height: 1.35;
+  .subtitle {
+    max-width: 34em;
+    margin: 0.5rem auto 0;
+    font-size: clamp(1.05rem, 1rem + 0.4vw, 1.2rem);
+    line-height: 1.4;
     text-wrap: balance;
   }
 
-  .byline,
-  .versions {
-    margin-top: var(--space-xs);
-    color: var(--ink-soft);
-    font-size: var(--label);
+  .author {
+    margin-top: 1.4rem;
+    font-size: 1.1rem;
+    font-variant: small-caps;
+    letter-spacing: 0.03em;
   }
 
-  .versions {
-    margin-top: 2px;
-  }
-
-  .disclaimer {
-    margin-top: var(--space-s);
-    padding: 0.6rem 0.8rem;
-    border: 1px solid var(--rule);
-    border-radius: 4px;
+  .date,
+  .companion {
+    margin-top: 0.25rem;
     color: var(--ink-soft);
-    font-size: 0.75rem;
-    line-height: 1.45;
+    font-size: 0.9rem;
   }
 
   .abstract {
-    margin-top: var(--space-m);
-    padding: var(--space-s) var(--space-m) var(--space-m);
-    background: #f6f1e4;
-    border-left: 4px solid var(--accent);
-  }
-
-  .abstract h2,
-  .toc::before {
-    color: var(--accent);
-    font-size: var(--label);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .keypoints {
-    display: grid;
-    gap: 0.7rem;
-    margin-top: 0.6rem;
-    padding: 0;
-    list-style: none;
-    counter-reset: kp;
-  }
-
-  .keypoints li {
-    position: relative;
-    padding-left: 1.9rem;
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    counter-increment: kp;
-  }
-
-  .keypoints li::before {
-    content: counter(kp);
-    position: absolute;
-    top: 0.1em;
-    left: 0;
-    display: grid;
-    place-items: center;
-    width: 1.35rem;
-    height: 1.35rem;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-
-  .take {
-    margin-top: var(--space-s);
-    padding-top: var(--space-s);
-    border-top: 1px solid #e4dcc8;
-    font-family: var(--font-serif, Georgia, serif);
-    font-size: 1.0625rem;
+    max-width: 36rem;
+    margin: 2.2rem auto 0;
+    font-size: 0.95rem;
     line-height: 1.55;
   }
 
-  .toc {
-    margin-top: var(--space-m);
+  .abstract h2 {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    font-variant: small-caps;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: center;
   }
 
-  .toc::before {
-    content: 'Contents';
-    display: block;
+  .abstract p {
+    hyphens: auto;
+  }
+
+  .abstract .meta {
+    margin-top: 0.45rem;
+    font-size: 0.85rem;
+    hyphens: manual;
+    text-align: left;
+  }
+
+  .disclaimer {
+    max-width: 36rem;
+    margin: 1.6rem auto 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .toc {
+    margin-top: 2.4rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .toc h2 {
+    font-size: 0.95rem;
+    font-variant: small-caps;
+    font-weight: 700;
+    letter-spacing: 0.06em;
   }
 
   .toc ol {
-    columns: 2 16rem;
-    margin-top: 6px;
-    padding-left: 1.4em;
-    list-style: decimal;
-    font-size: var(--label);
-    line-height: 1.7;
-  }
-
-  .toc li.unnumbered {
+    margin-top: 0.5rem;
+    padding: 0;
     list-style: none;
+    columns: 2 18rem;
+    column-gap: 2rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
   }
 
+  .toc li {
+    break-inside: avoid;
+    padding: 0.12rem 0;
+  }
+
+  .toc a {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .toc a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .toc .n {
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  /* ---- Body text */
   .body {
-    margin-top: var(--space-l);
-    font-family: var(--font-serif, Georgia, serif);
     font-size: 1.0625rem;
-    line-height: 1.65;
-  }
-
-  .body > section + section {
-    margin-top: var(--space-xl);
+    line-height: 1.62;
   }
 
   .body h2 {
-    font-family: var(--font-sans);
-    font-size: var(--step-2);
+    display: flex;
+    gap: 0.7em;
+    margin-top: 2.8rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    line-height: 1.2;
-    scroll-margin-top: var(--space-m);
-  }
-
-  .body h2 .num {
-    color: var(--accent);
+    line-height: 1.25;
+    scroll-margin-top: 3.5rem;
   }
 
   .body h3 {
-    margin-top: 1.6em;
-    font-family: var(--font-sans);
-    font-size: var(--step-1);
+    display: flex;
+    gap: 0.6em;
+    margin-top: 1.8rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.3;
+    scroll-margin-top: 3.5rem;
+  }
+
+  .body .num {
+    flex: none;
+    font-variant-numeric: lining-nums;
   }
 
   .body p {
@@ -399,18 +549,30 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
     text-wrap: pretty;
   }
 
+  .body h2 + p,
   .body h3 + p {
-    margin-top: 0.4em;
+    margin-top: 0.5em;
   }
 
+  @media (min-width: 700px) {
+    .body p,
+    .body li,
+    .abstract p:not(.meta) {
+      text-align: justify;
+      hyphens: auto;
+    }
+  }
+
+  /* Numbered display equations, with the notation set as a "where" clause. */
   .eq {
-    margin: 1em 0;
-    padding: 0.8rem 1rem;
-    background: #faf7f0;
-    border-radius: 4px;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 2.5rem;
+    align-items: center;
+    margin: 1.2em 0;
   }
 
   .body .eq-line {
+    grid-column: 2;
     margin: 0;
     font-size: 1.05rem;
     font-style: italic;
@@ -419,12 +581,20 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
     text-wrap: balance;
   }
 
+  .body .eq-no {
+    grid-column: 3;
+    margin: 0;
+    font-style: normal;
+    text-align: right;
+  }
+
   .body .eq-caption {
-    margin-top: 0.5rem;
+    grid-column: 1 / -1;
+    margin-top: 0.45rem;
     color: var(--ink-soft);
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    line-height: 1.45;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-align: left;
   }
 
   .eq sub,
@@ -433,10 +603,15 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
     line-height: 0;
   }
 
+  .eq sub sup,
+  .eq sup sub {
+    font-size: 1em;
+  }
+
   .bullets,
   .steps {
     margin-top: 0.75em;
-    padding-left: 1.3em;
+    padding-left: 1.5em;
   }
 
   .bullets {
@@ -449,50 +624,7 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
 
   .bullets li + li,
   .steps li + li {
-    margin-top: 0.45em;
-  }
-
-  .bullets li::marker,
-  .steps li::marker {
-    color: var(--accent);
-  }
-
-  .sources-note {
-    color: var(--ink-soft);
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    line-height: 1.5;
-  }
-
-  .sources ol {
-    margin-top: 0.75em;
-    padding: 0;
-    list-style: none;
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    line-height: 1.45;
-  }
-
-  .sources li {
-    display: grid;
-    grid-template-columns: 2em 1fr;
-    gap: 0.25em;
-    overflow-wrap: anywhere;
-    scroll-margin-top: var(--space-m);
-  }
-
-  .sources li + li {
-    margin-top: 0.45em;
-  }
-
-  .sources li:target {
-    background: #f7eef3;
-  }
-
-  .sources .n {
-    color: var(--ink-soft);
-    font-variant-numeric: lining-nums;
-    text-align: right;
+    margin-top: 0.5em;
   }
 
   .body p a,
@@ -500,38 +632,244 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
     text-underline-offset: 2px;
   }
 
-  .eq sub sup,
-  .eq sup sub {
-    font-size: 1em;
+  /* ---- Appendices and references */
+  .appendix-divider {
+    margin-top: 3.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ink);
+    font-size: 0.95rem;
+    font-variant: small-caps;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: center;
   }
 
-  @media print {
-    @page {
-      size: Letter;
-      margin: 0.7in 0.75in;
+  .body .appendix h2 .num::before {
+    content: 'Appendix ';
+  }
+
+  .references h2 {
+    margin-top: 3.2rem;
+  }
+
+  .references-note {
+    color: var(--ink-soft);
+    font-size: 0.85rem !important;
+    line-height: 1.5;
+    text-align: left !important;
+  }
+
+  .references ol {
+    margin-top: 0.8em;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .references li {
+    display: grid;
+    grid-template-columns: 2.6em 1fr;
+    gap: 0.2em;
+    overflow-wrap: anywhere;
+    text-align: left !important;
+    scroll-margin-top: 3.5rem;
+  }
+
+  .references li + li {
+    margin-top: 0.4em;
+  }
+
+  .references li:target {
+    background: #fff6d6;
+  }
+
+  .references .n {
+    color: var(--ink-soft);
+    font-variant-numeric: lining-nums;
+  }
+
+  /* ---- The calculator, as a plain results table rather than cards */
+  .body :global(.calc-out) {
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .body :global(.calc-out div),
+  .body :global(.calc-out div.key) {
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    border-radius: 0;
+    background: none;
+  }
+
+  .body :global(.calc-out dd[data-out]:not(.hint)) {
+    font-size: 1.25rem;
+  }
+
+  /* ---- Where am I: side contents on wide screens, a running head on narrow ones */
+  .side,
+  .running {
+    display: none;
+    font-family: var(--font-sans);
+  }
+
+  @media (min-width: 1300px) {
+    .side {
+      position: fixed;
+      top: 1.5rem;
+      left: max(1rem, calc(50% - 400px - 270px));
+      display: block;
+      width: 250px;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      scrollbar-width: thin;
     }
 
-    .toolbar,
-    .toc {
+    .side:global(.show) {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .side-title {
+      margin-bottom: 0.5rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .side ol {
+      padding: 0;
+      list-style: none;
+    }
+
+    .side li a {
+      display: grid;
+      grid-template-columns: 2.1rem 1fr;
+      padding: 0.18rem 0.5rem;
+      border-left: 2px solid transparent;
+      color: var(--ink-soft);
+      text-decoration: none;
+    }
+
+    .side li a:hover {
+      color: var(--ink);
+    }
+
+    .side li.l3 {
       display: none;
     }
 
-    .paper {
-      margin: 0;
-      padding: 0;
-      border: 0;
+    .side li.l3:global(.open) {
+      display: block;
     }
 
-    .keypoints li,
-    .take,
-    .eq,
-    .disclaimer {
-      break-inside: avoid;
+    .side li.l3 a {
+      padding-left: 1.4rem;
+      grid-template-columns: 2.1rem 1fr;
+    }
+
+    .side li:global(.in) > a {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .side li:global(.active) > a {
+      border-left-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+  }
+
+  @media (max-width: 1299px) {
+    .running {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      display: block;
+      padding: 0.45rem var(--gutter);
+      border-bottom: 1px solid var(--rule);
+      background: #fff;
+      font-size: 0.78rem;
+      line-height: 1.3;
+      transform: translateY(-100%);
+      transition: transform 0.2s;
+    }
+
+    .running:global(.show) {
+      transform: none;
+    }
+
+    .running a {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.6rem;
+      max-width: 800px;
+      margin: 0 auto;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .r-sec {
+      font-weight: 600;
+    }
+
+    .r-sub:not(:empty)::before {
+      content: '› ';
+      color: var(--ink-soft);
+    }
+
+    .r-sub {
+      color: var(--ink-soft);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side,
+    .running {
+      transition: none;
+    }
+  }
+
+  /* ---- Print: the PDF is a plain paper */
+  @media print {
+    @page {
+      size: Letter;
+      margin: 0.75in 0.8in;
+    }
+
+    .topbar,
+    .side,
+    .running {
+      display: none !important;
+    }
+
+    .paper {
+      max-width: none;
+      padding: 0;
+    }
+
+    .titleblock {
+      margin-top: 0;
+    }
+
+    .companion {
+      display: none;
+    }
+
+    .toc {
+      margin-top: 0;
+      break-before: page;
+      break-after: page;
     }
 
     .body {
       font-size: 10.5pt;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
     .body h2,
@@ -539,16 +877,22 @@ const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '').spl
       break-after: avoid;
     }
 
-    .body > section + section {
-      margin-top: 1.4rem;
+    .eq,
+    .disclaimer {
+      break-inside: avoid;
     }
 
-    .sources ol {
-      font-size: 7.5pt;
+    .first-appendix {
+      break-before: page;
+    }
+
+    .references ol {
+      font-size: 8pt;
     }
 
     a {
-      color: inherit;
+      color: inherit !important;
+      text-decoration: none;
     }
 
     /* Legend keys are CSS backgrounds, which a printer drops unless told otherwise. */

@@ -71,7 +71,8 @@ interface Props {
   yMin?: number;
   yMax?: number;
   format?: Fmt;
-  refs?: { v: number; label?: string }[];
+  /** Horizontal reference lines; `below` puts the label under the line, clear of a series above it. */
+  refs?: { v: number; label?: string; below?: boolean }[];
   vrefs?: { v: number; label: string }[];
   /** Data table; built from the series at the tick positions when omitted. */
   table?: { head: string[]; rows: (string | number)[][] };
@@ -121,7 +122,7 @@ function build(L: Layout) {
   }
   for (const r of refs) {
     s += `<line x1="${x0}" x2="${x1}" y1="${sy(r.v)}" y2="${sy(r.v)}" stroke="${AXIS}" stroke-width="1.25"/>`;
-    if (r.label) s += `<text x="${x0 + 4}" y="${sy(r.v) - 4}" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
+    if (r.label) s += `<text x="${x0 + 4}" y="${r.below ? sy(r.v) + f + 2 : sy(r.v) - 4}" font-size="${f - 1}" fill="${INK_SOFT}">${esc(r.label)}</text>`;
   }
   for (const r of vrefs) {
     s += `<line x1="${sx(r.v)}" x2="${sx(r.v)}" y1="${top}" y2="${H - bottom}" stroke="${AXIS}" stroke-width="1.25"/>`;
